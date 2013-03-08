@@ -1,0 +1,29 @@
+events: Hits
+
+fl=(1) /home/luke/profiling/lmfit.R
+fn=<TOP>
+1 0
+3 0
+4 0
+cfl=(2) /home/luke/profiling/lmsrc.R
+cfn=lm.fit
+calls=897
+4 897
+
+fl=(2)
+fn=lm.fit
+30 323
+39 37
+55 17
+58 14
+64 136
+40 1
+cfl=??
+cfn=<GC>
+calls=27 0
+30 27
+
+fl=??
+fn=<GC>
+0 166
+

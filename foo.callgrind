@@ -1,0 +1,141 @@
+events: Hits
+
+fl=(1) /home/luke/foo.c
+fn=f
+cfl=(1)
+cfn=f
+calls=5 7
+6 5
+
+fl=(1)
+fn=f
+6 2
+
+fl=(1)
+fn=f
+cfl=(1)
+cfn=f
+calls=2 6
+6 2
+
+fl=(1)
+fn=f
+cfl=??
+cfn=(1) __log_finite
+calls=378 0
+7 378
+
+fl=(1)
+fn=f
+cfl=??
+cfn=(2) lgamma_r
+calls=3 0
+7 3
+
+fl=(1)
+fn=f
+7 8
+
+fl=(1)
+fn=f
+cfl=??
+cfn=(3) __lgamma_r_finite
+calls=2 0
+7 2
+
+fl=(1)
+fn=f
+cfl=(1)
+cfn=f
+calls=3 7
+7 3
+
+fl=(1)
+fn=g
+cfl=(1)
+cfn=f
+calls=386 7
+13 386
+
+fl=(1)
+fn=g
+cfl=(1)
+cfn=f
+calls=7 6
+13 7
+
+fl=(1)
+fn=g
+cfl=??
+cfn=(4) 0xffefffffffffffff
+calls=2 0
+13 2
+
+fl=(1)
+fn=(5) main
+cfl=(1)
+cfn=g
+calls=395 13
+21 395
+
+fl=??
+fn=(6) __libc_start_main
+cfl=(1)
+cfn=(5)
+calls=395 21
+0 395
+
+fl=??
+fn=(1)
+cfl=??
+cfn=(1)
+calls=378 0
+0 378
+
+fl=??
+fn=(1)
+0 380
+
+fl=??
+fn=log
+0 3
+
+fl=??
+fn=(3)
+cfl=??
+cfn=(1)
+calls=2 0
+0 2
+
+fl=??
+fn=(7) _start
+cfl=??
+cfn=(6)
+calls=395 0
+0 395
+
+fl=??
+fn=(2)
+cfl=??
+cfn=log
+calls=3 0
+0 3
+
+fl=??
+fn=(4)
+cfl=??
+cfn=(8) _init
+calls=2 0
+0 2
+
+fl=??
+fn=(8)
+0 2
+
+fl=??
+fn=(8)
+cfl=??
+cfn=(8)
+calls=2 0
+0 2
+
