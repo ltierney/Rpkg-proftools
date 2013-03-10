@@ -1,0 +1,53 @@
+* C level profiling
+** Google perftools
+   Google CPU profiler perf
+   need to install on Ubuntu, maybe OS X
+   http://code.google.com/p/gperftools/
+   http://alexott.net/en/writings/prog-checking/GooglePT.html
+   
+   needs to use a library; can link or use dyn.load/dyn.unload
+
+   env CPUPROFILE=./Rlm.prof ~/working/R/R-devel/build/bin/R
+
+   dyn.load("/usr/lib/libprofiler.so")
+   source("lmfit.R")
+   dyn.unload("/usr/lib/libprofiler.so")
+
+   google-pprof --text ~/working/R/R-devel/build/bin/exec/R Rlm.prof
+   google-pprof --gv ~/working/R/R-devel/build/bin/exec/R Rlm.prof
+   google-pprof --callgrind ~/working/R/R-devel/build/bin/exec/R Rlm.prof > Rlm.cg
+   kcachegrind Rlm.cg  
+
+** valgrind tool=callgrind
+   http://www.baptiste-wicht.com/2011/09/profile-c-application-with-callgrind-kcachegrind/
+
+   ~/working/R/R-devel/build/bin/R -d "valgrind --tool=callgrind"
+
+   This runs quite a bit slower
+
+   can look at result file with kcachegrind
+
+** Linux perf
+   https://perf.wiki.kernel.org/index.php/Main_Page
+   https://perf.wiki.kernel.org/index.php/Tutorial
+
+   perf record ~/working/R/R-devel/build/bin/R
+   perf report
+
+* Other profiling notes
+  http://www.pixelbeat.org/programming/profiling/
+  http://stackoverflow.com/questions/1777556/alternatives-to-gprof
+  http://code.google.com/p/jrfonseca/wiki/Gprof2Dot
+  http://www.yosefk.com/blog/how-profilers-lie-the-cases-of-gprof-and-kcachegrind.html
+  http://www.baptiste-wicht.com/2011/09/profile-c-application-with-callgrind-kcachegrind/
+  http://en.wikipedia.org/wiki/Call_graph
+  
+  http://msdn.microsoft.com/en-us/magazine/cc337887.aspx
+  http://blogs.msdn.com/b/visualstudioalm/archive/2013/02/27/how-to-profile-a-xaml-windows-store-app.aspx
+
+  Flame graphs: http://dtrace.org/blogs/brendan/2012/03/17/linux-kernel-performance-flame-graphs/
+  https://blogs.oracle.com/realneel/entry/visualizing_callstacks_via_dtrace_and
+
+  http://kcachegrind.sourceforge.net/html/CallgrindFormat.html
+  http://valgrind.org/docs/manual/cl-format.html
+  http://trac.parrot.org/parrot/wiki/CallgrindFormat
