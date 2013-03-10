@@ -22,6 +22,7 @@ readPD <- function(file) {
         files <- sub("#File [[:digit:]]: (.+)", "\\1", stacks[fstacks])
         stacks <- stacks[! fstacks]
     }
+    else files <- NULL
 
     ## record and strip out GC info
     inGC <- grepl("<GC>", stacks)
