@@ -1,6 +1,6 @@
 * C level profiling
 ** Google perftools
-   Google CPU profiler perf
+   Google CPU profiler pperf
    need to install on Ubuntu, maybe OS X
    http://code.google.com/p/gperftools/
    http://alexott.net/en/writings/prog-checking/GooglePT.html
