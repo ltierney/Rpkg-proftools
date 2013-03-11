@@ -202,7 +202,7 @@ flameGraph <- function(stacks, counts, reorder = TRUE) {
                 rect(left, bottom, right, top,
                      col = rgb(runif(1), runif(1), runif(1)))
             if (strheight(label) <= 1 &&
-                strwidth(label) + hm <= 0.8 * (right - left))
+                strwidth(label) + 2 * hm <= 0.8 * (right - left))
                 text(left, bottom + 0.4, label, pos = 4)
         }
     }
@@ -250,12 +250,13 @@ flameGraph <- function(stacks, counts, reorder = TRUE) {
 
         show <- (! is.na(labels) &
                 strheight(labels) <= 1 &
-                strwidth(labels) + hm <= 0.8 * (right - left))
+                strwidth(labels) + 2 * hm <= 0.8 * (right - left))
         if (any(show))
             text(left[show], bottom + 0.4, labels[show], pos = 4)
     }
 }
 
+## produce a flame graph from an Rprof file
 fg <- function(file) {
     d <- readPD(file)
     s <- cleanStacks(d$stacks)
@@ -265,6 +266,7 @@ fg <- function(file) {
     flameGraph(stacks, counts)
 }
 
+## produce a time graph (like profr) from an Rprof file
 tg <- function(file) {
     d <- readPD(file)
     s <- cleanStacks(d$stacks)
