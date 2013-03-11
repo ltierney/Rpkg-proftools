@@ -159,9 +159,7 @@ printPaths <- function(stacks, counts, n) {
 ## show call tree
 ## flame graph
 
-stacks <- s$stacks
-counts <- ct$counts
-flameGraph <- function(stacks, counts, time.order = FALSE) {
+flameGraph <- function(stacks, counts) {
     mx <- max(sapply(stacks, length))
 
     ## For 'standard' flame graph order the stacks so they are
@@ -169,13 +167,11 @@ flameGraph <- function(stacks, counts, time.order = FALSE) {
     ## frst. This does a lexicographic sort by sorint on the top entry
     ## first, then the next, and do on; since the sorts are stable
     ## this keeps the top levels sorted within the lower ones.
-    if (! time.order) {
-        ord <- seq_along(stacks)
-        for (i in (mx : 1))
-            ord <- ord[order(sapply(stacks[ord], `[`, 1), na.last = FALSE)]
-        stacks <- stacks[ord]
-        counts <- counts[ord]
-    }
+    ord <- seq_along(stacks)
+    for (i in (mx : 1))
+        ord <- ord[order(sapply(stacks[ord], `[`, 1), na.last = FALSE)]
+    stacks <- stacks[ord]
+    counts <- counts[ord]
     
     plot(c(0, sum(counts)), c(0, mx), type = "n",
          axes = FALSE, xlab = "", ylab = "")
@@ -210,7 +206,7 @@ flameGraph <- function(stacks, counts, time.order = FALSE) {
     }
 }
 
-flameGraph <- function(stacks, counts, time.order = FALSE) {
+flameGraph <- function(stacks, counts) {
     mx <- max(sapply(stacks, length))
 
     ## For 'standard' flame graph order the stacks so they are
@@ -218,13 +214,11 @@ flameGraph <- function(stacks, counts, time.order = FALSE) {
     ## frst. This does a lexicographic sort by sorint on the top entry
     ## first, then the next, and do on; since the sorts are stable
     ## this keeps the top levels sorted within the lower ones.
-    if (! time.order) {
-        ord <- seq_along(stacks)
-        for (i in (mx : 1))
-            ord <- ord[order(sapply(stacks[ord], `[`, 1), na.last = FALSE)]
-        stacks <- stacks[ord]
-        counts <- counts[ord]
-    }
+    ord <- seq_along(stacks)
+    for (i in (mx : 1))
+        ord <- ord[order(sapply(stacks[ord], `[`, 1), na.last = FALSE)]
+    stacks <- stacks[ord]
+    counts <- counts[ord]
     
     plot(c(0, sum(counts)), c(0, mx), type = "n",
          axes = FALSE, xlab = "", ylab = "")
@@ -256,5 +250,14 @@ flameGraph <- function(stacks, counts, time.order = FALSE) {
         if (any(show))
             text(left[show], bottom + 0.4, labels[show], pos = 4)
     }
+}
+
+fg <- function(file) {
+    d <- readPD(file)
+    s <- cleanStacks(d$stacks)
+    ct <- countStacks(d$trace, d$inGC)
+    stacks <- s$stacks
+    counts <- ct$counts
+    flameGraph(stacks, counts)
 }
 
