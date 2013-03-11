@@ -210,3 +210,51 @@ flameGraph <- function(stacks, counts, time.order = FALSE) {
     }
 }
 
+flameGraph <- function(stacks, counts, time.order = FALSE) {
+    mx <- max(sapply(stacks, length))
+
+    ## For 'standard' flame graph order the stacks so they are
+    ## alphabetical within lines within calls, with missing entires
+    ## frst. This does a lexicographic sort by sorint on the top entry
+    ## first, then the next, and do on; since the sorts are stable
+    ## this keeps the top levels sorted within the lower ones.
+    if (! time.order) {
+        ord <- seq_along(stacks)
+        for (i in (mx : 1))
+            ord <- ord[order(sapply(stacks[ord], `[`, 1), na.last = FALSE)]
+        stacks <- stacks[ord]
+        counts <- counts[ord]
+    }
+    
+    plot(c(0, sum(counts)), c(0, mx), type = "n",
+         axes = FALSE, xlab = "", ylab = "")
+
+    ## half-em for half-character offset used by text() when pos
+    ## argument is used.
+    hm <- 0.5 * strwidth("m")
+
+    for (k in 1 : mx) {
+        runs <- rle(sapply(stacks, `[`, k))
+        lens <- runs$lengths
+        n <- length(lens)
+        csums <- cumsum(tapply(counts, rep(1 : n, lens), sum))
+
+        top <- k
+        bottom <- k - 1
+        left <- c(0, csums[-n])
+        right <- csums
+        cols <- rgb(runif(n), runif(n), runif(n))
+        labels <- runs$values
+
+        show <- ! is.na(labels)
+        if (any(show))
+            rect(left[show], bottom, right[show], top, col = cols[show])
+
+        show <- (! is.na(labels) &
+                strheight(labels) <= 1 &
+                strwidth(labels) + hm <= 0.8 * (right - left))
+        if (any(show))
+            text(left[show], bottom + 0.4, labels[show], pos = 4)
+    }
+}
+
