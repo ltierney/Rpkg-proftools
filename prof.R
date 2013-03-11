@@ -159,4 +159,45 @@ printPaths <- function(stacks, counts, n) {
 ## show call tree
 ## flame graph
 
+stacks <- s$stacks
+counts <- ct$counts
+flameGraph <- function(stacks, counts, time.order = FALSE) {
+    mx <- max(sapply(stacks, length))
+
+    if (! time.order) {
+        ord <- seq_along(stacks)
+        for (i in (mx : 1))
+            ord <- ord[order(sapply(stacks[ord], `[`, 1), na.last = FALSE)]
+        stacks <- stacks[ord]
+        counts <- counts[ord]
+    }
+    
+    plot(c(0, sum(counts)), c(0, mx), type = "n",
+         axes = FALSE, xlab = "", ylab = "")
+
+    for (k in 1 : mx) {
+        runs <- rle(sapply(stacks, `[`, k))
+        lens <- runs$lengths
+        n <- length(lens)
+        csums <- cumsum(tapply(counts, rep(1 : n, lens), sum))
+
+        top <- k
+        bottom <- k - 1
+        left <- 0
+        right <- 0
+
+        ## should be able to vectorize this loop
+        for (i in 1 : n) {
+            left <- right
+            right <- csums[i]
+            label <- runs$values[i]
+            if (! is.na(label))
+                rect(left, bottom, right, top,
+                     col = rgb(runif(1), runif(1), runif(1)))
+            if (strheight(label) <= 1 &&
+                strwidth(label) <= 0.8 * (right - left))
+                text(left, bottom + 0.4, label, pos = 4)
+        }
+    }
+}
 
