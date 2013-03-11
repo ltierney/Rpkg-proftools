@@ -40,7 +40,9 @@
      }
      rs <- scale(resid(storm.fm), scale = FALSE) # remove the mean
      storm.boot <- boot(rs, storm.bf, R = 4999) # slow enough to profile
-  
+
+env LD_PRELOAD=/usr/lib64/libprofiler.so CPUPROFILE=./Rlm.prof ~/working/R/R-devel/build/bin/R
+
 ** valgrind tool=callgrind
    http://www.baptiste-wicht.com/2011/09/profile-c-application-with-callgrind-kcachegrind/
 
