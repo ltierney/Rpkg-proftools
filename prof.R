@@ -159,7 +159,7 @@ printPaths <- function(stacks, counts, n) {
 ## show call tree
 ## flame graph
 
-flameGraph <- function(stacks, counts) {
+flameGraph <- function(stacks, counts, reorder = TRUE) {
     mx <- max(sapply(stacks, length))
 
     ## For 'standard' flame graph order the stacks so they are
@@ -167,12 +167,14 @@ flameGraph <- function(stacks, counts) {
     ## frst. This does a lexicographic sort by sorint on the top entry
     ## first, then the next, and do on; since the sorts are stable
     ## this keeps the top levels sorted within the lower ones.
-    ord <- seq_along(stacks)
-    for (i in (mx : 1))
-        ord <- ord[order(sapply(stacks[ord], `[`, 1), na.last = FALSE)]
-    stacks <- stacks[ord]
-    counts <- counts[ord]
-    
+    if (reorder) {
+        ord <- seq_along(stacks)
+        for (i in (mx : 1))
+            ord <- ord[order(sapply(stacks[ord], `[`, 1), na.last = FALSE)]
+        stacks <- stacks[ord]
+        counts <- counts[ord]
+    }
+
     plot(c(0, sum(counts)), c(0, mx), type = "n",
          axes = FALSE, xlab = "", ylab = "")
 
@@ -206,7 +208,7 @@ flameGraph <- function(stacks, counts) {
     }
 }
 
-flameGraph <- function(stacks, counts) {
+flameGraph <- function(stacks, counts, reorder = TRUE) {
     mx <- max(sapply(stacks, length))
 
     ## For 'standard' flame graph order the stacks so they are
@@ -214,12 +216,14 @@ flameGraph <- function(stacks, counts) {
     ## frst. This does a lexicographic sort by sorint on the top entry
     ## first, then the next, and do on; since the sorts are stable
     ## this keeps the top levels sorted within the lower ones.
-    ord <- seq_along(stacks)
-    for (i in (mx : 1))
-        ord <- ord[order(sapply(stacks[ord], `[`, 1), na.last = FALSE)]
-    stacks <- stacks[ord]
-    counts <- counts[ord]
-    
+    if (reorder) {
+        ord <- seq_along(stacks)
+        for (i in (mx : 1))
+            ord <- ord[order(sapply(stacks[ord], `[`, 1), na.last = FALSE)]
+        stacks <- stacks[ord]
+        counts <- counts[ord]
+    }
+
     plot(c(0, sum(counts)), c(0, mx), type = "n",
          axes = FALSE, xlab = "", ylab = "")
 
@@ -261,3 +265,11 @@ fg <- function(file) {
     flameGraph(stacks, counts)
 }
 
+tg <- function(file) {
+    d <- readPD(file)
+    s <- cleanStacks(d$stacks)
+    r <- rle(d$trace)
+    stacks <- s$stacks[r$values]
+    counts <- r$lengths
+    flameGraph(stacks, counts, FALSE)
+}    
