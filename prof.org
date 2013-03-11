@@ -18,6 +18,29 @@
    google-pprof --callgrind ~/working/R/R-devel/build/bin/exec/R Rlm.prof > Rlm.cg
    kcachegrind Rlm.cg  
 
+   On Fedora,
+
+   library(boot)
+   Sys.setenv(CPUPROFILE="./Rboot.prof")
+   dyn.load("/usr/lib64/libprofiler.so")
+   example(boot)
+   dyn.unload("/usr/lib64/libprofiler.so")
+
+
+   library(boot)
+   library(MASS)
+   storm.fm <- nls(Time ~ b*Viscosity/(Wt - c), stormer,
+                   start = c(b=30.401, c=2.2183))
+     st <- cbind(stormer, fit=fitted(storm.fm))
+     storm.bf <- function(rs, i) {
+         st$Time <-  st$fit + rs[i]
+         tmp <- nls(Time ~ (b * Viscosity)/(Wt - c), st,
+                    start = coef(storm.fm))
+         tmp$m$getAllPars()
+     }
+     rs <- scale(resid(storm.fm), scale = FALSE) # remove the mean
+     storm.boot <- boot(rs, storm.bf, R = 4999) # slow enough to profile
+  
 ** valgrind tool=callgrind
    http://www.baptiste-wicht.com/2011/09/profile-c-application-with-callgrind-kcachegrind/
 
