@@ -164,6 +164,11 @@ counts <- ct$counts
 flameGraph <- function(stacks, counts, time.order = FALSE) {
     mx <- max(sapply(stacks, length))
 
+    ## For 'standard' flame graph order the stacks so they are
+    ## alphabetical within lines within calls, with missing entires
+    ## frst. This does a lexicographic sort by sorint on the top entry
+    ## first, then the next, and do on; since the sorts are stable
+    ## this keeps the top levels sorted within the lower ones.
     if (! time.order) {
         ord <- seq_along(stacks)
         for (i in (mx : 1))
@@ -175,7 +180,8 @@ flameGraph <- function(stacks, counts, time.order = FALSE) {
     plot(c(0, sum(counts)), c(0, mx), type = "n",
          axes = FALSE, xlab = "", ylab = "")
 
-    ## half-em for half-character offset used by text() when pos argument is used.
+    ## half-em for half-character offset used by text() when pos
+    ## argument is used.
     hm <- 0.5 * strwidth("m")
 
     for (k in 1 : mx) {
