@@ -175,6 +175,9 @@ flameGraph <- function(stacks, counts, time.order = FALSE) {
     plot(c(0, sum(counts)), c(0, mx), type = "n",
          axes = FALSE, xlab = "", ylab = "")
 
+    ## half-em for half-character offset used by text() when pos argument is used.
+    hm <- 0.5 * strwidth("m")
+
     for (k in 1 : mx) {
         runs <- rle(sapply(stacks, `[`, k))
         lens <- runs$lengths
@@ -195,7 +198,7 @@ flameGraph <- function(stacks, counts, time.order = FALSE) {
                 rect(left, bottom, right, top,
                      col = rgb(runif(1), runif(1), runif(1)))
             if (strheight(label) <= 1 &&
-                strwidth(label) <= 0.8 * (right - left))
+                strwidth(label) + hm <= 0.8 * (right - left))
                 text(left, bottom + 0.4, label, pos = 4)
         }
     }
