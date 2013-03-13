@@ -324,3 +324,43 @@ do.call(rbind, lapply(seq_along(s$stacks), leafCall))
 ## **** compute total. self, gctotal, gcself for calls w and w/o sites
 ## **** figure out how to write out callgrind from this
 ## **** figure out how to generate call graphs as in proftools
+
+## **** make site optional
+## **** wrap into function
+## **** make result be char not factor
+lineFuns <- function(i) {
+    fun <- s$stacks[[i]]
+    refs <- s$refs[[i]]
+    n <- length(fun)
+    site <- refs[-(n + 1)]
+    unique(cbind(fun, site))
+}
+
+leafFun <- function(i) {
+    line <- s$stacks[[i]]
+    refs <- s$refs[[i]]
+    n <- length(line)
+    fun <- line[n]
+    site <- refs[n]
+    cbind(fun, site)
+}
+
+funs <- lapply(lapply(seq_along(s$stacks), lineFuns), as.data.frame)
+reps <- unlist(lapply(funs, nrow))
+
+fdf <- do.call(rbind, funs)
+fdf$total <- rep(ct$counts, reps)
+fdf$gctotal <- rep(ct$gccounts, reps)
+
+ff <- fdf$fun
+fs <- factor(as.character(fdf$site), exclude = "")
+
+afdf <- aggregate(fdf[-(1:2)], list(fun = ff, site = fs), sum)
+
+sfdf <- as.data.frame(do.call(rbind, lapply(seq_along(s$stacks), leafFun)))
+sfdf$self <- ct$counts
+sfdf$gcself <- ct$gccounts
+
+mfdf <- merge(afdf, sfdf, all = TRUE)
+mfdf$self[is.na(mfdf$self)] <- 0
+mfdf$gcself[is.na(mfdf$gcself)] <- 0
