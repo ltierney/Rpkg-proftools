@@ -328,11 +328,16 @@ do.call(rbind, lapply(seq_along(s$stacks), leafCall))
 ## **** make site optional
 ## **** wrap into function
 ## **** make result be char not factor
+useSite <- FALSE
+
 lineFuns <- function(i) {
     fun <- s$stacks[[i]]
     refs <- s$refs[[i]]
-    n <- length(fun)
-    site <- refs[-(n + 1)]
+    if (useSite) {
+        n <- length(fun)
+        site <- refs[-(n + 1)]
+    }
+    else site <- NA_character_
     unique(cbind(fun, site))
 }
 
@@ -341,7 +346,7 @@ leafFun <- function(i) {
     refs <- s$refs[[i]]
     n <- length(line)
     fun <- line[n]
-    site <- refs[n]
+    site <- if (useSite) refs[n] else NA_character_
     cbind(fun, site)
 }
 
@@ -361,6 +366,11 @@ sfdf <- as.data.frame(do.call(rbind, lapply(seq_along(s$stacks), leafFun)))
 sfdf$self <- ct$counts
 sfdf$gcself <- ct$gccounts
 
-mfdf <- merge(afdf, sfdf, all = TRUE)
+sff <- sfdf$fun
+sfs <- factor(as.character(sfdf$site), exclude = "")
+
+asfdf <- aggregate(sfdf[-(1:2)], list(fun = sff, site = sfs), sum)
+
+mfdf <- merge(afdf, asfdf, all = TRUE)
 mfdf$self[is.na(mfdf$self)] <- 0
 mfdf$gcself[is.na(mfdf$gcself)] <- 0
