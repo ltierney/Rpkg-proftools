@@ -335,6 +335,9 @@ aggregateCounts <- function(cdf, fdf) {
     aggregate(cdf, lapply(fdf, clean), sum)
 }
 
+mergeFuns <- function(funs)
+    as.data.frame(do.call(rbind, funs), stringsAsFactors = FALSE)
+    
 funCunts <- function(s, cd, useSite = TRUE) {
     stacks <- s$stacks
     refs <- s$refs
@@ -361,9 +364,6 @@ funCunts <- function(s, cd, useSite = TRUE) {
         cbind(fun, site)
     }
 
-    mergeFuns <- function(funs)
-        as.data.frame(do.call(rbind, funs), stringsAsFactors = FALSE)
-    
     funs <- lapply(seq_along(stacks), lineFuns)
     fdf <- mergeFuns(funs)
 
