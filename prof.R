@@ -342,6 +342,9 @@ funCounts <- function(s, cd, useSite = TRUE) {
     mfdf
 }
 
+useCalleeSite <- TRUE
+useCallerSite <- TRUE
+
 lineCalls <- function(i) {
     line <- s$stacks[[i]]
     refs <- s$refs[[i]]
@@ -349,11 +352,18 @@ lineCalls <- function(i) {
     if (n > 0) {
         caller <- line[-n]
         callee <- line[-1]
-        site <- refs[-c(1, n + 1)]
+        if (useCalleeSite)
+            callee.site <- refs[-c(1, n + 1)]
+        else
+            caller.site <- NA_character_
+        if (useCallerSite)
+            caller.site <- refs[-c(n, n + 1)]
+        else
+            caller.site <- NA_character_
     }
     else
-        caller <- callee <- site <- character()
-    unique(cbind(caller, callee, site))
+        caller <- callee <- callee.site <- caller.site <- character()
+    unique(cbind(caller, callee, caller.site, callee.site))
 }
 
 leafCall <- function(i) {
@@ -363,27 +373,39 @@ leafCall <- function(i) {
     if (n > 0) {
         caller <- line[n - 1]
         callee <- line[n]
-        site <- refs[n]
+        if (useCalleeSite)
+            callee.site <- refs[n]
+        else
+            caller.site <- NA_character_
+        if (useCallerSite)
+            caller.site <- refs[n - 1]
+        else
+            caller.site <- NA_character_
+
     }
     else
-        caller <- callee <- site <- character()
-    cbind(caller, callee, site)
+        caller <- callee <- callee.site <- caller.site <- character()
+    cbind(caller, callee, caller.site, callee.site)
 }
 
 calls <- lapply(lapply(seq_along(s$stacks), lineCalls), as.data.frame)
 reps <- unlist(lapply(calls, nrow))
 
 cdf <- do.call(rbind, calls)
-cdf$counts <- rep(ct$counts, reps)
-cdf$gccounts <- rep(ct$gccounts, reps)
+
+tot <- rep(ct$counts, reps)
+gctot <- rep(ct$gccounts, reps)
+ccdf <- data.frame(total = tot, gctotal = gctot)
 
 f1 <- cdf$caller
 f2 <- cdf$callee
-fs <- factor(as.character(cdf$site), exclude = "")
+fs1 <- factor(as.character(cdf$caller.site), exclude = "")
+fs2 <- factor(as.character(cdf$callee.site), exclude = "")
 
-acdf <- aggregate(cdf[-(1:3)], list(caller = f1, callee = f2, site = fs), sum)
-
-## **** need to optionally include where  of caller
+acdf <- aggregate(ccdf,
+                  list(caller = f1, callee = f2,
+                       caller.site = fs1,
+                       callee.site = fs2), sum)
 
 alcdf <- do.call(rbind, lapply(seq_along(s$stacks), leafCall))
 
