@@ -344,7 +344,7 @@ aggregateCounts <- function(cdf, fdf) {
 mergeFuns <- function(funs)
     as.data.frame(do.call(rbind, funs), stringsAsFactors = FALSE)
     
-funCunts <- function(s, cd, useSite = TRUE) {
+funCounts <- function(s, cd, useSite = TRUE) {
     stacks <- s$stacks
     refs <- s$refs
     counts <- ct$counts
