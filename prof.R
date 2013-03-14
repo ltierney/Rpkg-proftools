@@ -276,55 +276,6 @@ tg <- function(file) {
     flameGraph(stacks, counts, FALSE)
 }    
 
-lineCalls <- function(i) {
-    line <- s$stacks[[i]]
-    refs <- s$refs[[i]]
-    n <- length(line)
-    if (n > 0) {
-        caller <- line[-n]
-        callee <- line[-1]
-        site <- refs[-c(1, n + 1)]
-    }
-    else
-        caller <- callee <- site <- character()
-    unique(cbind(caller, callee, site))
-}
-
-leafCall <- function(i) {
-    line <- s$stacks[[i]]
-    refs <- s$refs[[i]]
-    n <- length(line)
-    if (n > 0) {
-        caller <- line[n - 1]
-        callee <- line[n]
-        site <- refs[n]
-    }
-    else
-        caller <- callee <- site <- character()
-    cbind(caller, callee, site)
-}
-
-calls <- lapply(lapply(seq_along(s$stacks), lineCalls), as.data.frame)
-reps <- unlist(lapply(calls, nrow))
-
-cdf <- do.call(rbind, calls)
-cdf$counts <- rep(ct$counts, reps)
-cdf$gccounts <- rep(ct$gccounts, reps)
-
-f1 <- cdf$caller
-f2 <- cdf$callee
-fs <- factor(as.character(cdf$site), exclude = "")
-
-aggregate(cdf[-(1:3)], list(caller = f1, callee = f2, site = fs), sum)
-
-## **** need to optionally include where  of caller
-
-do.call(rbind, lapply(seq_along(s$stacks), leafCall))
-
-## **** compute total. self, gctotal, gcself for calls w and w/o sites
-## **** figure out how to write out callgrind from this
-## **** figure out how to generate call graphs as in proftools
-
 fact2char <- function(d) {
     for (i in seq_along(d))
         if (is.factor(d[[i]]))
@@ -390,3 +341,53 @@ funCounts <- function(s, cd, useSite = TRUE) {
 
     mfdf
 }
+
+lineCalls <- function(i) {
+    line <- s$stacks[[i]]
+    refs <- s$refs[[i]]
+    n <- length(line)
+    if (n > 0) {
+        caller <- line[-n]
+        callee <- line[-1]
+        site <- refs[-c(1, n + 1)]
+    }
+    else
+        caller <- callee <- site <- character()
+    unique(cbind(caller, callee, site))
+}
+
+leafCall <- function(i) {
+    line <- s$stacks[[i]]
+    refs <- s$refs[[i]]
+    n <- length(line)
+    if (n > 0) {
+        caller <- line[n - 1]
+        callee <- line[n]
+        site <- refs[n]
+    }
+    else
+        caller <- callee <- site <- character()
+    cbind(caller, callee, site)
+}
+
+calls <- lapply(lapply(seq_along(s$stacks), lineCalls), as.data.frame)
+reps <- unlist(lapply(calls, nrow))
+
+cdf <- do.call(rbind, calls)
+cdf$counts <- rep(ct$counts, reps)
+cdf$gccounts <- rep(ct$gccounts, reps)
+
+f1 <- cdf$caller
+f2 <- cdf$callee
+fs <- factor(as.character(cdf$site), exclude = "")
+
+acdf <- aggregate(cdf[-(1:3)], list(caller = f1, callee = f2, site = fs), sum)
+
+## **** need to optionally include where  of caller
+
+alcdf <- do.call(rbind, lapply(seq_along(s$stacks), leafCall))
+
+## **** compute total. self, gctotal, gcself for calls w and w/o sites
+## **** figure out how to write out callgrind from this
+## **** figure out how to generate call graphs as in proftools
+## **** allow pct, counts, or time in final output
