@@ -295,7 +295,7 @@ aggregateCounts <- function(cdf, fdf) {
 mergeFuns <- function(funs)
     as.data.frame(do.call(rbind, funs), stringsAsFactors = FALSE)
     
-funCounts <- function(s, cd, useSite = TRUE) {
+funCounts <- function(s, ct, useSite = TRUE) {
     stacks <- s$stacks
     refs <- s$refs
     counts <- ct$counts
@@ -394,7 +394,7 @@ leafCall <- function(i) {
 }
 
 calls <- lapply(seq_along(stacks), lineCalls)
-cdf <- mergeFuns(calls)
+cdf <- mergeFuns(calls)  ## **** need to rename mergeFuns
 
 reps <- unlist(lapply(calls, nrow))
 tot <- rep(counts, reps)
@@ -407,9 +407,14 @@ lcdf <- mergeFuns(lapply(seq_along(stacks), leafCall))
 clcdf <- data.frame(self = counts, gcself = gccounts)
 alcdf <- aggregateCounts(clcdf, lcdf)
 
+mcdf <- merge(acdf, alcdf, all = TRUE)
+mcdf$self[is.na(mcdf$self)] <- 0
+mcdf$gcself[is.na(mcdf$gcself)] <- 0
+
 ## **** finish leaf calls
 ## **** merge calls, leaf calls
 ## **** put into function
 ## **** figure out how to write out callgrind from this
 ## **** figure out how to generate call graphs as in proftools
 ## **** allow pct, counts, or time in final output
+## **** would be useful if checkUsage could warn for non-namespace-globals
