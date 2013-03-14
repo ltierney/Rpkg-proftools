@@ -345,77 +345,76 @@ funCounts <- function(s, ct, useSite = TRUE) {
     mergeCounts(afdf, asfdf)
 }
 
-useCalleeSite <- TRUE
-useCallerSite <- TRUE
+callCounts <- function(s, ct, useCalleeSite = TRUE, useCallerSite = FALSE) {
+    stacks <- s$stacks
+    refs <- s$refs
+    counts <- ct$counts
+    gccounts <- ct$gccounts
 
-stacks <- s$stacks
-refs <- s$refs
-counts <- ct$counts
-gccounts <- ct$gccounts
-
-lineCalls <- function(i) {
-    line <- stacks[[i]]
-    linerefs <- refs[[i]]
-    n <- length(line)
-    if (n > 0) {
-        caller <- line[-n]
-        callee <- line[-1]
-        if (useCalleeSite)
-            callee.site <- linerefs[-c(1, n + 1)]
+    lineCalls <- function(i) {
+        line <- stacks[[i]]
+        linerefs <- refs[[i]]
+        n <- length(line)
+        if (n > 0) {
+            caller <- line[-n]
+            callee <- line[-1]
+            if (useCalleeSite)
+                callee.site <- linerefs[-c(1, n + 1)]
+            else
+                caller.site <- NA_character_
+            if (useCallerSite)
+                caller.site <- linerefs[-c(n, n + 1)]
+            else
+                caller.site <- NA_character_
+        }
         else
-            caller.site <- NA_character_
-        if (useCallerSite)
-            caller.site <- linerefs[-c(n, n + 1)]
-        else
-            caller.site <- NA_character_
+            caller <- callee <- callee.site <- caller.site <- character()
+        unique(cbind(caller, callee, caller.site, callee.site))
     }
-    else
-        caller <- callee <- callee.site <- caller.site <- character()
-    unique(cbind(caller, callee, caller.site, callee.site))
-}
 
-leafCall <- function(i) {
-    line <- stacks[[i]]
-    linerefs <- refs[[i]]
-    n <- length(line)
-    if (n > 0) {
-        caller <- line[n - 1]
-        callee <- line[n]
-        if (useCalleeSite)
-            callee.site <- linerefs[n]
-        else
-            caller.site <- NA_character_
-        if (useCallerSite)
-            caller.site <- linerefs[n - 1]
-        else
-            caller.site <- NA_character_
+    leafCall <- function(i) {
+        line <- stacks[[i]]
+        linerefs <- refs[[i]]
+        n <- length(line)
+        if (n > 0) {
+            caller <- line[n - 1]
+            callee <- line[n]
+            if (useCalleeSite)
+                callee.site <- linerefs[n]
+            else
+                caller.site <- NA_character_
+            if (useCallerSite)
+                caller.site <- linerefs[n - 1]
+            else
+                caller.site <- NA_character_
 
+        }
+        else
+            caller <- callee <- callee.site <- caller.site <- character()
+        cbind(caller, callee, caller.site, callee.site)
     }
-    else
-        caller <- callee <- callee.site <- caller.site <- character()
-    cbind(caller, callee, caller.site, callee.site)
+
+    calls <- lapply(seq_along(stacks), lineCalls)
+    cdf <- rbindEntries(calls)
+
+    reps <- unlist(lapply(calls, nrow))
+    tot <- rep(counts, reps)
+    gctot <- rep(gccounts, reps)
+    ccdf <- data.frame(total = tot, gctotal = gctot)
+    acdf <- aggregateCounts(ccdf, cdf)
+
+    lcdf <- rbindEntries(lapply(seq_along(stacks), leafCall))
+
+    clcdf <- data.frame(self = counts, gcself = gccounts)
+    alcdf <- aggregateCounts(clcdf, lcdf)
+
+    mergeCounts(acdf, alcdf)
 }
-
-calls <- lapply(seq_along(stacks), lineCalls)
-cdf <- rbindEntries(calls)
-
-reps <- unlist(lapply(calls, nrow))
-tot <- rep(counts, reps)
-gctot <- rep(gccounts, reps)
-ccdf <- data.frame(total = tot, gctotal = gctot)
-acdf <- aggregateCounts(ccdf, cdf)
-
-lcdf <- rbindEntries(lapply(seq_along(stacks), leafCall))
-
-clcdf <- data.frame(self = counts, gcself = gccounts)
-alcdf <- aggregateCounts(clcdf, lcdf)
-
-mcdf <- mergeCounts(acdf, alcdf)
 
 ## **** abstract out common control pattern for funs/calls
+## **** push creating count data frame into aggregateCounts
 ## **** finish leaf calls
 ## **** merge calls, leaf calls
-## **** put into function
 ## **** figure out how to write out callgrind from this
 ## **** figure out how to generate call graphs as in proftools
 ## **** allow pct, counts, or time in final output
