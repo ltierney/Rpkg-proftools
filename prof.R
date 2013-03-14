@@ -325,56 +325,57 @@ do.call(rbind, lapply(seq_along(s$stacks), leafCall))
 ## **** figure out how to write out callgrind from this
 ## **** figure out how to generate call graphs as in proftools
 
-## **** wrap into function
 ## **** make result be char not factor
-useSite <- FALSE
+funCunts <- function(s, cd, useSite = TRUE) {
+    stacks <- s$stacks
+    refs <- s$refs
+    counts <- ct$counts
+    gccounts <- ct$gccounts
 
-stacks <- s$stacks
-refs <- s$refs
-counts <- ct$counts
-gccounts <- ct$gccounts
-
-lineFuns <- function(i) {
-    line <- stacks[[i]]
-    linerefs <- refs[[i]]
-    if (useSite) {
-        n <- length(line)
-        site <- linerefs[-(n + 1)]
+    lineFuns <- function(i) {
+        line <- stacks[[i]]
+        linerefs <- refs[[i]]
+        if (useSite) {
+            n <- length(line)
+            site <- linerefs[-(n + 1)]
+        }
+        else site <- NA_character_
+        unique(cbind(fun = line, site))
     }
-    else site <- NA_character_
-    unique(cbind(fun = line, site))
+
+    leafFun <- function(i) {
+        line <- stacks[[i]]
+        linerefs <- refs[[i]]
+        n <- length(line)
+        fun <- line[n]
+        site <- if (useSite) linerefs[n] else NA_character_
+        cbind(fun, site)
+    }
+
+    funs <- lapply(lapply(seq_along(stacks), lineFuns), as.data.frame)
+    reps <- unlist(lapply(funs, nrow))
+
+    fdf <- do.call(rbind, funs)
+    fdf$total <- rep(counts, reps)
+    fdf$gctotal <- rep(gccounts, reps)
+
+    ff <- fdf$fun
+    fs <- factor(as.character(fdf$site), exclude = "")
+
+    afdf <- aggregate(fdf[-(1:2)], list(fun = ff, site = fs), sum)
+
+    sfdf <- as.data.frame(do.call(rbind, lapply(seq_along(stacks), leafFun)))
+    sfdf$self <- counts
+    sfdf$gcself <- gccounts
+
+    sff <- sfdf$fun
+    sfs <- factor(as.character(sfdf$site), exclude = "")
+
+    asfdf <- aggregate(sfdf[-(1:2)], list(fun = sff, site = sfs), sum)
+
+    mfdf <- merge(afdf, asfdf, all = TRUE)
+    mfdf$self[is.na(mfdf$self)] <- 0
+    mfdf$gcself[is.na(mfdf$gcself)] <- 0
+
+    mfdf
 }
-
-leafFun <- function(i) {
-    line <- stacks[[i]]
-    linerefs <- refs[[i]]
-    n <- length(line)
-    fun <- line[n]
-    site <- if (useSite) linerefs[n] else NA_character_
-    cbind(fun, site)
-}
-
-funs <- lapply(lapply(seq_along(stacks), lineFuns), as.data.frame)
-reps <- unlist(lapply(funs, nrow))
-
-fdf <- do.call(rbind, funs)
-fdf$total <- rep(counts, reps)
-fdf$gctotal <- rep(gccounts, reps)
-
-ff <- fdf$fun
-fs <- factor(as.character(fdf$site), exclude = "")
-
-afdf <- aggregate(fdf[-(1:2)], list(fun = ff, site = fs), sum)
-
-sfdf <- as.data.frame(do.call(rbind, lapply(seq_along(stacks), leafFun)))
-sfdf$self <- counts
-sfdf$gcself <- gccounts
-
-sff <- sfdf$fun
-sfs <- factor(as.character(sfdf$site), exclude = "")
-
-asfdf <- aggregate(sfdf[-(1:2)], list(fun = sff, site = sfs), sum)
-
-mfdf <- merge(afdf, asfdf, all = TRUE)
-mfdf$self[is.na(mfdf$self)] <- 0
-mfdf$gcself[is.na(mfdf$gcself)] <- 0
