@@ -374,7 +374,9 @@ funCounts <- function(s, cd, useSite = TRUE) {
     fdf <- mergeFuns(funs)
 
     reps <- unlist(lapply(funs, nrow))
-    fcdf <- data.frame(total = rep(counts, reps), cgtotal = rep(gccounts, reps))
+    tot <- rep(counts, reps)
+    gctot <- rep(gccounts, reps)
+    fcdf <- data.frame(total = tot, cgtotal = gctot)
     afdf <- aggregateCounts(fcdf, fdf)
 
     sfdf <- mergeFuns(lapply(seq_along(stacks), leafFun))
