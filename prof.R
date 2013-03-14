@@ -326,6 +326,15 @@ do.call(rbind, lapply(seq_along(s$stacks), leafCall))
 ## **** figure out how to generate call graphs as in proftools
 
 ## **** make result be char not factor
+aggregateCounts <- function(cdf, fdf) {
+    clean <- function(x)
+        if (any(is.na(x)))
+            factor(as.character(x), exclude = "")
+        else
+            x
+    aggregate(cdf, lapply(fdf, clean), sum)
+}
+
 funCunts <- function(s, cd, useSite = TRUE) {
     stacks <- s$stacks
     refs <- s$refs
@@ -352,22 +361,18 @@ funCunts <- function(s, cd, useSite = TRUE) {
         cbind(fun, site)
     }
 
-    funs <- lapply(lapply(seq_along(stacks), lineFuns), as.data.frame)
-    fdf <- do.call(rbind, funs)
+    funs <- lapply(seq_along(stacks), lineFuns)
+    fdf <- as.data.frame(do.call(rbind, funs), stringsAsFactors = FALSE)
 
     reps <- unlist(lapply(funs, nrow))
     fcdf <- data.frame(total = rep(counts, reps), cgtotal = rep(gccounts, reps))
+    afdf <- aggregateCounts(fcdf, fdf)
 
-    ff <- fdf$fun
-    fs <- factor(as.character(fdf$site), exclude = "")
-    afdf <- aggregate(fcdf, list(fun = ff, site = fs), sum)
+    lfuns <- lapply(seq_along(stacks), leafFun)
+    sfdf <- as.data.frame(do.call(rbind, lfuns), stringsAsFactors = FALSE)
 
-    sfdf <- as.data.frame(do.call(rbind, lapply(seq_along(stacks), leafFun)))
     sfcdf <- data.frame(self = counts, gcself = gccounts)
-
-    sff <- sfdf$fun
-    sfs <- factor(as.character(sfdf$site), exclude = "")
-    asfdf <- aggregate(sfcdf, list(fun = sff, site = sfs), sum)
+    asfdf <- aggregateCounts(sfcdf, sfdf)
 
     mfdf <- merge(afdf, asfdf, all = TRUE)
     mfdf$self[is.na(mfdf$self)] <- 0
