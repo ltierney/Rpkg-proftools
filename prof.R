@@ -413,8 +413,7 @@ callCounts <- function(s, ct, useCalleeSite = TRUE, useCallerSite = FALSE) {
 
 ## **** abstract out common control pattern for funs/calls
 ## **** push creating count data frame into aggregateCounts
-## **** finish leaf calls
-## **** merge calls, leaf calls
+
 ## **** figure out how to write out callgrind from this
 ## **** figure out how to generate call graphs as in proftools
 ## **** allow pct, counts, or time in final output
