@@ -347,6 +347,8 @@ useCallerSite <- TRUE
 
 stacks <- s$stacks
 refs <- s$refs
+counts <- ct$counts
+gccounts <- ct$gccounts
 
 lineCalls <- function(i) {
     line <- stacks[[i]]
@@ -396,13 +398,16 @@ reps <- unlist(lapply(calls, nrow))
 
 cdf <- do.call(rbind, calls)
 
-tot <- rep(ct$counts, reps)
-gctot <- rep(ct$gccounts, reps)
+tot <- rep(counts, reps)
+gctot <- rep(gccounts, reps)
 ccdf <- data.frame(total = tot, gctotal = gctot)
 
 acdf <- aggregateCounts(ccdf, cdf)
 
-alcdf <- do.call(rbind, lapply(seq_along(stacks), leafCall))
+lcdf <- as.data.frame(do.call(rbind, lapply(seq_along(stacks), leafCall)))
+
+clcdf <- data.frame(self = counts, gcself = gccounts)
+alcdf <- aggregateCounts(clcdf, lcdf)
 
 ## **** finish leaf calls
 ## **** merge calls, leaf calls
