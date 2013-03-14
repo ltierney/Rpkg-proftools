@@ -295,6 +295,13 @@ aggregateCounts <- function(cdf, fdf) {
 mergeFuns <- function(funs)
     as.data.frame(do.call(rbind, funs), stringsAsFactors = FALSE)
     
+mergeCounts <- function(data, leafdata) {
+    val <- merge(data, leafdata, all = TRUE)
+    val$self[is.na(val$self)] <- 0
+    val$gcself[is.na(val$gcself)] <- 0
+    val
+}
+
 funCounts <- function(s, ct, useSite = TRUE) {
     stacks <- s$stacks
     refs <- s$refs
@@ -335,11 +342,7 @@ funCounts <- function(s, ct, useSite = TRUE) {
     sfcdf <- data.frame(self = counts, gcself = gccounts)
     asfdf <- aggregateCounts(sfcdf, sfdf)
 
-    mfdf <- merge(afdf, asfdf, all = TRUE)
-    mfdf$self[is.na(mfdf$self)] <- 0
-    mfdf$gcself[is.na(mfdf$gcself)] <- 0
-
-    mfdf
+    mergeCounts(afdf, asfdf)
 }
 
 useCalleeSite <- TRUE
@@ -394,7 +397,7 @@ leafCall <- function(i) {
 }
 
 calls <- lapply(seq_along(stacks), lineCalls)
-cdf <- mergeFuns(calls)  ## **** need to rename mergeFuns
+cdf <- mergeFuns(calls)
 
 reps <- unlist(lapply(calls, nrow))
 tot <- rep(counts, reps)
@@ -407,10 +410,9 @@ lcdf <- mergeFuns(lapply(seq_along(stacks), leafCall))
 clcdf <- data.frame(self = counts, gcself = gccounts)
 alcdf <- aggregateCounts(clcdf, lcdf)
 
-mcdf <- merge(acdf, alcdf, all = TRUE)
-mcdf$self[is.na(mcdf$self)] <- 0
-mcdf$gcself[is.na(mcdf$gcself)] <- 0
+mcdf <- mergeCounts(acdf, alcdf)
 
+## **** need to rename mergeFuns (rbindEntries maybe?)
 ## **** finish leaf calls
 ## **** merge calls, leaf calls
 ## **** put into function
