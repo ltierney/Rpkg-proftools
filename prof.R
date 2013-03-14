@@ -292,8 +292,8 @@ aggregateCounts <- function(cdf, fdf) {
     fact2char(aggregate(cdf, lapply(fdf, clean), sum))
 }
 
-mergeFuns <- function(funs)
-    as.data.frame(do.call(rbind, funs), stringsAsFactors = FALSE)
+rbindEntries <- function(entries)
+    as.data.frame(do.call(rbind, entries), stringsAsFactors = FALSE)
     
 mergeCounts <- function(data, leafdata) {
     val <- merge(data, leafdata, all = TRUE)
@@ -329,7 +329,7 @@ funCounts <- function(s, ct, useSite = TRUE) {
     }
 
     funs <- lapply(seq_along(stacks), lineFuns)
-    fdf <- mergeFuns(funs)
+    fdf <- rbindEntries(funs)
 
     reps <- unlist(lapply(funs, nrow))
     tot <- rep(counts, reps)
@@ -337,7 +337,7 @@ funCounts <- function(s, ct, useSite = TRUE) {
     fcdf <- data.frame(total = tot, cgtotal = gctot)
     afdf <- aggregateCounts(fcdf, fdf)
 
-    sfdf <- mergeFuns(lapply(seq_along(stacks), leafFun))
+    sfdf <- rbindEntries(lapply(seq_along(stacks), leafFun))
 
     sfcdf <- data.frame(self = counts, gcself = gccounts)
     asfdf <- aggregateCounts(sfcdf, sfdf)
@@ -397,7 +397,7 @@ leafCall <- function(i) {
 }
 
 calls <- lapply(seq_along(stacks), lineCalls)
-cdf <- mergeFuns(calls)
+cdf <- rbindEntries(calls)
 
 reps <- unlist(lapply(calls, nrow))
 tot <- rep(counts, reps)
@@ -405,14 +405,14 @@ gctot <- rep(gccounts, reps)
 ccdf <- data.frame(total = tot, gctotal = gctot)
 acdf <- aggregateCounts(ccdf, cdf)
 
-lcdf <- mergeFuns(lapply(seq_along(stacks), leafCall))
+lcdf <- rbindEntries(lapply(seq_along(stacks), leafCall))
 
 clcdf <- data.frame(self = counts, gcself = gccounts)
 alcdf <- aggregateCounts(clcdf, lcdf)
 
 mcdf <- mergeCounts(acdf, alcdf)
 
-## **** need to rename mergeFuns (rbindEntries maybe?)
+## **** abstract out common control pattern for funs/calls
 ## **** finish leaf calls
 ## **** merge calls, leaf calls
 ## **** put into function
