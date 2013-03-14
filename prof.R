@@ -303,33 +303,32 @@ mergeCounts <- function(data, leafdata) {
     val
 }
 
+lineFuns <- function(line, refs, useSite) {
+    if (useSite) {
+        n <- length(line)
+        site <- refs[-(n + 1)]
+    }
+    else site <- NA_character_
+    unique(cbind(fun = line, site))
+}
+
+leafFun <- function(line, refs, useSite) {
+    n <- length(line)
+    fun <- line[n]
+    site <- if (useSite) refs[n] else NA_character_
+    cbind(fun, site)
+}
+
 funCounts <- function(s, ct, useSite = TRUE) {
     stacks <- s$stacks
     refs <- s$refs
     counts <- ct$counts
     gccounts <- ct$gccounts
 
-    lineFuns <- function(i) {
-        line <- stacks[[i]]
-        linerefs <- refs[[i]]
-        if (useSite) {
-            n <- length(line)
-            site <- linerefs[-(n + 1)]
-        }
-        else site <- NA_character_
-        unique(cbind(fun = line, site))
-    }
+    which <- seq_along(stacks)
 
-    leafFun <- function(i) {
-        line <- stacks[[i]]
-        linerefs <- refs[[i]]
-        n <- length(line)
-        fun <- line[n]
-        site <- if (useSite) linerefs[n] else NA_character_
-        cbind(fun, site)
-    }
-
-    funs <- lapply(seq_along(stacks), lineFuns)
+    doLine <- function(i) lineFuns(stacks[[i]], refs[[i]], useSite)
+    funs <- lapply(which, doLine)
     fdf <- rbindEntries(funs)
 
     reps <- unlist(lapply(funs, nrow))
@@ -337,10 +336,49 @@ funCounts <- function(s, ct, useSite = TRUE) {
     gctot <- rep(gccounts, reps)
     afdf <- aggregateCounts(fdf, total = tot, cgtotal = gctot)
 
-    sfdf <- rbindEntries(lapply(seq_along(stacks), leafFun))
+    doLeaf <- function(i) leafFun(stacks[[i]], refs[[i]], useSite)
+    sfdf <- rbindEntries(lapply(which, doLeaf))
     asfdf <- aggregateCounts(sfdf, self = counts, gcself = gccounts)
 
     mergeCounts(afdf, asfdf)
+}
+
+lineCalls <- function(line, refs, cntrl) {
+    n <- length(line)
+    if (n > 0) {
+        caller <- line[-n]
+        callee <- line[-1]
+        if (cntrl$useCalleeSite)
+            callee.site <- refs[-c(1, n + 1)]
+        else
+            caller.site <- NA_character_
+        if (cntrl$useCallerSite)
+            caller.site <- refs[-c(n, n + 1)]
+        else
+            caller.site <- NA_character_
+    }
+    else
+        caller <- callee <- callee.site <- caller.site <- character()
+    unique(cbind(caller, callee, caller.site, callee.site))
+}
+
+leafCall <- function(line, refs, cntrl) {
+    n <- length(line)
+    if (n > 0) {
+        caller <- line[n - 1]
+        callee <- line[n]
+        if (cntrl$useCalleeSite)
+            callee.site <- refs[n]
+        else
+            caller.site <- NA_character_
+        if (cntrl$useCallerSite)
+            caller.site <- refs[n - 1]
+        else
+            caller.site <- NA_character_
+    }
+    else
+        caller <- callee <- callee.site <- caller.site <- character()
+    cbind(caller, callee, caller.site, callee.site)
 }
 
 callCounts <- function(s, ct, useCalleeSite = TRUE, useCallerSite = FALSE) {
@@ -349,50 +387,11 @@ callCounts <- function(s, ct, useCalleeSite = TRUE, useCallerSite = FALSE) {
     counts <- ct$counts
     gccounts <- ct$gccounts
 
-    lineCalls <- function(i) {
-        line <- stacks[[i]]
-        linerefs <- refs[[i]]
-        n <- length(line)
-        if (n > 0) {
-            caller <- line[-n]
-            callee <- line[-1]
-            if (useCalleeSite)
-                callee.site <- linerefs[-c(1, n + 1)]
-            else
-                caller.site <- NA_character_
-            if (useCallerSite)
-                caller.site <- linerefs[-c(n, n + 1)]
-            else
-                caller.site <- NA_character_
-        }
-        else
-            caller <- callee <- callee.site <- caller.site <- character()
-        unique(cbind(caller, callee, caller.site, callee.site))
-    }
-
-    leafCall <- function(i) {
-        line <- stacks[[i]]
-        linerefs <- refs[[i]]
-        n <- length(line)
-        if (n > 0) {
-            caller <- line[n - 1]
-            callee <- line[n]
-            if (useCalleeSite)
-                callee.site <- linerefs[n]
-            else
-                caller.site <- NA_character_
-            if (useCallerSite)
-                caller.site <- linerefs[n - 1]
-            else
-                caller.site <- NA_character_
-
-        }
-        else
-            caller <- callee <- callee.site <- caller.site <- character()
-        cbind(caller, callee, caller.site, callee.site)
-    }
-
-    calls <- lapply(seq_along(stacks), lineCalls)
+    cntrl <- list(useCalleeSite = useCalleeSite, useCallerSite = useCallerSite)
+    which <- seq_along(stacks)
+    
+    doLine <- function(i) lineCalls(stacks[[i]], refs[[i]], cntrl)
+    calls <- lapply(which, doLine)
     cdf <- rbindEntries(calls)
 
     reps <- unlist(lapply(calls, nrow))
@@ -400,7 +399,8 @@ callCounts <- function(s, ct, useCalleeSite = TRUE, useCallerSite = FALSE) {
     gctot <- rep(gccounts, reps)
     acdf <- aggregateCounts(cdf, total = tot, gctotal = gctot)
 
-    lcdf <- rbindEntries(lapply(seq_along(stacks), leafCall))
+    doLeaf <- function(i) leafCall(stacks[[i]], refs[[i]], cntrl)
+    lcdf <- rbindEntries(lapply(which, doLeaf))
     alcdf <- aggregateCounts(lcdf, self = counts, gcself = gccounts)
 
     mergeCounts(acdf, alcdf)
