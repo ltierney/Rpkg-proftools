@@ -318,7 +318,7 @@ entryCounts <- function(s, ct, lineFun, leafFun, control) {
     reps <- unlist(lapply(entries, nrow))
     tot <- rep(counts, reps)
     gctot <- rep(gccounts, reps)
-    aedf <- aggregateCounts(edf, total = tot, cgtotal = gctot)
+    aedf <- aggregateCounts(edf, total = tot, gctotal = gctot)
 
     doLeaf <- function(i) leafFun(stacks[[i]], refs[[i]], control)
     ledf <- rbindEntries(lapply(which, doLeaf))
@@ -358,7 +358,7 @@ funCounts <- function(s, ct, useSite = TRUE) {
     reps <- unlist(lapply(funs, nrow))
     tot <- rep(counts, reps)
     gctot <- rep(gccounts, reps)
-    afdf <- aggregateCounts(fdf, total = tot, cgtotal = gctot)
+    afdf <- aggregateCounts(fdf, total = tot, gctotal = gctot)
 
     doLeaf <- function(i) leafFun(stacks[[i]], refs[[i]], useSite)
     sfdf <- rbindEntries(lapply(which, doLeaf))
@@ -433,10 +433,10 @@ callCounts <- function(s, ct, useCalleeSite = TRUE, useCallerSite = FALSE) {
     mergeCounts(acdf, alcdf)
 }
 
-## callCounts <- function(s, ct, useCalleeSite = TRUE, useCallerSite = FALSE) {
-##     cntrl <- list(useCalleeSite = useCalleeSite, useCallerSite = useCallerSite)
-##     entryCounts(s, ct, lineCalls, leafCall, cntrl)
-## }
+callCounts <- function(s, ct, useCalleeSite = TRUE, useCallerSite = FALSE) {
+    cntrl <- list(useCalleeSite = useCalleeSite, useCallerSite = useCallerSite)
+    entryCounts(s, ct, lineCalls, leafCall, cntrl)
+}
 
 ## **** abstract out common control pattern for funs/calls
 
