@@ -343,30 +343,6 @@ leafFun <- function(line, refs, useSite) {
     cbind(fun, site)
 }
 
-funCounts <- function(s, ct, useSite = TRUE) {
-    stacks <- s$stacks
-    refs <- s$refs
-    counts <- ct$counts
-    gccounts <- ct$gccounts
-
-    which <- seq_along(stacks)
-
-    doLine <- function(i) lineFuns(stacks[[i]], refs[[i]], useSite)
-    funs <- lapply(which, doLine)
-    fdf <- rbindEntries(funs)
-
-    reps <- unlist(lapply(funs, nrow))
-    tot <- rep(counts, reps)
-    gctot <- rep(gccounts, reps)
-    afdf <- aggregateCounts(fdf, total = tot, gctotal = gctot)
-
-    doLeaf <- function(i) leafFun(stacks[[i]], refs[[i]], useSite)
-    sfdf <- rbindEntries(lapply(which, doLeaf))
-    asfdf <- aggregateCounts(sfdf, self = counts, gcself = gccounts)
-
-    mergeCounts(afdf, asfdf)
-}
-
 funCounts <- function(s, ct, useSite = TRUE)
     entryCounts(s, ct, lineFuns, leafFun, useSite)
     
@@ -409,36 +385,9 @@ leafCall <- function(line, refs, cntrl) {
 }
 
 callCounts <- function(s, ct, useCalleeSite = TRUE, useCallerSite = FALSE) {
-    stacks <- s$stacks
-    refs <- s$refs
-    counts <- ct$counts
-    gccounts <- ct$gccounts
-
-    cntrl <- list(useCalleeSite = useCalleeSite, useCallerSite = useCallerSite)
-    which <- seq_along(stacks)
-    
-    doLine <- function(i) lineCalls(stacks[[i]], refs[[i]], cntrl)
-    calls <- lapply(which, doLine)
-    cdf <- rbindEntries(calls)
-
-    reps <- unlist(lapply(calls, nrow))
-    tot <- rep(counts, reps)
-    gctot <- rep(gccounts, reps)
-    acdf <- aggregateCounts(cdf, total = tot, gctotal = gctot)
-
-    doLeaf <- function(i) leafCall(stacks[[i]], refs[[i]], cntrl)
-    lcdf <- rbindEntries(lapply(which, doLeaf))
-    alcdf <- aggregateCounts(lcdf, self = counts, gcself = gccounts)
-
-    mergeCounts(acdf, alcdf)
-}
-
-callCounts <- function(s, ct, useCalleeSite = TRUE, useCallerSite = FALSE) {
     cntrl <- list(useCalleeSite = useCalleeSite, useCallerSite = useCallerSite)
     entryCounts(s, ct, lineCalls, leafCall, cntrl)
 }
-
-## **** abstract out common control pattern for funs/calls
 
 ## **** figure out how to write out callgrind from this
 ## **** figure out how to generate call graphs as in proftools
