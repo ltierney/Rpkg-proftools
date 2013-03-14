@@ -400,15 +400,7 @@ tot <- rep(ct$counts, reps)
 gctot <- rep(ct$gccounts, reps)
 ccdf <- data.frame(total = tot, gctotal = gctot)
 
-f1 <- cdf$caller
-f2 <- cdf$callee
-fs1 <- factor(as.character(cdf$caller.site), exclude = "")
-fs2 <- factor(as.character(cdf$callee.site), exclude = "")
-
-acdf <- aggregate(ccdf,
-                  list(caller = f1, callee = f2,
-                       caller.site = fs1,
-                       callee.site = fs2), sum)
+acdf <- aggregateCounts(ccdf, cdf)
 
 alcdf <- do.call(rbind, lapply(seq_along(stacks), leafCall))
 
