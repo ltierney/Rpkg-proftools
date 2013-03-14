@@ -283,13 +283,14 @@ fact2char <- function(d) {
     d
 }
 
-aggregateCounts <- function(cdf, fdf) {
+aggregateCounts <- function(entries, ...) {
+    counts <- data.frame(...)
     clean <- function(x)
         if (any(is.na(x)))
             factor(as.character(x), exclude = "")
         else
             x
-    fact2char(aggregate(cdf, lapply(fdf, clean), sum))
+    fact2char(aggregate(counts, lapply(entries, clean), sum))
 }
 
 rbindEntries <- function(entries)
@@ -334,13 +335,10 @@ funCounts <- function(s, ct, useSite = TRUE) {
     reps <- unlist(lapply(funs, nrow))
     tot <- rep(counts, reps)
     gctot <- rep(gccounts, reps)
-    fcdf <- data.frame(total = tot, cgtotal = gctot)
-    afdf <- aggregateCounts(fcdf, fdf)
+    afdf <- aggregateCounts(fdf, total = tot, cgtotal = gctot)
 
     sfdf <- rbindEntries(lapply(seq_along(stacks), leafFun))
-
-    sfcdf <- data.frame(self = counts, gcself = gccounts)
-    asfdf <- aggregateCounts(sfcdf, sfdf)
+    asfdf <- aggregateCounts(sfdf, self = counts, gcself = gccounts)
 
     mergeCounts(afdf, asfdf)
 }
@@ -400,19 +398,15 @@ callCounts <- function(s, ct, useCalleeSite = TRUE, useCallerSite = FALSE) {
     reps <- unlist(lapply(calls, nrow))
     tot <- rep(counts, reps)
     gctot <- rep(gccounts, reps)
-    ccdf <- data.frame(total = tot, gctotal = gctot)
-    acdf <- aggregateCounts(ccdf, cdf)
+    acdf <- aggregateCounts(cdf, total = tot, gctotal = gctot)
 
     lcdf <- rbindEntries(lapply(seq_along(stacks), leafCall))
-
-    clcdf <- data.frame(self = counts, gcself = gccounts)
-    alcdf <- aggregateCounts(clcdf, lcdf)
+    alcdf <- aggregateCounts(lcdf, self = counts, gcself = gccounts)
 
     mergeCounts(acdf, alcdf)
 }
 
 ## **** abstract out common control pattern for funs/calls
-## **** push creating count data frame into aggregateCounts
 
 ## **** figure out how to write out callgrind from this
 ## **** figure out how to generate call graphs as in proftools
