@@ -389,6 +389,8 @@ callCounts <- function(s, ct, useCalleeSite = TRUE, useCallerSite = FALSE) {
     entryCounts(s, ct, lineCalls, leafCall, cntrl)
 }
 
+## **** settle on a proper profile data structure
+
 ## **** figure out how to write out callgrind from this
 ## **** figure out how to generate call graphs as in proftools
 ## **** allow pct, counts, or time in final output
