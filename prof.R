@@ -325,14 +325,20 @@ do.call(rbind, lapply(seq_along(s$stacks), leafCall))
 ## **** figure out how to write out callgrind from this
 ## **** figure out how to generate call graphs as in proftools
 
-## **** make result be char not factor
+fact2char <- function(d) {
+    for (i in seq_along(d))
+        if (is.factor(d[[i]]))
+            d[[i]] <- as.character(d[[i]])
+    d
+}
+
 aggregateCounts <- function(cdf, fdf) {
     clean <- function(x)
         if (any(is.na(x)))
             factor(as.character(x), exclude = "")
         else
             x
-    aggregate(cdf, lapply(fdf, clean), sum)
+    fact2char(aggregate(cdf, lapply(fdf, clean), sum))
 }
 
 mergeFuns <- function(funs)
