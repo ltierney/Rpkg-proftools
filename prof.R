@@ -345,19 +345,22 @@ funCounts <- function(s, cd, useSite = TRUE) {
 useCalleeSite <- TRUE
 useCallerSite <- TRUE
 
+stacks <- s$stacks
+refs <- s$refs
+
 lineCalls <- function(i) {
-    line <- s$stacks[[i]]
-    refs <- s$refs[[i]]
+    line <- stacks[[i]]
+    linerefs <- refs[[i]]
     n <- length(line)
     if (n > 0) {
         caller <- line[-n]
         callee <- line[-1]
         if (useCalleeSite)
-            callee.site <- refs[-c(1, n + 1)]
+            callee.site <- linerefs[-c(1, n + 1)]
         else
             caller.site <- NA_character_
         if (useCallerSite)
-            caller.site <- refs[-c(n, n + 1)]
+            caller.site <- linerefs[-c(n, n + 1)]
         else
             caller.site <- NA_character_
     }
@@ -367,18 +370,18 @@ lineCalls <- function(i) {
 }
 
 leafCall <- function(i) {
-    line <- s$stacks[[i]]
-    refs <- s$refs[[i]]
+    line <- stacks[[i]]
+    linerefs <- refs[[i]]
     n <- length(line)
     if (n > 0) {
         caller <- line[n - 1]
         callee <- line[n]
         if (useCalleeSite)
-            callee.site <- refs[n]
+            callee.site <- linerefs[n]
         else
             caller.site <- NA_character_
         if (useCallerSite)
-            caller.site <- refs[n - 1]
+            caller.site <- linerefs[n - 1]
         else
             caller.site <- NA_character_
 
@@ -388,7 +391,7 @@ leafCall <- function(i) {
     cbind(caller, callee, caller.site, callee.site)
 }
 
-calls <- lapply(lapply(seq_along(s$stacks), lineCalls), as.data.frame)
+calls <- lapply(lapply(seq_along(stacks), lineCalls), as.data.frame)
 reps <- unlist(lapply(calls, nrow))
 
 cdf <- do.call(rbind, calls)
@@ -407,9 +410,11 @@ acdf <- aggregate(ccdf,
                        caller.site = fs1,
                        callee.site = fs2), sum)
 
-alcdf <- do.call(rbind, lapply(seq_along(s$stacks), leafCall))
+alcdf <- do.call(rbind, lapply(seq_along(stacks), leafCall))
 
-## **** compute total. self, gctotal, gcself for calls w and w/o sites
+## **** finish leaf calls
+## **** merge calls, leaf calls
+## **** put into function
 ## **** figure out how to write out callgrind from this
 ## **** figure out how to generate call graphs as in proftools
 ## **** allow pct, counts, or time in final output
