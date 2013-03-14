@@ -361,15 +361,17 @@ funCunts <- function(s, cd, useSite = TRUE) {
         cbind(fun, site)
     }
 
+    mergeFuns <- function(funs)
+        as.data.frame(do.call(rbind, funs), stringsAsFactors = FALSE)
+    
     funs <- lapply(seq_along(stacks), lineFuns)
-    fdf <- as.data.frame(do.call(rbind, funs), stringsAsFactors = FALSE)
+    fdf <- mergeFuns(funs)
 
     reps <- unlist(lapply(funs, nrow))
     fcdf <- data.frame(total = rep(counts, reps), cgtotal = rep(gccounts, reps))
     afdf <- aggregateCounts(fcdf, fdf)
 
-    lfuns <- lapply(seq_along(stacks), leafFun)
-    sfdf <- as.data.frame(do.call(rbind, lfuns), stringsAsFactors = FALSE)
+    sfdf <- mergeFuns(lapply(seq_along(stacks), leafFun))
 
     sfcdf <- data.frame(self = counts, gcself = gccounts)
     asfdf <- aggregateCounts(sfcdf, sfdf)
