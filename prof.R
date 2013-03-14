@@ -393,18 +393,16 @@ leafCall <- function(i) {
     cbind(caller, callee, caller.site, callee.site)
 }
 
-calls <- lapply(lapply(seq_along(stacks), lineCalls), as.data.frame)
+calls <- lapply(seq_along(stacks), lineCalls)
+cdf <- mergeFuns(calls)
+
 reps <- unlist(lapply(calls, nrow))
-
-cdf <- do.call(rbind, calls)
-
 tot <- rep(counts, reps)
 gctot <- rep(gccounts, reps)
 ccdf <- data.frame(total = tot, gctotal = gctot)
-
 acdf <- aggregateCounts(ccdf, cdf)
 
-lcdf <- as.data.frame(do.call(rbind, lapply(seq_along(stacks), leafCall)))
+lcdf <- mergeFuns(lapply(seq_along(stacks), leafCall))
 
 clcdf <- data.frame(self = counts, gcself = gccounts)
 alcdf <- aggregateCounts(clcdf, lcdf)
