@@ -16,14 +16,17 @@ readPDheader <- function(con) {
 
     list(interval = interval, haveGC = haveGC, haveLines = haveLines)
 }
-    
+
 readPD <- function(file) {
-    hdr <- readPDheader(file)
+    con <- file(file, "r")
+    on.exit(close(con))
+    
+    hdr <- readPDheader(con)
     haveLines <- hdr$haveLines
     haveGC <- hdr$haveGC
     
     ## read lines and filter out file information
-    stacks <- readLines(file)[-1]
+    stacks <-  readLines(con)
     if (haveLines) {
         fstacks <- grepl("#File ", stacks)
         files <- sub("#File [[:digit:]]: (.+)", "\\1", stacks[fstacks])
