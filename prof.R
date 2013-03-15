@@ -124,18 +124,18 @@ formatTrace <- function(trace, maxlen = 50) {
 }
 
 d <- readPD("Rprof-lmfit-new.out")
-ct <- list(counts = d$counts, gccounts = d$gccounts)
-countHits(d$stacks, ct)
+cts <- list(counts = d$counts, gccounts = d$gccounts)
+countHits(d$stacks, cts)
 
-countSelfHits(d$stacks, ct)
-countSelfHits(d$refs, ct)
+countSelfHits(d$stacks, cts)
+countSelfHits(d$refs, cts)
 
 ## this drops the final ref
 v <- mapply(function (x, y) ifelse(is.na(y), x, paste(x, y)), d$stacks, d$refs)
 v <- mapply(function (x, y)
             ifelse(is.na(y), x, paste0(x, " (", y,")")),
             d$stacks, recodeRefs(d$refs, d$files))
-countHits(v, ct)
+countHits(v, cts)
 
 ## this attributes the final ref to "<Unknown>"
 v <- mapply(function (x, y) {
@@ -143,7 +143,7 @@ v <- mapply(function (x, y) {
             ifelse(is.na(y), x, paste0(x, " (", y,")"))
             },
             d$stacks, recodeRefs(d$refs, d$files))
-countHits(v, ct)
+countHits(v, cts)
 
 printPaths <- function(stacks, counts, n) {
     ord = rev(order(counts$counts))
@@ -311,11 +311,11 @@ mergeCounts <- function(data, leafdata) {
     val
 }
 
-entryCounts <- function(s, ct, lineFun, leafFun, control) {
-    stacks <- s$stacks
-    refs <- s$refs
-    counts <- ct$counts
-    gccounts <- ct$gccounts
+entryCounts <- function(pd, lineFun, leafFun, control) {
+    stacks <- pd$stacks
+    refs <- pd$refs
+    counts <- pd$counts
+    gccounts <- pd$gccounts
 
     which <- seq_along(stacks)
     
@@ -351,8 +351,8 @@ leafFun <- function(line, refs, useSite) {
     cbind(fun, site)
 }
 
-funCounts <- function(s, ct, useSite = TRUE)
-    entryCounts(s, ct, lineFuns, leafFun, useSite)
+funCounts <- function(pd, useSite = TRUE)
+    entryCounts(pd, lineFuns, leafFun, useSite)
     
 lineCalls <- function(line, refs, cntrl) {
     n <- length(line)
@@ -392,9 +392,9 @@ leafCall <- function(line, refs, cntrl) {
     cbind(caller, callee, caller.site, callee.site)
 }
 
-callCounts <- function(s, ct, useCalleeSite = TRUE, useCallerSite = FALSE) {
+callCounts <- function(pd, useCalleeSite = TRUE, useCallerSite = FALSE) {
     cntrl <- list(useCalleeSite = useCalleeSite, useCallerSite = useCallerSite)
-    entryCounts(s, ct, lineCalls, leafCall, cntrl)
+    entryCounts(pd, lineCalls, leafCall, cntrl)
 }
 
 ## **** make sure things work with no GC data
