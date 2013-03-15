@@ -66,19 +66,20 @@ splitStacks <- function(data) {
     data
 }
 
+countStacks <- function(trace, inGC)
+    list(counts = as.numeric(table(trace)),
+         gccounts = as.numeric(tapply(inGC, trace, sum)))
+
 readPD <- function(file) {
     con <- file(file, "r")
     on.exit(close(con))
     
     hdr <- readPDheader(con)
     data <- readPDlines(con, hdr)
-    pd <- splitStacks(data)
-    c(hdr, pd)
+    sdata <- splitStacks(data)
+    counts <- countStacks(sdata$trace, sdata$inGC)
+    c(hdr, sdata, list(counts = counts))
 }
-
-countStacks <- function(trace, inGC)
-    list(counts = as.numeric(table(trace)),
-         gccounts = as.numeric(tapply(inGC, trace, sum)))
 
 countHits <- function(stacks, counts) {
     stacks <- lapply(stacks, function(x) x[! is.na(x)])
@@ -123,7 +124,7 @@ formatTrace <- function(trace, maxlen = 50) {
 }
 
 d <- readPD("Rprof-lmfit-new.out")
-ct <- countStacks(d$trace, d$inGC)
+ct <- d$counts
 countHits(d$stacks, ct)
 
 countSelfHits(d$stacks, ct)
@@ -271,7 +272,7 @@ flameGraph <- function(stacks, counts, reorder = TRUE) {
 ## produce a flame graph from an Rprof file
 fg <- function(file) {
     d <- readPD(file)
-    ct <- countStacks(d$trace, d$inGC)
+    ct <- d$counts
     stacks <- d$stacks
     counts <- ct$counts
     flameGraph(stacks, counts)
