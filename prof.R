@@ -436,3 +436,32 @@ printPaths <- function(stacks, counts, n) {
 ## **** figure out how to generate call graphs as in proftools
 ## **** allow pct, counts, or time in final output
 ## **** would be useful if checkUsage could warn for non-namespace-globals
+
+writeSelfLine <- function(con, fun, file, fc) {
+    self <- fc$self[fc$fun == fun]
+    cat(sprintf("\nfl=%s\nfn=%s\n0 %d\n",  file, fun, self), file = con)
+}
+    
+writeCallLines <- function(con, fun, cc) {
+    fcc <- cc[cc$caller == fun, ]
+    cfun <- fcc$callee
+    tot <- fcc$total
+    cat(sprintf("fl=%s\ncalls=%d 0\n%d %d\n", cfun, tot, 0, tot),
+        sep = "", file = con)
+}
+
+writeFunLines <- function(con, fun, fc, cc) {
+    file <- 0
+    writeSelfLine(con, fun, file, fc)
+    writeCallLines(con, fun, cc)
+}
+
+writeCG <- function(con, fc, cc) {
+    if (is.character(con)) {
+        con <- file(con, "w")
+        on.exit(close(con))
+    }
+    cat("events: Hits\n", file = con)
+    for (fun in fc$fun)
+        writeFunLines(con, fun, fc, cc)
+}
