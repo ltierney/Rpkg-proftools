@@ -22,12 +22,10 @@ readPD <- function(file) {
     on.exit(close(con))
     
     hdr <- readPDheader(con)
-    haveRefs <- hdr$haveRefs
-    haveGC <- hdr$haveGC
     
     ## read lines and filter out file information
     stacks <-  readLines(con)
-    if (haveRefs) {
+    if (hdr$haveRefs) {
         fstacks <- grepl("#File ", stacks)
         files <- sub("#File [[:digit:]]: (.+)", "\\1", stacks[fstacks])
         stacks <- stacks[! fstacks]
@@ -41,8 +39,7 @@ readPD <- function(file) {
     ustacks <- unique(stacks)
     trace <- match(stacks, ustacks)
 
-    list(gc = haveGC, lines = haveRefs, files = files,
-         stacks = ustacks, trace = trace, inGC = inGC)
+    c(hdr, list(files = files, stacks = ustacks, trace = trace, inGC = inGC))
 }
 
 cleanStacks <- function(stacks) {
