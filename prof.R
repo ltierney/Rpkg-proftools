@@ -1,6 +1,5 @@
-readPD <- function(file) {
-    ## read, check, and record header
-    header <- readLines(file, 1)
+readPDheader <- function(con) {
+    header <- readLines(con, 1)
 
     pat <- ".*sample.interval=([[:digit:]]+).*"
     if (grepl(pat, header))
@@ -15,6 +14,14 @@ readPD <- function(file) {
     if (haveMem)
         stop("memory profiling is currently not supported")
 
+    list(interval = interval, haveGC = haveGC, haveLines = haveLines)
+}
+    
+readPD <- function(file) {
+    hdr <- readPDheader(file)
+    haveLines <- hdr$haveLines
+    haveGC <- hdr$haveGC
+    
     ## read lines and filter out file information
     stacks <- readLines(file)[-1]
     if (haveLines) {
@@ -389,6 +396,7 @@ callCounts <- function(s, ct, useCalleeSite = TRUE, useCallerSite = FALSE) {
     entryCounts(s, ct, lineCalls, leafCall, cntrl)
 }
 
+## **** make sure things work with no GC data
 ## **** settle on a proper profile data structure
 
 ## **** figure out how to write out callgrind from this
