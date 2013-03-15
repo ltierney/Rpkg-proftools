@@ -1,3 +1,7 @@
+###
+### Read profile data
+###
+
 readPDheader <- function(con) {
     header <- readLines(con, 1)
 
@@ -81,6 +85,7 @@ readPD <- function(file) {
     c(hdr, sdata, counts)
 }
 
+
 countHits <- function(stacks, counts) {
     stacks <- lapply(stacks, function(x) x[! is.na(x)])
     uitems <- unique(unlist(stacks))
@@ -90,87 +95,10 @@ countHits <- function(stacks, counts) {
     t(ln) %*% do.call(cbind, counts)
 }
 
-countSelfHits <- function(stacks, counts) {
-    uitems <- unique(unlist(lapply(stacks, function(x) unique(x[! is.na(x)]))))
-    ln <- sapply(uitems,
-                 function(y) sapply(stacks,
-                                    function(x) {
-                                        n <- length(x)
-                                        if (n > 0 && identical(y, x[n]))
-                                            1
-                                        else
-                                            0
-                                    }))
-    t(ln) %*% do.call(cbind, counts)
-}
 
-recodeRefs <- function(refs, files) {
-    files <- basename(files)
-    recode <- function(refs) {
-        fi <- as.integer(sub("([[:digit:]]+)#[[:digit:]]+", "\\1", refs))
-        li <- as.integer(sub("[[:digit:]]+#([[:digit:]]+)", "\\1", refs))
-        ifelse(is.na(refs), NA, paste(files[fi],  li, sep = ":"))
-    }
-    sapply(refs, recode)
-}
-
-formatTrace <- function(trace, maxlen = 50) {
-    out <- paste(trace, collapse = " -> ")
-    while (nchar(out) > maxlen && length(trace) > 1) {
-        trace <- trace[-1]
-        out <- paste("... ", paste(trace, collapse = " -> "))
-    }
-    out
-}
-
-d <- readPD("Rprof-lmfit-new.out")
-cts <- list(counts = d$counts, gccounts = d$gccounts)
-countHits(d$stacks, cts)
-
-countSelfHits(d$stacks, cts)
-countSelfHits(d$refs, cts)
-
-## this drops the final ref
-v <- mapply(function (x, y) ifelse(is.na(y), x, paste(x, y)), d$stacks, d$refs)
-v <- mapply(function (x, y)
-            ifelse(is.na(y), x, paste0(x, " (", y,")")),
-            d$stacks, recodeRefs(d$refs, d$files))
-countHits(v, cts)
-
-## this attributes the final ref to "<Unknown>"
-v <- mapply(function (x, y) {
-            x <- c(x, "<Unknown>")
-            ifelse(is.na(y), x, paste0(x, " (", y,")"))
-            },
-            d$stacks, recodeRefs(d$refs, d$files))
-countHits(v, cts)
-
-printPaths <- function(stacks, counts, n) {
-    ord = rev(order(counts$counts))
-    if (! missing(n) && length(ord) > n)
-        ord <- ord[1 : n]
-    tot <- sum(counts$counts)
-    pct <- round(100 * counts$counts[ord] / tot, 1)
-    gcpct <- round(100 * counts$gccounts[ord] / tot, 1)
-    paths <- sapply(stacks[ord], formatTrace)
-    mapply(function(x, y, z) cat(sprintf("%5.2f %5.2f   %s\n", x, y, z)),
-           pct, gcpct, paths)
-    invisible(NULL)
-}
-
-## Hot paths -- print ncely, but also allow examination of source refs and such
-## Maybe print with source refs?
-## Reorder paths, revise time index, so hottest one is first?
-
-## need call counts, fun -> fun and site->fun
-## need both since multiple sites, same fun can happen in same stack trace
-## collapse cycles within stack trace?
-
-## show hot files, hot lines, calls within line
-## show hot paths -- tree view with collapsing of some kind
-## show call graph
-## show call tree
-## flame graph
+###
+### Flame graph and time graph
+###
 
 flameGraph <- function(stacks, counts, reorder = TRUE) {
     mx <- max(sapply(stacks, length))
@@ -283,6 +211,11 @@ tg <- function(file) {
     counts <- r$lengths
     flameGraph(stacks, counts, FALSE)
 }    
+
+
+###
+### Function and call summaries
+###
 
 fact2char <- function(d) {
     for (i in seq_along(d))
@@ -397,10 +330,94 @@ callCounts <- function(pd, useCalleeSite = TRUE, useCallerSite = FALSE) {
     entryCounts(pd, lineCalls, leafCall, cntrl)
 }
 
-## **** make sure things work with no GC data
-## **** settle on a proper profile data structure
-
 ## **** figure out how to write out callgrind from this
 ## **** figure out how to generate call graphs as in proftools
 ## **** allow pct, counts, or time in final output
 ## **** would be useful if checkUsage could warn for non-namespace-globals
+
+
+###
+### Experimental stuff
+###
+
+
+countSelfHits <- function(stacks, counts) {
+    uitems <- unique(unlist(lapply(stacks, function(x) unique(x[! is.na(x)]))))
+    ln <- sapply(uitems,
+                 function(y) sapply(stacks,
+                                    function(x) {
+                                        n <- length(x)
+                                        if (n > 0 && identical(y, x[n]))
+                                            1
+                                        else
+                                            0
+                                    }))
+    t(ln) %*% do.call(cbind, counts)
+}
+
+recodeRefs <- function(refs, files) {
+    files <- basename(files)
+    recode <- function(refs) {
+        fi <- as.integer(sub("([[:digit:]]+)#[[:digit:]]+", "\\1", refs))
+        li <- as.integer(sub("[[:digit:]]+#([[:digit:]]+)", "\\1", refs))
+        ifelse(is.na(refs), NA, paste(files[fi],  li, sep = ":"))
+    }
+    sapply(refs, recode)
+}
+
+formatTrace <- function(trace, maxlen = 50) {
+    out <- paste(trace, collapse = " -> ")
+    while (nchar(out) > maxlen && length(trace) > 1) {
+        trace <- trace[-1]
+        out <- paste("... ", paste(trace, collapse = " -> "))
+    }
+    out
+}
+
+d <- readPD("Rprof-lmfit-new.out")
+cts <- list(counts = d$counts, gccounts = d$gccounts)
+countHits(d$stacks, cts)
+
+countSelfHits(d$stacks, cts)
+countSelfHits(d$refs, cts)
+
+## this drops the final ref
+v <- mapply(function (x, y) ifelse(is.na(y), x, paste(x, y)), d$stacks, d$refs)
+v <- mapply(function (x, y)
+            ifelse(is.na(y), x, paste0(x, " (", y,")")),
+            d$stacks, recodeRefs(d$refs, d$files))
+countHits(v, cts)
+
+## this attributes the final ref to "<Unknown>"
+v <- mapply(function (x, y) {
+            x <- c(x, "<Unknown>")
+            ifelse(is.na(y), x, paste0(x, " (", y,")"))
+            },
+            d$stacks, recodeRefs(d$refs, d$files))
+countHits(v, cts)
+
+printPaths <- function(stacks, counts, n) {
+    ord = rev(order(counts$counts))
+    if (! missing(n) && length(ord) > n)
+        ord <- ord[1 : n]
+    tot <- sum(counts$counts)
+    pct <- round(100 * counts$counts[ord] / tot, 1)
+    gcpct <- round(100 * counts$gccounts[ord] / tot, 1)
+    paths <- sapply(stacks[ord], formatTrace)
+    mapply(function(x, y, z) cat(sprintf("%5.2f %5.2f   %s\n", x, y, z)),
+           pct, gcpct, paths)
+    invisible(NULL)
+}
+
+## Hot paths -- print ncely, but also allow examination of source refs and such
+## Maybe print with source refs?
+## Reorder paths, revise time index, so hottest one is first?
+
+## need call counts, fun -> fun and site->fun
+## need both since multiple sites, same fun can happen in same stack trace
+## collapse cycles within stack trace?
+
+## show hot files, hot lines, calls within line
+## show hot paths -- tree view with collapsing of some kind
+## show call graph
+## show call tree
