@@ -17,13 +17,7 @@ readPDheader <- function(con) {
     list(interval = interval, haveGC = haveGC, haveRefs = haveRefs)
 }
 
-readPD <- function(file) {
-    con <- file(file, "r")
-    on.exit(close(con))
-    
-    hdr <- readPDheader(con)
-    
-    ## read lines and filter out file information
+readPDlines <- function(con, hdr) {
     stacks <-  readLines(con)
     if (hdr$haveRefs) {
         fstacks <- grepl("#File ", stacks)
@@ -39,7 +33,16 @@ readPD <- function(file) {
     ustacks <- unique(stacks)
     trace <- match(stacks, ustacks)
 
-    c(hdr, list(files = files, stacks = ustacks, trace = trace, inGC = inGC))
+    list(files = files, stacks = ustacks, trace = trace, inGC = inGC)
+}
+
+readPD <- function(file) {
+    con <- file(file, "r")
+    on.exit(close(con))
+    
+    hdr <- readPDheader(con)
+    data <- readPDlines(con, hdr)
+    c(hdr, data)
 }
 
 cleanStacks <- function(stacks) {
