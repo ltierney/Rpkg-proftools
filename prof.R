@@ -437,6 +437,26 @@ printPaths <- function(stacks, counts, n) {
 ## **** allow pct, counts, or time in final output
 ## **** would be useful if checkUsage could warn for non-namespace-globals
 
+commonFile <- function(refs) {
+    fn <- unique(refFN(refs))
+    if (length(fn) == 1 && ! is.na(2))
+        fn
+    else
+        NA
+}
+
+homeFileMap <- function(cc) {
+    map <- tapply(cc$callee.site, cc$caller, commonFile)
+    map <- map[! is.na(map)]
+    map
+}
+
+refFN <- function(refs)
+    as.integer(sub("([[:digit:]]+)#[[:digit:]]+", "\\1", refs))
+
+refLN <- function(refs)
+    as.integer(sub("[[:digit:]]+#([[:digit:]]+)", "\\1", refs))
+    
 splitRefs <- function(refs) {
     fn <- as.integer(sub("([[:digit:]]+)#[[:digit:]]+", "\\1", refs))
     ln <- as.integer(sub("[[:digit:]]+#([[:digit:]]+)", "\\1", refs))
@@ -477,8 +497,15 @@ writeCG <- function(con, pd) {
         con <- file(con, "w")
         on.exit(close(con))
     }
+
     fc <- funCounts(pd, FALSE)
     cc <- callCounts(pd, TRUE, FALSE)
+    hfm <- homeFileMap(cc)
+    fc$fl <- hfm[match(fc$fun, names(hfm))]
+    cc$cfl <- hfm[match(cc$callee, names(hfm))]
+    ## **** put in actual file name here??
+    ## **** add callee line to cc here??
+    
     cat("events: Hits\n", file = con)
     for (fun in fc$fun)
         writeFunLines(con, fun, fc, cc, pd$files)
