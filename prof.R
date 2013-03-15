@@ -78,7 +78,7 @@ readPD <- function(file) {
     data <- readPDlines(con, hdr)
     sdata <- splitStacks(data)
     counts <- countStacks(sdata$trace, sdata$inGC)
-    c(hdr, sdata, list(counts = counts))
+    c(hdr, sdata, counts)
 }
 
 countHits <- function(stacks, counts) {
@@ -124,7 +124,7 @@ formatTrace <- function(trace, maxlen = 50) {
 }
 
 d <- readPD("Rprof-lmfit-new.out")
-ct <- d$counts
+ct <- list(counts = d$counts, gccounts = d$gccounts)
 countHits(d$stacks, ct)
 
 countSelfHits(d$stacks, ct)
@@ -272,10 +272,7 @@ flameGraph <- function(stacks, counts, reorder = TRUE) {
 ## produce a flame graph from an Rprof file
 fg <- function(file) {
     d <- readPD(file)
-    ct <- d$counts
-    stacks <- d$stacks
-    counts <- ct$counts
-    flameGraph(stacks, counts)
+    flameGraph(d$stacks, d$counts)
 }
 
 ## produce a time graph (like profr) from an Rprof file
