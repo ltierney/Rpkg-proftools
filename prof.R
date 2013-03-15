@@ -36,16 +36,8 @@ readPDlines <- function(con, hdr) {
     list(files = files, stacks = ustacks, trace = trace, inGC = inGC)
 }
 
-readPD <- function(file) {
-    con <- file(file, "r")
-    on.exit(close(con))
-    
-    hdr <- readPDheader(con)
-    data <- readPDlines(con, hdr)
-    c(hdr, data)
-}
-
-cleanStacks <- function(stacks) {
+splitStacks <- function(data) {
+    stacks <- data$stacks
     rsstacks <- lapply(strsplit(stacks, " +"),
                  function(x) sub("\"(.+)\"", "\\1", rev(x)))
     refpat <- "[[:digit:]]+#[[:digit:]]+$"
@@ -69,8 +61,19 @@ cleanStacks <- function(stacks) {
         }
         refs
     })
-    ## Maybe split out file numbers, line numbers
-    list(stacks = stacks, refs = stackrefs)
+    data$stacks <- stacks
+    data$refs <- stackrefs
+    data
+}
+
+readPD <- function(file) {
+    con <- file(file, "r")
+    on.exit(close(con))
+    
+    hdr <- readPDheader(con)
+    data <- readPDlines(con, hdr)
+    pd <- splitStacks(data)
+    c(hdr, pd)
 }
 
 countStacks <- function(trace, inGC)
@@ -120,18 +123,17 @@ formatTrace <- function(trace, maxlen = 50) {
 }
 
 d <- readPD("Rprof-lmfit-new.out")
-s <- cleanStacks(d$stacks)
 ct <- countStacks(d$trace, d$inGC)
-countHits(s$stacks, ct)
+countHits(d$stacks, ct)
 
-countSelfHits(s$stacks, ct)
-countSelfHits(s$refs, ct)
+countSelfHits(d$stacks, ct)
+countSelfHits(d$refs, ct)
 
 ## this drops the final ref
-v <- mapply(function (x, y) ifelse(is.na(y), x, paste(x, y)), s$stacks, s$refs)
+v <- mapply(function (x, y) ifelse(is.na(y), x, paste(x, y)), d$stacks, d$refs)
 v <- mapply(function (x, y)
             ifelse(is.na(y), x, paste0(x, " (", y,")")),
-            s$stacks, recodeRefs(s$refs, d$files))
+            d$stacks, recodeRefs(d$refs, d$files))
 countHits(v, ct)
 
 ## this attributes the final ref to "<Unknown>"
@@ -139,7 +141,7 @@ v <- mapply(function (x, y) {
             x <- c(x, "<Unknown>")
             ifelse(is.na(y), x, paste0(x, " (", y,")"))
             },
-            s$stacks, recodeRefs(s$refs, d$files))
+            d$stacks, recodeRefs(d$refs, d$files))
 countHits(v, ct)
 
 printPaths <- function(stacks, counts, n) {
@@ -269,9 +271,8 @@ flameGraph <- function(stacks, counts, reorder = TRUE) {
 ## produce a flame graph from an Rprof file
 fg <- function(file) {
     d <- readPD(file)
-    s <- cleanStacks(d$stacks)
     ct <- countStacks(d$trace, d$inGC)
-    stacks <- s$stacks
+    stacks <- d$stacks
     counts <- ct$counts
     flameGraph(stacks, counts)
 }
@@ -279,9 +280,8 @@ fg <- function(file) {
 ## produce a time graph (like profr) from an Rprof file
 tg <- function(file) {
     d <- readPD(file)
-    s <- cleanStacks(d$stacks)
     r <- rle(d$trace)
-    stacks <- s$stacks[r$values]
+    stacks <- d$stacks[r$values]
     counts <- r$lengths
     flameGraph(stacks, counts, FALSE)
 }    
