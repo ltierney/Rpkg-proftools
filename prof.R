@@ -86,16 +86,6 @@ readPD <- function(file) {
 }
 
 
-countHits <- function(stacks, counts) {
-    stacks <- lapply(stacks, function(x) x[! is.na(x)])
-    uitems <- unique(unlist(stacks))
-    ln <- sapply(uitems,
-                 function(y) sapply(stacks,
-                                    function(x) as.integer(y %in% x)))
-    t(ln) %*% do.call(cbind, counts)
-}
-
-
 ###
 ### Flame graph and time graph
 ###
@@ -330,16 +320,36 @@ callCounts <- function(pd, useCalleeSite = TRUE, useCallerSite = FALSE) {
     entryCounts(pd, lineCalls, leafCall, cntrl)
 }
 
-## **** figure out how to write out callgrind from this
-## **** figure out how to generate call graphs as in proftools
-## **** allow pct, counts, or time in final output
-## **** would be useful if checkUsage could warn for non-namespace-globals
+
+###
+### Source reference summaries
+###
+
+lineSites <- function(line, refs, useSite)
+    unique(cbind(site = refs))
+
+leafSite <- function(line, refs, useSite) {
+    n <- length(refs)
+    cbind(site = refs[n])
+}
+
+siteCounts <- function(pd)
+    entryCounts(pd, lineSites, leafSite, TRUE)
 
 
 ###
 ### Experimental stuff
 ###
 
+
+countHits <- function(stacks, counts) {
+    stacks <- lapply(stacks, function(x) x[! is.na(x)])
+    uitems <- unique(unlist(stacks))
+    ln <- sapply(uitems,
+                 function(y) sapply(stacks,
+                                    function(x) as.integer(y %in% x)))
+    t(ln) %*% do.call(cbind, counts)
+}
 
 countSelfHits <- function(stacks, counts) {
     uitems <- unique(unlist(lapply(stacks, function(x) unique(x[! is.na(x)]))))
@@ -421,3 +431,8 @@ printPaths <- function(stacks, counts, n) {
 ## show hot paths -- tree view with collapsing of some kind
 ## show call graph
 ## show call tree
+
+## **** figure out how to write out callgrind from this
+## **** figure out how to generate call graphs as in proftools
+## **** allow pct, counts, or time in final output
+## **** would be useful if checkUsage could warn for non-namespace-globals
