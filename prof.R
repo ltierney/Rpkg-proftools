@@ -9,12 +9,12 @@ readPDheader <- function(con) {
 
     haveMem <- grepl("memory profiling:", header)
     haveGC <- grepl("GC profiling:", header)
-    haveLines <- grepl("line profiling:", header)
+    haveRefs <- grepl("line profiling:", header)
 
     if (haveMem)
         stop("memory profiling is currently not supported")
 
-    list(interval = interval, haveGC = haveGC, haveLines = haveLines)
+    list(interval = interval, haveGC = haveGC, haveRefs = haveRefs)
 }
 
 readPD <- function(file) {
@@ -22,12 +22,12 @@ readPD <- function(file) {
     on.exit(close(con))
     
     hdr <- readPDheader(con)
-    haveLines <- hdr$haveLines
+    haveRefs <- hdr$haveRefs
     haveGC <- hdr$haveGC
     
     ## read lines and filter out file information
     stacks <-  readLines(con)
-    if (haveLines) {
+    if (haveRefs) {
         fstacks <- grepl("#File ", stacks)
         files <- sub("#File [[:digit:]]: (.+)", "\\1", stacks[fstacks])
         stacks <- stacks[! fstacks]
@@ -41,7 +41,7 @@ readPD <- function(file) {
     ustacks <- unique(stacks)
     trace <- match(stacks, ustacks)
 
-    list(gc = haveGC, lines = haveLines, files = files,
+    list(gc = haveGC, lines = haveRefs, files = files,
          stacks = ustacks, trace = trace, inGC = inGC)
 }
 
