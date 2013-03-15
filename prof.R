@@ -285,7 +285,7 @@ lineCalls <- function(line, refs, cntrl) {
         if (cntrl$useCalleeSite)
             callee.site <- refs[-c(1, n + 1)]
         else
-            caller.site <- NA_character_
+            callee.site <- NA_character_
         if (cntrl$useCallerSite)
             caller.site <- refs[-c(n, n + 1)]
         else
@@ -304,7 +304,7 @@ leafCall <- function(line, refs, cntrl) {
         if (cntrl$useCalleeSite)
             callee.site <- refs[n]
         else
-            caller.site <- NA_character_
+            callee.site <- NA_character_
         if (cntrl$useCallerSite)
             caller.site <- refs[n - 1]
         else
@@ -437,31 +437,49 @@ printPaths <- function(stacks, counts, n) {
 ## **** allow pct, counts, or time in final output
 ## **** would be useful if checkUsage could warn for non-namespace-globals
 
+splitRefs <- function(refs) {
+    fn <- as.integer(sub("([[:digit:]]+)#[[:digit:]]+", "\\1", refs))
+    ln <- as.integer(sub("[[:digit:]]+#([[:digit:]]+)", "\\1", refs))
+    list(file = fn, line = ln)
+}
+
 writeSelfLine <- function(con, fun, file, fc) {
     self <- fc$self[fc$fun == fun]
     cat(sprintf("\nfl=%s\nfn=%s\n0 %d\n",  file, fun, self), file = con)
 }
     
-writeCallLines <- function(con, fun, cc) {
-    fcc <- cc[cc$caller == fun, ]
+writeCallLines <- function(con, fun, line, fcc) {
     cfun <- fcc$callee
     tot <- fcc$total
-    cat(sprintf("fl=%s\ncalls=%d 0\n%d %d\n", cfun, tot, 0, tot),
+    cat(sprintf("cfn=%s\ncalls=%d 0\n%d %d\n", cfun, tot, line, tot),
         sep = "", file = con)
 }
 
-writeFunLines <- function(con, fun, fc, cc) {
-    file <- 0
+writeFunLines <- function(con, fun, fc, cc, files) {
+    fcc <- cc[cc$caller == fun, ]
+    sr <- splitRefs(fcc$callee.site)
+    fn <- unique(sr$file)
+    if (length(fn) == 1 && ! is.na(fn)) {
+        file <- files[fn]
+        line <- sr$line
+    }
+    else {
+        file <- 0
+        line <- 0
+    }
+    
     writeSelfLine(con, fun, file, fc)
-    writeCallLines(con, fun, cc)
+    writeCallLines(con, fun, line, fcc)
 }
 
-writeCG <- function(con, fc, cc) {
+writeCG <- function(con, pd) {
     if (is.character(con)) {
         con <- file(con, "w")
         on.exit(close(con))
     }
+    fc <- funCounts(pd, FALSE)
+    cc <- callCounts(pd, TRUE, FALSE)
     cat("events: Hits\n", file = con)
     for (fun in fc$fun)
-        writeFunLines(con, fun, fc, cc)
+        writeFunLines(con, fun, fc, cc, pd$files)
 }
