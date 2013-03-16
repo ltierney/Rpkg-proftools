@@ -500,7 +500,9 @@ recodeRefs <- function(refs, files, na.value = NA) {
 recodeRefsList <- function(refs, files)
     sapply(refs, recodeRefs, files)
 
-formatTrace <- function(trace, maxlen = 50) {
+formatTrace <- function(trace, maxlen = 50, skip = 0) {
+    if (skip > 0)
+        trace <- trace[-(1 : skip)]
     out <- paste(trace, collapse = " -> ")
     while (nchar(out) > maxlen && length(trace) > 1) {
         trace <- trace[-1]
@@ -530,18 +532,36 @@ v <- mapply(function (x, y) {
             d$stacks, recodeRefsList(d$refs, d$files))
 countHits(v, cts)
 
-printPaths <- function(stacks, counts, n) {
-    ord = rev(order(counts$counts))
+printPaths <- function(pd, n, ...) {
+    ord = rev(order(pd$counts))
     if (! missing(n) && length(ord) > n)
         ord <- ord[1 : n]
-    tot <- sum(counts$counts)
-    pct <- round(100 * counts$counts[ord] / tot, 1)
-    gcpct <- round(100 * counts$gccounts[ord] / tot, 1)
-    paths <- sapply(stacks[ord], formatTrace)
-    mapply(function(x, y, z) cat(sprintf("%5.2f %5.2f   %s\n", x, y, z)),
+    tot <- sum(pd$counts)
+    pct <- round(100 * pd$counts[ord] / tot, 1)
+    gcpct <- round(100 * pd$gccounts[ord] / tot, 1)
+    paths <- sapply(pd$stacks[ord], formatTrace, ...)
+    mapply(function(x, y, z) cat(sprintf("%5.1f %5.1f   %s\n", x, y, z)),
            pct, gcpct, paths)
     invisible(NULL)
 }
+
+pathSummary <- function(pd, ...) {
+    paths <- sapply(pd$stacks, formatTrace, ...)
+    apd <- aggregateCounts(list(paths = paths),
+                           counts = pd$counts, gccounts = pd$gccounts)
+    ord = rev(order(apd$counts))
+    tot <- sum(pd$counts)
+    pct <- round(100 * apd$counts[ord] / tot, 1)
+    gcpct <- round(100 * apd$gccounts[ord] / tot, 1)
+    val <- data.frame(total.pct = pct, gc.pct = gcpct)
+    rownames(val) <- apd$paths[ord]
+    val
+}
+
+## **** option of pct, hits, time
+
+## **** subset -- only stacks containing X or starting with Y
+## **** merge -- cycles or subtrees
 
 ## **** Hot paths -- print nicely, but also allow examination of
 ## **** source refs and such.
