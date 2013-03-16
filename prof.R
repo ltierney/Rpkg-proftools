@@ -457,39 +457,27 @@ refFN <- function(refs)
 refLN <- function(refs)
     as.integer(sub("[[:digit:]]+#([[:digit:]]+)", "\\1", refs))
     
-splitRefs <- function(refs) {
-    fn <- as.integer(sub("([[:digit:]]+)#[[:digit:]]+", "\\1", refs))
-    ln <- as.integer(sub("[[:digit:]]+#([[:digit:]]+)", "\\1", refs))
-    list(file = fn, line = ln)
-}
-
-writeSelfLine <- function(con, fun, file, fc) {
+writeSelfLine <- function(con, fun, fc, files) {
+    fn <- fc$fl[fc$fun == fun]
+    file <- if (is.na(fn)) "??" else files[fn]
     self <- fc$self[fc$fun == fun]
     cat(sprintf("\nfl=%s\nfn=%s\n0 %d\n",  file, fun, self), file = con)
 }
     
-writeCallLines <- function(con, fun, line, fcc) {
+writeCallLines <- function(con, fun, cc, files) {
+    fcc <- cc[cc$caller == fun, ]
     cfun <- fcc$callee
     tot <- fcc$total
-    cat(sprintf("cfn=%s\ncalls=%d 0\n%d %d\n", cfun, tot, line, tot),
+    file <- ifelse(is.na(fcc$cfl), "??", files[fcc$cfl])
+    line <- ifelse(is.na(fcc$cln), 0, fcc$cln)
+    cat(sprintf("cfl=%s\ncfn=%s\ncalls=%d 0\n%d %d\n",
+                file, cfun, tot, line, tot),
         sep = "", file = con)
 }
 
 writeFunLines <- function(con, fun, fc, cc, files) {
-    fcc <- cc[cc$caller == fun, ]
-    sr <- splitRefs(fcc$callee.site)
-    fn <- unique(sr$file)
-    if (length(fn) == 1 && ! is.na(fn)) {
-        file <- files[fn]
-        line <- sr$line
-    }
-    else {
-        file <- 0
-        line <- 0
-    }
-    
-    writeSelfLine(con, fun, file, fc)
-    writeCallLines(con, fun, line, fcc)
+    writeSelfLine(con, fun, fc, files)
+    writeCallLines(con, fun, cc, files)
 }
 
 writeCG <- function(con, pd) {
@@ -503,10 +491,14 @@ writeCG <- function(con, pd) {
     hfm <- homeFileMap(cc)
     fc$fl <- hfm[match(fc$fun, names(hfm))]
     cc$cfl <- hfm[match(cc$callee, names(hfm))]
-    ## **** put in actual file name here??
-    ## **** add callee line to cc here??
+    cc$cln <- ifelse(is.na(match(cc$caller, names(hfm))),
+                     NA, refLN(cc$callee.site))
     
     cat("events: Hits\n", file = con)
     for (fun in fc$fun)
         writeFunLines(con, fun, fc, cc, pd$files)
 }
+
+## **** need to (optionally) write out <GC> info
+## **** need to explain the magic
+
