@@ -549,12 +549,12 @@ pathSummary <- function(pd, ...) {
     paths <- sapply(pd$stacks, formatTrace, ...)
     apd <- aggregateCounts(list(paths = paths),
                            counts = pd$counts, gccounts = pd$gccounts)
-    ord = rev(order(apd$counts))
+    apd <- apd[rev(order(apd$counts)),]
     tot <- sum(pd$counts)
-    pct <- round(100 * apd$counts[ord] / tot, 1)
-    gcpct <- round(100 * apd$gccounts[ord] / tot, 1)
+    pct <- round(100 * apd$counts / tot, 1)
+    gcpct <- round(100 * apd$gccounts / tot, 1)
     val <- data.frame(total.pct = pct, gc.pct = gcpct)
-    rownames(val) <- apd$paths[ord]
+    rownames(val) <- apd$paths
     val
 }
 
