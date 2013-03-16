@@ -322,6 +322,132 @@ callCounts <- function(pd, useCalleeSite = TRUE, useCallerSite = FALSE) {
 
 
 ###
+### Writing callgrind file
+###
+
+## For a set of source references determine if they have a common file
+## index and return that index. If they do not have a common index
+## then return NA.
+commonFile <- function(refs) {
+    fn <- unique(refFN(refs))
+    if (length(fn) == 1 && ! is.na(2))
+        fn
+    else
+        NA
+}
+
+## For each caller check whether all calls have a common file index.
+## If they do, then assume this is the file in which the caller is
+## defined.  Otherwise tread the caller's home file as unkown. The
+## result returned by this function is a named vector with one element
+## per funciton for which the home file is assumed know.  The names
+## are the names of the callers, and the values are the indices of the
+## files in whicn the callers are defined.
+homeFileMap <- function(cc) {
+    map <- tapply(cc$callee.site, cc$caller, commonFile)
+    map <- map[! is.na(map)]
+    map
+}
+
+## Extract the file indices and line numbers from source references of
+## the form FN#LN.
+refFN <- function(refs)
+    as.integer(sub("([[:digit:]]+)#[[:digit:]]+", "\\1", refs))
+
+refLN <- function(refs)
+    as.integer(sub("[[:digit:]]+#([[:digit:]]+)", "\\1", refs))
+
+## Collect the data for the callgrind output. The basic data is
+##
+##     fc = function counts
+##     cc = call counts and call site references
+##
+## To fc we add the indes of the xome file for each cunction (NA if
+## not known) in fl.
+##
+## To cc we add in cfl the index of the home file of the function
+## called (the callee), and in cln the line number of the call (in the
+## caller's file). If the caller's file is considered unknown, then
+## the line number is NA.
+##
+## If we do not want GC information in the output then we set the
+## gcself entries in fc to zero, since the output functions only
+## generate GC output for positive gcself counts.
+getCGdata <- function(pd, GC) {
+    fc <- funCounts(pd, FALSE)
+    cc <- callCounts(pd, TRUE, FALSE)
+
+    hfm <- homeFileMap(cc)
+
+    fc$fl <- hfm[match(fc$fun, names(hfm))]
+    cc$cfl <- hfm[match(cc$callee, names(hfm))]
+    cc$cln <- ifelse(is.na(match(cc$caller, names(hfm))),
+                     NA, refLN(cc$callee.site))
+
+    if (! GC)
+        fc$gcself <- 0
+
+    list(fc = fc, cc = cc, gcself = sum(fc$gcself), files = pd$files)
+}
+
+writeSelfEntry <- function(con, fun, fc, files) {
+    fn <- fc$fl[fc$fun == fun]
+    file <- if (is.na(fn)) "??" else files[fn]
+    self <- fc$self[fc$fun == fun]
+    gcself <- fc$gcself[fc$fun == fun]
+
+    cat(sprintf("\nfl=%s\nfn=%s\n0 %d\n",  file, fun, self - gcself),
+        file = con)
+
+    if (gcself > 0)
+        cat(sprintf("cfn=<GC>\ncalls=%d 0\n0 %d\n", gcself, gcself),
+            sep = "", file = con)
+}
+    
+writeCallEntries <- function(con, fun, cc, files) {
+    fcc <- cc[cc$caller == fun, ]
+    cfun <- fcc$callee
+    tot <- fcc$total
+    file <- ifelse(is.na(fcc$cfl), "??", files[fcc$cfl])
+    line <- ifelse(is.na(fcc$cln), 0, fcc$cln)
+
+    cat(sprintf("cfl=%s\ncfn=%s\ncalls=%d 0\n%d %d\n",
+                file, cfun, tot, line, tot),
+        sep = "", file = con)
+}
+
+writeFunEntries <- function(con, fun, data) {
+    fc <- data$fc
+    cc <- data$cc
+    files <- data$files
+    writeSelfEntry(con, fun, fc, files)
+    writeCallEntries(con, fun, cc, files)
+}
+
+writeGCEntry <- function(con, data)  {
+    gcself <- data$gcself
+    if (gcself > 0)
+        cat(sprintf("\nfn=<GC>\n0 %d\n", gcself), file = con)
+}
+
+writeCG <- function(con, pd, GC = TRUE) {
+    if (is.character(con)) {
+        con <- file(con, "w")
+        on.exit(close(con))
+    }
+
+    data <- getCGdata(pd, GC)
+    
+    cat("events: Hits\n", file = con)
+
+    for (fun in data$fc$fun)
+        writeFunEntries(con, fun, data)
+
+    writeGCEntry(con, data)
+}
+
+
+###
 ### Source reference summaries
 ###
 
@@ -432,98 +558,8 @@ printPaths <- function(stacks, counts, n) {
 ## show call graph
 ## show call tree
 
-## **** figure out how to write out callgrind from this
 ## **** figure out how to generate call graphs as in proftools
 ## **** allow pct, counts, or time in final output
 ## **** would be useful if checkUsage could warn for non-namespace-globals
 
-commonFile <- function(refs) {
-    fn <- unique(refFN(refs))
-    if (length(fn) == 1 && ! is.na(2))
-        fn
-    else
-        NA
-}
-
-homeFileMap <- function(cc) {
-    map <- tapply(cc$callee.site, cc$caller, commonFile)
-    map <- map[! is.na(map)]
-    map
-}
-
-refFN <- function(refs)
-    as.integer(sub("([[:digit:]]+)#[[:digit:]]+", "\\1", refs))
-
-refLN <- function(refs)
-    as.integer(sub("[[:digit:]]+#([[:digit:]]+)", "\\1", refs))
-
-getCGdata <- function(pd, GC) {
-    fc <- funCounts(pd, FALSE)
-    cc <- callCounts(pd, TRUE, FALSE)
-
-    hfm <- homeFileMap(cc)
-
-    fc$fl <- hfm[match(fc$fun, names(hfm))]
-    cc$cfl <- hfm[match(cc$callee, names(hfm))]
-    cc$cln <- ifelse(is.na(match(cc$caller, names(hfm))),
-                     NA, refLN(cc$callee.site))
-
-    if (! GC)
-        fc$gcself <- 0
-
-    list(fc = fc, cc = cc, gcself = sum(fc$gcself))
-}
-    
-writeSelfLine <- function(con, fun, fc, files) {
-    fn <- fc$fl[fc$fun == fun]
-    file <- if (is.na(fn)) "??" else files[fn]
-    self <- fc$self[fc$fun == fun]
-    gcself <- fc$gcself[fc$fun == fun]
-    dself <- self - gcself
-    cat(sprintf("\nfl=%s\nfn=%s\n0 %d\n",  file, fun, dself), file = con)
-    if (gcself > 0)
-        cat(sprintf("cfn=<GC>\ncalls=%d 0\n0 %d\n", gcself, gcself),
-            sep = "", file = con)
-}
-    
-writeCallLines <- function(con, fun, cc, files) {
-    fcc <- cc[cc$caller == fun, ]
-    cfun <- fcc$callee
-    tot <- fcc$total
-    file <- ifelse(is.na(fcc$cfl), "??", files[fcc$cfl])
-    line <- ifelse(is.na(fcc$cln), 0, fcc$cln)
-    cat(sprintf("cfl=%s\ncfn=%s\ncalls=%d 0\n%d %d\n",
-                file, cfun, tot, line, tot),
-        sep = "", file = con)
-}
-
-writeFunLines <- function(con, fun, fc, cc, files) {
-    writeSelfLine(con, fun, fc, files)
-    writeCallLines(con, fun, cc, files)
-}
-
-writeCG <- function(con, pd, GC = TRUE) {
-    if (is.character(con)) {
-        con <- file(con, "w")
-        on.exit(close(con))
-    }
-
-    files <- pd$files
-    data <- getCGdata(pd, GC)
-    fc <- data$fc
-    cc <- data$cc
-    gcself <- data$gcself
-    
-    cat("events: Hits\n", file = con)
-
-    for (fun in fc$fun) {
-        writeSelfLine(con, fun, fc, files)
-        writeCallLines(con, fun, cc, files)
-    }
-
-    if (gcself > 0)
-        cat(sprintf("\nfn=<GC>\n0 %d\n", gcself), file = con)
-}
-
-## **** need to explain the magic
-## **** test with and without GC/refs in Rprof file
+## **** use [...] instead of <...> for GC and Anonymous?
