@@ -545,22 +545,43 @@ printPaths <- function(pd, n, ...) {
     invisible(NULL)
 }
 
-pathSummary <- function(pd, ...) {
+pathSummary <- function(pd, value = c("pct", "time", "hits"), ...) {
+    value = match.arg(value)
     paths <- sapply(pd$stacks, formatTrace, ...)
+
+    ## need to aggregate in canse some collapsed paths are identical
+    ## or some paths differ only in source references.
     apd <- aggregateCounts(list(paths = paths),
                            counts = pd$counts, gccounts = pd$gccounts)
     apd <- apd[rev(order(apd$counts)),]
-    tot <- sum(pd$counts)
-    pct <- round(100 * apd$counts / tot, 1)
-    gcpct <- round(100 * apd$gccounts / tot, 1)
-    val <- data.frame(total.pct = pct, gc.pct = gcpct)
-    rownames(val) <- apd$paths
-    val
+
+    counts <- apd$counts
+    gccounts <- apd$gccounts
+    paths <- apd$paths
+
+    if (value == "pct") {
+        tot <- sum(counts)
+        pct <- round(100 * counts / tot, 1)
+        gcpct <- round(100 * gccounts / tot, 1)
+        data.frame(total.pct = pct, gc.pct = gcpct, row.names = paths)
+    }
+    else if (value == "time") {
+        delta <- pd$interval / 1.0e6
+        tm <- counts * delta
+        gctm <- gccounts * delta
+        data.frame(total.time = tm, gc.time = gctm, row.names = paths)
+    }
+    else
+        data.frame(total.hits = counts, gc.hits = gccounts, row.names = paths)
 }
 
-## **** option of pct, hits, time
+## **** pull path control to pathSummary
 
 ## **** subset -- only stacks containing X or starting with Y
+## **** drop stuff before X
+## **** drop stuff after Y
+## **** mark any empty paths as <Other> ore some such; kep first.last ref?
+## **** need to merge pd content if end up with identical stacks
 ## **** merge -- cycles or subtrees
 
 ## **** Hot paths -- print nicely, but also allow examination of
