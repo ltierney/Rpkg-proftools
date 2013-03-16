@@ -456,6 +456,23 @@ refFN <- function(refs)
 
 refLN <- function(refs)
     as.integer(sub("[[:digit:]]+#([[:digit:]]+)", "\\1", refs))
+
+getCGdata <- function(pd, GC) {
+    fc <- funCounts(pd, FALSE)
+    cc <- callCounts(pd, TRUE, FALSE)
+
+    hfm <- homeFileMap(cc)
+
+    fc$fl <- hfm[match(fc$fun, names(hfm))]
+    cc$cfl <- hfm[match(cc$callee, names(hfm))]
+    cc$cln <- ifelse(is.na(match(cc$caller, names(hfm))),
+                     NA, refLN(cc$callee.site))
+
+    if (! GC)
+        fc$gcself <- 0
+
+    list(fc = fc, cc = cc, gcself = sum(fc$gcself))
+}
     
 writeSelfLine <- function(con, fun, fc, files) {
     fn <- fc$fl[fc$fun == fun]
@@ -491,20 +508,19 @@ writeCG <- function(con, pd, GC = TRUE) {
         on.exit(close(con))
     }
 
-    fc <- funCounts(pd, FALSE)
-    cc <- callCounts(pd, TRUE, FALSE)
-    hfm <- homeFileMap(cc)
-    fc$fl <- hfm[match(fc$fun, names(hfm))]
-    cc$cfl <- hfm[match(cc$callee, names(hfm))]
-    cc$cln <- ifelse(is.na(match(cc$caller, names(hfm))),
-                     NA, refLN(cc$callee.site))
-    if (! GC)
-        fc$gcself <- 0
+    files <- pd$files
+    data <- getCGdata(pd, GC)
+    fc <- data$fc
+    cc <- data$cc
+    gcself <- data$gcself
     
     cat("events: Hits\n", file = con)
-    for (fun in fc$fun)
-        writeFunLines(con, fun, fc, cc, pd$files)
-    gcself <- sum(fc$gcself)
+
+    for (fun in fc$fun) {
+        writeSelfLine(con, fun, fc, files)
+        writeCallLines(con, fun, cc, files)
+    }
+
     if (gcself > 0)
         cat(sprintf("\nfn=<GC>\n0 %d\n", gcself), file = con)
 }
