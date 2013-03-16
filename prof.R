@@ -491,15 +491,14 @@ countSelfHits <- function(stacks, counts) {
     t(ln) %*% do.call(cbind, counts)
 }
 
-recodeRefs <- function(refs, files) {
-    files <- basename(files)
-    recode <- function(refs) {
-        fi <- as.integer(sub("([[:digit:]]+)#[[:digit:]]+", "\\1", refs))
-        li <- as.integer(sub("[[:digit:]]+#([[:digit:]]+)", "\\1", refs))
-        ifelse(is.na(refs), NA, paste(files[fi],  li, sep = ":"))
-    }
-    sapply(refs, recode)
+recodeRefs <- function(refs, files, na.value = NA) {
+    fn <- refFN(refs)
+    ln <-refLN(refs)
+    ifelse(is.na(refs), na.value, paste(basename(files)[fn], ln, sep = ":"))
 }
+
+recodeRefsList <- function(refs, files)
+    sapply(refs, recodeRefs, files)
 
 formatTrace <- function(trace, maxlen = 50) {
     out <- paste(trace, collapse = " -> ")
@@ -518,10 +517,9 @@ countSelfHits(d$stacks, cts)
 countSelfHits(d$refs, cts)
 
 ## this drops the final ref
-v <- mapply(function (x, y) ifelse(is.na(y), x, paste(x, y)), d$stacks, d$refs)
 v <- mapply(function (x, y)
             ifelse(is.na(y), x, paste0(x, " (", y,")")),
-            d$stacks, recodeRefs(d$refs, d$files))
+            d$stacks, recodeRefsList(d$refs, d$files))
 countHits(v, cts)
 
 ## this attributes the final ref to "<Unknown>"
@@ -529,7 +527,7 @@ v <- mapply(function (x, y) {
             x <- c(x, "<Unknown>")
             ifelse(is.na(y), x, paste0(x, " (", y,")"))
             },
-            d$stacks, recodeRefs(d$refs, d$files))
+            d$stacks, recodeRefsList(d$refs, d$files))
 countHits(v, cts)
 
 printPaths <- function(stacks, counts, n) {
@@ -545,21 +543,22 @@ printPaths <- function(stacks, counts, n) {
     invisible(NULL)
 }
 
-## Hot paths -- print ncely, but also allow examination of source refs and such
-## Maybe print with source refs?
-## Reorder paths, revise time index, so hottest one is first?
+## **** Hot paths -- print nicely, but also allow examination of
+## **** source refs and such.
 
-## need call counts, fun -> fun and site->fun
-## need both since multiple sites, same fun can happen in same stack trace
-## collapse cycles within stack trace?
+## **** Maybe print with source refs?
+## **** Reorder paths, revise time index, so hottest one is first?
 
-## show hot files, hot lines, calls within line
-## show hot paths -- tree view with collapsing of some kind
-## show call graph
-## show call tree
+## **** flexible ways of examining/displaying fc, cc?
+
+## **** show hot files, hot lines, calls within line
+## **** show hot paths -- tree view with collapsing of some kind
+## **** show call tree
 
 ## **** figure out how to generate call graphs as in proftools
+## **** figure out how to generate gprof output
 ## **** allow pct, counts, or time in final output
+## **** use [...] instead of <...> for GC and Anonymous?
+
 ## **** would be useful if checkUsage could warn for non-namespace-globals
 
-## **** use [...] instead of <...> for GC and Anonymous?
