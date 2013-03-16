@@ -76,3 +76,6 @@ env LD_PRELOAD=/usr/lib64/libprofiler.so CPUPROFILE=./Rlm.prof ~/working/R/R-dev
   http://kcachegrind.sourceforge.net/html/CallgrindFormat.html
   http://valgrind.org/docs/manual/cl-format.html
   http://trac.parrot.org/parrot/wiki/CallgrindFormat
+
+** Mac
+   http://diggit.drupalextras.com/arthur-foelsche-kcachegrind-redux
