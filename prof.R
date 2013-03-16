@@ -461,7 +461,12 @@ writeSelfLine <- function(con, fun, fc, files) {
     fn <- fc$fl[fc$fun == fun]
     file <- if (is.na(fn)) "??" else files[fn]
     self <- fc$self[fc$fun == fun]
-    cat(sprintf("\nfl=%s\nfn=%s\n0 %d\n",  file, fun, self), file = con)
+    gcself <- fc$gcself[fc$fun == fun]
+    dself <- self - gcself
+    cat(sprintf("\nfl=%s\nfn=%s\n0 %d\n",  file, fun, dself), file = con)
+    if (gcself > 0)
+        cat(sprintf("cfn=<GC>\ncalls=%d 0\n0 %d\n", gcself, gcself),
+            sep = "", file = con)
 }
     
 writeCallLines <- function(con, fun, cc, files) {
@@ -480,7 +485,7 @@ writeFunLines <- function(con, fun, fc, cc, files) {
     writeCallLines(con, fun, cc, files)
 }
 
-writeCG <- function(con, pd) {
+writeCG <- function(con, pd, GC = TRUE) {
     if (is.character(con)) {
         con <- file(con, "w")
         on.exit(close(con))
@@ -493,12 +498,16 @@ writeCG <- function(con, pd) {
     cc$cfl <- hfm[match(cc$callee, names(hfm))]
     cc$cln <- ifelse(is.na(match(cc$caller, names(hfm))),
                      NA, refLN(cc$callee.site))
+    if (! GC)
+        fc$gcself <- 0
     
     cat("events: Hits\n", file = con)
     for (fun in fc$fun)
         writeFunLines(con, fun, fc, cc, pd$files)
+    gcself <- sum(fc$gcself)
+    if (gcself > 0)
+        cat(sprintf("\nfn=<GC>\n0 %d\n", gcself), file = con)
 }
 
-## **** need to (optionally) write out <GC> info
 ## **** need to explain the magic
-
+## **** test with and without GC/refs in Rprof file
