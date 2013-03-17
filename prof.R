@@ -234,7 +234,7 @@ mergeCounts <- function(data, leafdata) {
     val
 }
 
-entryCounts <- function(pd, lineFun, leafFun, control) {
+entryCounts0 <- function(pd, fun, control, names) {
     stacks <- pd$stacks
     refs <- pd$refs
     counts <- pd$counts
@@ -242,24 +242,21 @@ entryCounts <- function(pd, lineFun, leafFun, control) {
 
     which <- seq_along(stacks)
     
-    doLine <- function(i) lineFun(stacks[[i]], refs[[i]], control)
+    doLine <- function(i) fun(stacks[[i]], refs[[i]], control)
     entries <- lapply(which, doLine)
     edf <- rbindEntries(entries)
 
     reps <- unlist(lapply(entries, nrow))
     tot <- rep(counts, reps)
     gctot <- rep(gccounts, reps)
-    aedf <- aggregateCounts(edf, cbind(total = tot, gctotal = gctot))
-
-    doLeaf <- function(i) leafFun(stacks[[i]], refs[[i]], control)
-    entries <- lapply(which, doLeaf)
-    ledf <- rbindEntries(entries)
+    ct <- cbind(tot, gctot, deparse.level = 0)
+    colnames(ct) <- names
+    aggregateCounts(edf, ct)
+}
     
-    reps <- unlist(lapply(entries, nrow))
-    tot <- rep(counts, reps)
-    gctot <- rep(gccounts, reps)
-    aledf <- aggregateCounts(ledf, cbind(self = tot, gcself = gctot))
-
+entryCounts <- function(pd, lineFun, leafFun, control) {
+    aedf <- entryCounts0(pd, lineFun, control, c("total", "gctotal"))
+    aledf <- entryCounts0(pd, leafFun, control, c("self", "gcself"))
     mergeCounts(aedf, aledf)
 }
 
