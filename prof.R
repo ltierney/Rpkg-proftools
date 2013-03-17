@@ -214,14 +214,14 @@ fact2char <- function(d) {
     d
 }
 
-aggregateCounts <- function(entries, ...) {
-    counts <- data.frame(...)
+aggregateCounts <- function(entries, counts) {
+    dcounts <- as.data.frame(counts)
     clean <- function(x)
         if (any(is.na(x)))
             factor(as.character(x), exclude = "")
         else
             x
-    fact2char(aggregate(counts, lapply(entries, clean), sum))
+    fact2char(aggregate(dcounts, lapply(entries, clean), sum))
 }
 
 rbindEntries <- function(entries)
@@ -249,7 +249,7 @@ entryCounts <- function(pd, lineFun, leafFun, control) {
     reps <- unlist(lapply(entries, nrow))
     tot <- rep(counts, reps)
     gctot <- rep(gccounts, reps)
-    aedf <- aggregateCounts(edf, total = tot, gctotal = gctot)
+    aedf <- aggregateCounts(edf, cbind(total = tot, gctotal = gctot))
 
     doLeaf <- function(i) leafFun(stacks[[i]], refs[[i]], control)
     entries <- lapply(which, doLeaf)
@@ -258,7 +258,7 @@ entryCounts <- function(pd, lineFun, leafFun, control) {
     reps <- unlist(lapply(entries, nrow))
     tot <- rep(counts, reps)
     gctot <- rep(gccounts, reps)
-    aledf <- aggregateCounts(ledf, self = tot, gcself = gctot)
+    aledf <- aggregateCounts(ledf, cbind(self = tot, gcself = gctot))
 
     mergeCounts(aedf, aledf)
 }
@@ -557,7 +557,7 @@ pathSummary <- function(pd, value = c("pct", "time", "hits"), ...) {
     ## need to aggregate in canse some collapsed paths are identical
     ## or some paths differ only in source references.
     apd <- aggregateCounts(list(paths = paths),
-                           counts = pd$counts, gccounts = pd$gccounts)
+                           cbind(counts = pd$counts, gccounts = pd$gccounts))
     apd <- apd[rev(order(apd$counts)),]
 
     counts <- apd$counts
@@ -586,7 +586,7 @@ d0$refs[[12]] <- d0$refs[[13]] <- c(NA_character_, NA_character_)
 v <- mapply(c, d0$stacks, d0$refs)
 tb <- match(v, unique(v))
 ct <- aggregateCounts(data.frame(key = tb),
-                      counts = d0$counts, gccounts = d0$gccounts)
+                      cbind(counts = d0$counts, gccounts = d0$gccounts))
 ct <- ct[order(ct$key),] ## may not be needed
 itb <- match(unique(v), v)
 d0$stacks <- d0$stacks[itb]
