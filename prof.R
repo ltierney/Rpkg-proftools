@@ -252,8 +252,13 @@ entryCounts <- function(pd, lineFun, leafFun, control) {
     aedf <- aggregateCounts(edf, total = tot, gctotal = gctot)
 
     doLeaf <- function(i) leafFun(stacks[[i]], refs[[i]], control)
-    ledf <- rbindEntries(lapply(which, doLeaf))
-    aledf <- aggregateCounts(ledf, self = counts, gcself = gccounts)
+    entries <- lapply(which, doLeaf)
+    ledf <- rbindEntries(entries)
+    
+    reps <- unlist(lapply(entries, nrow))
+    tot <- rep(counts, reps)
+    gctot <- rep(gccounts, reps)
+    aledf <- aggregateCounts(ledf, self = tot, gcself = gctot)
 
     mergeCounts(aedf, aledf)
 }
