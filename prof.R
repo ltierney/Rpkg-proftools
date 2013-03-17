@@ -469,7 +469,6 @@ siteCounts <- function(pd)
 ### Experimental stuff
 ###
 
-
 countHits <- function(stacks, counts) {
     stacks <- lapply(stacks, function(x) x[! is.na(x)])
     uitems <- unique(unlist(stacks))
@@ -577,22 +576,103 @@ pathSummary <- function(pd, value = c("pct", "time", "hits"), ...) {
         data.frame(total.hits = counts, gc.hits = gccounts, row.names = paths)
 }
 
+subsetPD <- function(pd, idx) {
+    keep <- if (is.logical(idx)) which(idx) else idx
+
+    pd$stacks <- pd$stacks[keep]
+    pd$refs <- pd$refs[keep]
+    pd$counts <- pd$counts[keep]
+    pd$gccounts <- pd$gccounts[keep]
+
+    tkeep <- which(pd$trace %in% keep)
+    pd$inGC <- pd$inGC[tkeep]
+    pd$trace <- pd$trace[tkeep]
+
+    map <- match(seq_along(keep), keep)
+    pd$trace <- map[pd$trace]
+
+    pd
+}
+
+dl <- subsetPD(d, sapply(d$stacks, function(s) "lm.fit" %in% s))
+    
+## **** use this for initial pd merge?
+## **** use this for chunk-wise reading?
+compactPD <- function(pd) {
+    key <- mapply(c, pd$stacks, pd$refs)
+    map <- match(key, unique(key))
+    ct <- aggregateCounts(data.frame(key = map),
+                          cbind(counts = pd$counts, gccounts = pd$gccounts))
+    ct <- ct[order(ct$key),] ## may not be needed
+    invmap <- match(unique(key), key)
+    pd$stacks <- pd$stacks[invmap]
+    pd$refs <- pd$refs[invmap]
+    pd$counts <- ct$counts
+    pd$gccounts <- ct$gccounts
+    pd$trace <- map[pd$trace]
+    pd
+}
+
+## ***** pull out stack ref check into separate function?
+checkStackRefs <- function(val, nf) {
+    s <- val$stack
+    r <- val$refs
+    if (length(s) == 0)
+        stop("stacks must have at least one entry")
+    if (length(r) != length(s) + 1)
+        stop("stack and source references do not match")
+    fn <- refFN(r)
+    fn <- fn[! is.na(fn)]
+    if (length(fn) > 0 && (min(fn) < 1 || max(fn) > nf))
+        stop("invalid source references produced.")
+    val
+}
+
+transformPD <- function(pd, fun) {
+    stacks <- pd$stacks
+    refs <- pd$refs
+    nf <- length(pd$files)
+    for (i in seq_along(pd$stacks)) {
+        val <- checkStackRefs(fun(stacks[[i]], refs[[i]]), nf)
+        stacks[[i]] <- val$stack
+        refs[[i]] <- val$refs
+    }
+    pd$stacks <- stacks
+    pd$refs <- refs
+
+    compactPD(pd)
+}
+            
 d0 <- d
 d0$stacks[[12]] <- d0$stacks[[13]] <- "<Other>"
 d0$refs[[12]] <- d0$refs[[13]] <- c(NA_character_, NA_character_)
-v <- mapply(c, d0$stacks, d0$refs)
-tb <- match(v, unique(v))
-ct <- aggregateCounts(data.frame(key = tb),
-                      cbind(counts = d0$counts, gccounts = d0$gccounts))
-ct <- ct[order(ct$key),] ## may not be needed
-itb <- match(unique(v), v)
-d0$stacks <- d0$stacks[itb]
-d0$refs <- d0$refs[itb]
-d0$counts <- ct$counts
-d0$gccounts <- ct$gccounts
-d0$trace <- tb[d0$trace]
+d0 <- compactPD(d0)
 
+f1 <- function(stack, refs) {
+    if (".completeToken" %in% stack)
+        list(stack = "<Other>", refs = c(NA_character_, NA_character_))
+    else
+        list(stack = stack, refs = refs)
+}
 
+d1 <- transformPD(d, f1)
+stopifnot(identical(compactPD(d0), d1))
+
+f2 <- function(stack, refs) {
+    path <- c("source", "withVisible", "eval", "eval")
+    n <- length(path)
+    idx <- 1 : n
+    if (length(stack) >= n  && identical(stack[idx], path)) {
+        if (length(stack) > n)
+            list(stack = stack[-idx], refs = refs[-idx])
+        else
+            list(stack = "<Other>", refs = c(NA_character_, NA_character_))
+    }
+    else
+        list(stack = stack, refs = refs)
+}
+
+d2 <- transformPD(d1, f2)
 
 ## **** pull path control to pathSummary
 
