@@ -575,6 +575,22 @@ pathSummary <- function(pd, value = c("pct", "time", "hits"), ...) {
         data.frame(total.hits = counts, gc.hits = gccounts, row.names = paths)
 }
 
+d0 <- d
+d0$stacks[[12]] <- d0$stacks[[13]] <- "<Other>"
+d0$refs[[12]] <- d0$refs[[13]] <- c(NA_character_, NA_character_)
+v <- mapply(c, d0$stacks, d0$refs)
+tb <- match(v, unique(v))
+ct <- aggregateCounts(data.frame(key = tb),
+                      counts = d0$counts, gccounts = d0$gccounts)
+ct <- ct[order(ct$key),] ## may not be needed
+itb <- match(unique(v), v)
+d0$stacks <- d0$stacks[itb]
+d0$refs <- d0$refs[itb]
+d0$counts <- ct$counts
+d0$gccounts <- ct$gccounts
+d0$trace <- tb[d0$trace]
+
+
 
 ## **** pull path control to pathSummary
 
