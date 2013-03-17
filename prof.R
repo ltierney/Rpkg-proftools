@@ -279,7 +279,7 @@ funCounts <- function(pd, useSite = TRUE)
     
 lineCalls <- function(line, refs, cntrl) {
     n <- length(line)
-    if (n > 0) {
+    if (n > 1) {
         caller <- line[-n]
         callee <- line[-1]
         if (cntrl$useCalleeSite)
@@ -298,7 +298,7 @@ lineCalls <- function(line, refs, cntrl) {
 
 leafCall <- function(line, refs, cntrl) {
     n <- length(line)
-    if (n > 0) {
+    if (n > 1) {
         caller <- line[n - 1]
         callee <- line[n]
         if (cntrl$useCalleeSite)
@@ -574,6 +574,7 @@ pathSummary <- function(pd, value = c("pct", "time", "hits"), ...) {
     else
         data.frame(total.hits = counts, gc.hits = gccounts, row.names = paths)
 }
+
 
 ## **** pull path control to pathSummary
 
