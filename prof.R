@@ -553,7 +553,7 @@ printPaths <- function(pd, n, ...) {
 }
 
 pathSummary <- function(pd, value = c("pct", "time", "hits"), ...) {
-    value = match.arg(value)
+    value <- match.arg(value)
     paths <- sapply(pd$stacks, formatTrace, ...)
 
     ## need to aggregate in case some collapsed paths are identical
@@ -580,6 +580,77 @@ pathSummary <- function(pd, value = c("pct", "time", "hits"), ...) {
     }
     else
         data.frame(total.hits = counts, gc.hits = gccounts, row.names = paths)
+}
+
+funSummaryPct <- function(fc, label, gc, grandTotal) {
+    pct <- round(100 * fc$total / grandTotal, 1)
+    spct <- round(100 * fc$self / grandTotal, 1)
+    if (gc) {
+        gcpct <- round(100 * fc$gctotal / grandTotal, 1)
+        sgcpct <- round(100 * fc$gcself / grandTotal, 1)
+        data.frame(total.pct = pct, gc.pct = gcpct,
+                   self.pct = spct, gcself.pct = sgcpct,
+                   row.names = label)
+    }
+    else
+        data.frame(total.pct = pct, self.pct = spct, row.names = label)
+}
+
+funSummaryTime <- function(fc, label, gc, delta) {
+    tm <- fc$total * delta
+    stm <- fc$self * delta
+    if (gc) {
+        gctm <- fc$gctotal * delta
+        sgctm <- fc$gcself * delta
+        data.frame(total.time = tm, gc.time = gctm,
+                   self.time = stm, gcself.time = sgctm,
+                   row.names = label)
+    }
+    else
+        data.frame(total.time = tm, self.time = stm, row.names = label)
+}
+
+funSummaryHits <- function(fc, label, gc) {
+    if (gc)
+        data.frame(total.hits = fc$total, gc.hits = fc$gctotal,
+                   self.hits = fc$self, gcself.hits = fc$gcself,
+                       row.names = label)
+    else
+        data.frame(total.hits = fc$total, self.hits = fc$self,
+                   row.names = label)
+}
+
+funLabels <- function(fun, site, files) {
+    if (all(is.na(site)))
+        fun
+    else {
+        file <- basename(files[refFN(site)])
+        line <- refLN(site)
+        funsite <- sprintf("%s (%s:%d)", fun, file, line)
+        ifelse(is.na(site), fun, funsite)
+    }
+}
+
+funSummary <- function(pd, byTotal = TRUE,
+                       value = c("pct", "time", "hits"),
+                       srclines = TRUE,
+                       gc = TRUE) {
+    value <- match.arg(value)
+
+    fc <- funCounts(pd, srclines)
+    if (byTotal)
+        fc <- fc[rev(order(fc$total)), ]
+    else
+        fc <- fc[rev(order(fc$self)), ]
+
+    label <- funLabels(fc$fun, fc$site, pd$files)
+
+    if (value == "pct")
+        funSummaryPct(fc, label, gc && pd$haveGC, sum(pd$counts))
+    else if (value == "time")
+        funSummaryTime(fc, label, gc && pd$haveGC, pd$interval / 1.0e6)
+    else
+        funSummaryHits(fc, label, gc && pd$haveGC)
 }
 
 keepIDX <- function(idx) {
@@ -747,7 +818,7 @@ prunePD <- function(pd, what, merge = FALSE) {
 
     transformPD(pd, prune)
 }
-    
+
 dl <- subsetPD(d, sapply(d$stacks, function(s) "lm.fit" %in% s))
     
 d0 <- d
@@ -781,7 +852,10 @@ f2 <- function(stack, refs, i) {
 
 d2 <- transformPD(d1, f2)
 
+## **** make callSummary
+
 ## **** Include srcref in pathSummary if avaialble and relevant?
+## **** don't include gc if not wanted or not available
 
 ## **** pull path control from formatTrace into pathSummary
 
@@ -810,5 +884,8 @@ d2 <- transformPD(d1, f2)
 
 ## **** use compactPD for initial pd merge?
 ## **** use compactPD for chunk-wise reading?
+
+## **** flameGraph: compute rectangles, text, data;
+## ****     then render in base, grid, ggplot, or svg
 
 ## **** would be useful if checkUsage could warn for non-namespace-globals
