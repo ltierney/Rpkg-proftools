@@ -553,9 +553,17 @@ printPaths <- function(pd, n, ...) {
 }
 
 pathSummary <- function(pd, value = c("pct", "time", "hits"),
-                        gc = TRUE, ...) {
+                        gc = TRUE, srclines = FALSE, ...) {
     value <- match.arg(value)
-    paths <- sapply(pd$stacks, formatTrace, ...)
+    if (srclines && pd$haveRefs) {
+        files <- pd$files ## shorter: as.character(seq_along(pd$files)
+        rstacks <- mapply(function(a, b) funLabels(a, b, files),
+                          pd$stacks,
+                          sapply(pd$refs, function(x) x[-length(x)]))
+        paths <- sapply(rstacks, formatTrace, ...)
+    }
+    else
+        paths <- sapply(pd$stacks, formatTrace, ...)
 
     ## need to aggregate in case some collapsed paths are identical
     ## or some paths differ only in source references.
