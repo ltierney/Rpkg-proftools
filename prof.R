@@ -550,7 +550,7 @@ pathSummary <- function(pd, value = c("pct", "time", "hits"), ...) {
     value = match.arg(value)
     paths <- sapply(pd$stacks, formatTrace, ...)
 
-    ## need to aggregate in canse some collapsed paths are identical
+    ## need to aggregate in case some collapsed paths are identical
     ## or some paths differ only in source references.
     apd <- aggregateCounts(list(paths = paths),
                            cbind(counts = pd$counts, gccounts = pd$gccounts))
@@ -576,8 +576,17 @@ pathSummary <- function(pd, value = c("pct", "time", "hits"), ...) {
         data.frame(total.hits = counts, gc.hits = gccounts, row.names = paths)
 }
 
-subsetPD <- function(pd, idx) {
-    keep <- if (is.logical(idx)) which(idx) else idx
+keepIDX <- function(idx) {
+    if (is.character(idx))
+        which(sapply(d$stacks, function(s) any(idx %in% s)))
+    else if (is.logical(idx))
+        which(idx)
+    else 
+         idx
+}
+
+subsetPD <- function(pd, which) {
+    keep <- keepIDX(which)
 
     pd$stacks <- pd$stacks[keep]
     pd$refs <- pd$refs[keep]
@@ -594,10 +603,16 @@ subsetPD <- function(pd, idx) {
     pd
 }
 
-dl <- subsetPD(d, sapply(d$stacks, function(s) "lm.fit" %in% s))
+focusPD  <- function(pd, which) {
+    keep <- keepIDX(which)
+    nkeep <- setdiff(seq_along(pd$stacks), keep)
     
-## **** use this for initial pd merge?
-## **** use this for chunk-wise reading?
+    pd$stacks[nkeep] <- list("<Other>")
+    pd$refs[nkeep] <- list(c(NA_character_, NA_character_))
+
+    compactPD(pd)
+}
+
 compactPD <- function(pd) {
     key <- mapply(c, pd$stacks, pd$refs)
     map <- match(key, unique(key))
@@ -613,7 +628,6 @@ compactPD <- function(pd) {
     pd
 }
 
-## ***** pull out stack ref check into separate function?
 checkStackRefs <- function(val, nf) {
     s <- val$stack
     r <- val$refs
@@ -633,7 +647,7 @@ transformPD <- function(pd, fun) {
     refs <- pd$refs
     nf <- length(pd$files)
     for (i in seq_along(pd$stacks)) {
-        val <- checkStackRefs(fun(stacks[[i]], refs[[i]]), nf)
+        val <- checkStackRefs(fun(stacks[[i]], refs[[i]], i), nf)
         stacks[[i]] <- val$stack
         refs[[i]] <- val$refs
     }
@@ -642,13 +656,100 @@ transformPD <- function(pd, fun) {
 
     compactPD(pd)
 }
-            
+
+skipIDX <- function(pd, what) {
+    if (is.character(what)) {
+        findFirst <- function(s) {
+            idx <- match(what, s)
+            if (any(! is.na(idx)))
+                min(idx, na.rm = TRUE) - 1
+            else
+                0
+        }
+        idx <- sapply(pd$stacks, findFirst)
+    }
+    else
+        idx <- ifelse(is.na(what), 0, what)
+    if (length(idx) != length(pd$stacks))
+        idx <- rep(idx, length = length(pd$stacks))
+    idx
+}
+    
+skipPD <- function(pd, what, merge = FALSE) {
+    idx <- skipIDX(pd, what)
+
+    skip <- function(stack, refs, i) {
+        n <- idx[i]
+        if (n > 0) {
+            if (n < length(stack)) {
+                skip <- 1 : n
+                stack <- stack[-skip]
+                refs <- refs[-skip]
+            }
+            else {
+                stack <- "<Other>"
+                refs <- c(NA_character_, NA_character_)
+            }
+        }
+        else if (merge) {
+            stack <- "<Other>"
+            refs <- c(NA_character_, NA_character_)
+        }
+        list(stack = stack, refs = refs)
+    }
+
+    transformPD(pd, skip)
+}
+
+pruneIDX <- function(pd, what) {
+    if (is.character(what)) {
+        findPrune <- function(s) {
+            idx <- match(what, s)
+            if (any(! is.na(idx)))
+                length(s) - min(idx, na.rm = TRUE)
+            else
+                0
+        }
+        idx <- sapply(pd$stacks, findPrune)
+    }
+    else
+        idx <- ifelse(is.na(what), 0, what)
+    if (length(idx) != length(pd$stacks))
+        idx <- rep(idx, length = length(pd$stacks))
+    idx
+}
+
+prunePD <- function(pd, what, merge = FALSE) {
+    idx <- pruneIDX(pd, what)
+
+    prune <- function(stack, refs, i) {
+        n <- idx[i]
+        if (n > 0) {
+            slen <- length(stack)
+            if (n < slen) {
+                drop <- (slen - n + 1) : slen
+                stack <- stack[-drop]
+                refs <- refs[-drop]
+            }
+            else {
+                stack <- "<Other>"
+                refs <- c(NA_character_, NA_character_)
+            }
+        }
+        list(stack = stack, refs = refs)
+    }
+
+    transformPD(pd, prune)
+}
+    
+dl <- subsetPD(d, sapply(d$stacks, function(s) "lm.fit" %in% s))
+    
 d0 <- d
 d0$stacks[[12]] <- d0$stacks[[13]] <- "<Other>"
 d0$refs[[12]] <- d0$refs[[13]] <- c(NA_character_, NA_character_)
 d0 <- compactPD(d0)
 
-f1 <- function(stack, refs) {
+f1 <- function(stack, refs, i) {
     if (".completeToken" %in% stack)
         list(stack = "<Other>", refs = c(NA_character_, NA_character_))
     else
@@ -658,7 +759,7 @@ f1 <- function(stack, refs) {
 d1 <- transformPD(d, f1)
 stopifnot(identical(compactPD(d0), d1))
 
-f2 <- function(stack, refs) {
+f2 <- function(stack, refs, i) {
     path <- c("source", "withVisible", "eval", "eval")
     n <- length(path)
     idx <- 1 : n
@@ -674,13 +775,12 @@ f2 <- function(stack, refs) {
 
 d2 <- transformPD(d1, f2)
 
+## **** have pathSummary optionally trim the top instead of the bottom
+
 ## **** pull path control to pathSummary
 
-## **** subset -- only stacks containing X or starting with Y
-## **** drop stuff before X
-## **** drop stuff after Y
-## **** mark any empty paths as <Other> ore some such; kep first.last ref?
-## **** need to merge pd content if end up with identical stacks
+## **** need control argument in transformPD function?
+
 ## **** merge -- cycles or subtrees
 
 ## **** Hot paths -- print nicely, but also allow examination of
@@ -700,5 +800,9 @@ d2 <- transformPD(d1, f2)
 ## **** allow pct, counts, or time in final output
 ## **** use [...] instead of <...> for GC and Anonymous?
 
-## **** would be useful if checkUsage could warn for non-namespace-globals
+## **** pathSummary is breaking ties alphabetically -- change with skip, maxlen
 
+## **** use compactPD for initial pd merge?
+## **** use compactPD for chunk-wise reading?
+
+## **** would be useful if checkUsage could warn for non-namespace-globals
