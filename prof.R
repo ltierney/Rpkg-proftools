@@ -912,6 +912,8 @@ f2 <- function(stack, refs, i) {
 
 d2 <- transformPD(d1, f2)
 
+## **** formatTrace is inefficient due to excessive paste calls in while loop
+
 ## **** rename funSummaryXYZ since used in callSummary too
 ## **** can these be used in pathSummary also?
 
@@ -921,13 +923,12 @@ d2 <- transformPD(d1, f2)
 
 ## **** need control argument in transformPD function?
 
+## **** remove lines where certain functions are called?
+## **** re-root call trees (e.g. to separate out lazy evaluation)
 ## **** merge -- cycles or subtrees
 
 ## **** Hot paths -- print nicely, but also allow examination of
 ## **** source refs and such.
-
-## **** Maybe print with source refs?
-## **** Reorder paths, revise time index, so hottest one is first?
 
 ## **** show hot files, hot lines, calls within line
 ## **** show hot paths -- tree view with collapsing of some kind
