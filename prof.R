@@ -322,6 +322,22 @@ callCounts <- function(pd, useCalleeSite = TRUE, useCallerSite = FALSE) {
     entryCounts(pd, lineCalls, leafCall, cntrl)
 }
 
+lineRefs <- function(line, refs, useSite)
+    unique(cbind(fun = "", refs = refs))
+
+## leafRef <- function(line, refs, useSite) {
+##     n <- length(line)
+##     cbind(fun = "", refs = refs[n + 1])
+## }
+leafRef <- function(line, refs, useSite)
+    cbind(fun = "", refs = NA_character_)
+
+refCounts <- function(pd) {
+    val <- entryCounts(pd, lineRefs, leafRef, useSite)
+    val$fun <- val$self <- val$gcself <- NULL
+    val[! is.na(val$refs), ]
+}
+
 
 ###
 ### Writing callgrind file
@@ -713,6 +729,40 @@ callSummary <- function(pd, byTotal = TRUE,
         funSummaryHits(cc, label, gc && pd$haveGC)
 }
 
+refSummary <- function(pd, byTotal = TRUE,
+                       value = c("pct", "time", "hits"),
+                       gc = TRUE) {
+    value <- match.arg(value)
+
+    rc <- refCounts(pd)
+
+    file <- basename(pd$files[refFN(rc$refs)])
+    line <- refLN(rc$refs)
+    label <- paste(file, line, sep = ":")
+
+    if (gc && pd$haveGC)
+        val <- cbind(total = rc$total, gctotal = rc$gctotal)
+    else
+        val <- cbind(total = rc$total)
+    rownames(val) <- label
+    
+    if (value == "pct") {
+        tot <- sum(pd$counts)
+        colnames(val) <- paste(colnames(val), "pct", sep = ".")
+        as.data.frame(round(100 * val / tot, 1))
+    }
+    else if (value == "time") {
+        delta <- pd$interval / 1.0e6
+        colnames(val) <- paste(colnames(val), "time", sep = ".")
+        as.data.frame(val * delta)
+    }
+    else {
+        colnames(val) <- paste(colnames(val), "hits", sep = ".")
+        as.data.frame(val)
+    }
+
+}
+
 keepIDX <- function(idx) {
     if (is.character(idx))
         which(sapply(d$stacks, function(s) any(idx %in% s)))
@@ -913,19 +963,13 @@ f2 <- function(stack, refs, i) {
 d2 <- transformPD(d1, f2)
 
 ## **** formatTrace is inefficient due to excessive paste calls in while loop
+## **** pull path control from formatTrace into pathSummary
+### **** allow numbers instead of file names in pathSummary to shorten paths?
 
 ## **** rename funSummaryXYZ since used in callSummary too
 ## **** can these be used in pathSummary also?
 
-## **** pull path control from formatTrace into pathSummary
-## **** factor out path formatting from pathSummary?
-## **** allow numbers instead of file names in pathSummary to shorten paths?
-
-## **** need control argument in transformPD function?
-
-## **** remove lines where certain functions are called?
-## **** re-root call trees (e.g. to separate out lazy evaluation)
-## **** merge -- cycles or subtrees
+## **** pathSummary is breaking ties alphabetically -- change with skip, maxlen
 
 ## **** Hot paths -- print nicely, but also allow examination of
 ## **** source refs and such.
@@ -934,13 +978,17 @@ d2 <- transformPD(d1, f2)
 ## **** show hot paths -- tree view with collapsing of some kind
 ## **** show call tree
 
+## **** need control argument in transformPD function?
+
+## **** remove lines where certain functions are called?
+## **** re-root call trees (e.g. to separate out lazy evaluation)
+## **** merge -- cycles or subtrees
+
 ## **** figure out how to generate call graphs as in proftools
 ## **** figure out how to generate gprof output
 
 ## **** use [...] instead of <...> for GC and Anonymous?
 ## **** use file#line instead of file:line?
-
-## **** pathSummary is breaking ties alphabetically -- change with skip, maxlen
 
 ## **** use compactPD for initial pd merge?
 ## **** use compactPD for chunk-wise reading?
