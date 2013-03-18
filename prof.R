@@ -552,9 +552,48 @@ printPaths <- function(pd, n, ...) {
     invisible(NULL)
 }
 
+pathSummaryPct <- function(apd, gc) {
+    counts <- apd$counts
+    gccounts <- apd$gccounts
+    paths <- apd$paths
+
+    tot <- sum(counts)
+    pct <- round(100 * counts / tot, 1)
+    if (gc) {
+        gcpct <- round(100 * gccounts / tot, 1)
+        data.frame(total.pct = pct, gc.pct = gcpct, row.names = paths)
+    }
+    else
+        data.frame(total.pct = pct, row.names = paths)
+}
+                           
+pathSummaryTime <- function(apd, gc, delta) {
+    counts <- apd$counts
+    gccounts <- apd$gccounts
+    paths <- apd$paths
+    tm <- counts * delta
+    if (gc) {
+        gctm <- gccounts * delta
+        data.frame(total.time = tm, gc.time = gctm, row.names = paths)
+    }
+    else
+        data.frame(total.time = tm, row.names = paths)
+}
+
+pathSummaryHits <- function(apd, gc) {
+    hits <- apd$counts
+    gchits <- apd$gccounts
+    paths <- apd$paths
+    if (gc)
+        data.frame(total.hits = hits, gc.hits = gchits, row.names = paths)
+    else
+        data.frame(total.hits = hits, row.names = paths)
+}
+
 pathSummary <- function(pd, value = c("pct", "time", "hits"),
                         gc = TRUE, srclines = FALSE, ...) {
     value <- match.arg(value)
+
     if (srclines && pd$haveRefs) {
         files <- pd$files ## shorter: as.character(seq_along(pd$files)
         rstacks <- mapply(function(a, b) funLabels(a, b, files),
@@ -571,37 +610,12 @@ pathSummary <- function(pd, value = c("pct", "time", "hits"),
                            cbind(counts = pd$counts, gccounts = pd$gccounts))
     apd <- apd[rev(order(apd$counts)),]
 
-    counts <- apd$counts
-    gccounts <- apd$gccounts
-    paths <- apd$paths
-
-    if (value == "pct") {
-        tot <- sum(counts)
-        pct <- round(100 * counts / tot, 1)
-        if (gc &&pd$haveGC) {
-            gcpct <- round(100 * gccounts / tot, 1)
-            data.frame(total.pct = pct, gc.pct = gcpct, row.names = paths)
-        }
-        else
-            data.frame(total.pct = pct, row.names = paths)
-    }
-    else if (value == "time") {
-        delta <- pd$interval / 1.0e6
-        tm <- counts * delta
-        if (gc &&pd$haveGC) {
-            gctm <- gccounts * delta
-            data.frame(total.time = tm, gc.time = gctm, row.names = paths)
-        }
-        else
-            data.frame(total.time = tm, row.names = paths)
-    }
-    else {
-        if (gc &&pd$haveGC)
-            data.frame(total.hits = counts, gc.hits = gccounts,
-                       row.names = paths)
-        else
-            data.frame(total.hits = counts, row.names = paths)
-    }
+    if (value == "pct")
+        pathSummaryPct(apd, gc && pd$haveGC)
+    else if (value == "time")
+        pathSummaryTime(apd, gc && pd$haveGC, pd$interval / 1.0e6)
+    else
+        pathSummaryHits(apd, gc && pd$haveGC)
 }
 
 funSummaryPct <- function(fc, label, gc, grandTotal) {
