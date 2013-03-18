@@ -689,6 +689,30 @@ funSummary <- function(pd, byTotal = TRUE,
         funSummaryHits(fc, label, gc && pd$haveGC)
 }
 
+callSummary <- function(pd, byTotal = TRUE,
+                        value = c("pct", "time", "hits"),
+                        srclines = TRUE,
+                        gc = TRUE) {
+    value <- match.arg(value)
+
+    cc <- callCounts(pd, srclines, srclines)
+    if (byTotal)
+        cc <- cc[rev(order(cc$total)), ]
+    else
+        cc <- cc[rev(order(cc$self)), ]
+
+    caller.label <- funLabels(cc$caller, cc$caller.site, pd$files)
+    callee.label <- funLabels(cc$callee, cc$callee.site, pd$files)
+    label <- paste(caller.label, callee.label, sep = " -> ")
+
+    if (value == "pct")
+        funSummaryPct(cc, label, gc && pd$haveGC, sum(pd$counts))
+    else if (value == "time")
+        funSummaryTime(cc, label, gc && pd$haveGC, pd$interval / 1.0e6)
+    else
+        funSummaryHits(cc, label, gc && pd$haveGC)
+}
+
 keepIDX <- function(idx) {
     if (is.character(idx))
         which(sapply(d$stacks, function(s) any(idx %in% s)))
@@ -888,12 +912,12 @@ f2 <- function(stack, refs, i) {
 
 d2 <- transformPD(d1, f2)
 
-## **** make callSummary
-
-## **** Include srcref in pathSummary if avaialble and relevant?
-## **** don't include gc if not wanted or not available
+## **** rename funSummaryXYZ since used in callSummary too
+## **** can these be used in pathSummary also?
 
 ## **** pull path control from formatTrace into pathSummary
+## **** factor out path formatting from pathSummary?
+## **** allow numbers instead of file names in pathSummary to shorten paths?
 
 ## **** need control argument in transformPD function?
 
@@ -905,16 +929,15 @@ d2 <- transformPD(d1, f2)
 ## **** Maybe print with source refs?
 ## **** Reorder paths, revise time index, so hottest one is first?
 
-## **** flexible ways of examining/displaying fc, cc?
-
 ## **** show hot files, hot lines, calls within line
 ## **** show hot paths -- tree view with collapsing of some kind
 ## **** show call tree
 
 ## **** figure out how to generate call graphs as in proftools
 ## **** figure out how to generate gprof output
-## **** allow pct, counts, or time in final output
+
 ## **** use [...] instead of <...> for GC and Anonymous?
+## **** use file#line instead of file:line?
 
 ## **** pathSummary is breaking ties alphabetically -- change with skip, maxlen
 
