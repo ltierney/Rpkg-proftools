@@ -552,7 +552,8 @@ printPaths <- function(pd, n, ...) {
     invisible(NULL)
 }
 
-pathSummary <- function(pd, value = c("pct", "time", "hits"), ...) {
+pathSummary <- function(pd, value = c("pct", "time", "hits"),
+                        gc = TRUE, ...) {
     value <- match.arg(value)
     paths <- sapply(pd$stacks, formatTrace, ...)
 
@@ -569,17 +570,30 @@ pathSummary <- function(pd, value = c("pct", "time", "hits"), ...) {
     if (value == "pct") {
         tot <- sum(counts)
         pct <- round(100 * counts / tot, 1)
-        gcpct <- round(100 * gccounts / tot, 1)
-        data.frame(total.pct = pct, gc.pct = gcpct, row.names = paths)
+        if (gc &&pd$haveGC) {
+            gcpct <- round(100 * gccounts / tot, 1)
+            data.frame(total.pct = pct, gc.pct = gcpct, row.names = paths)
+        }
+        else
+            data.frame(total.pct = pct, row.names = paths)
     }
     else if (value == "time") {
         delta <- pd$interval / 1.0e6
         tm <- counts * delta
-        gctm <- gccounts * delta
-        data.frame(total.time = tm, gc.time = gctm, row.names = paths)
+        if (gc &&pd$haveGC) {
+            gctm <- gccounts * delta
+            data.frame(total.time = tm, gc.time = gctm, row.names = paths)
+        }
+        else
+            data.frame(total.time = tm, row.names = paths)
     }
-    else
-        data.frame(total.hits = counts, gc.hits = gccounts, row.names = paths)
+    else {
+        if (gc &&pd$haveGC)
+            data.frame(total.hits = counts, gc.hits = gccounts,
+                       row.names = paths)
+        else
+            data.frame(total.hits = counts, row.names = paths)
+    }
 }
 
 funSummaryPct <- function(fc, label, gc, grandTotal) {
