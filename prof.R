@@ -501,14 +501,20 @@ recodeRefs <- function(refs, files, na.value = NA) {
 recodeRefsList <- function(refs, files)
     sapply(refs, recodeRefs, files)
 
-formatTrace <- function(trace, maxlen = 50, skip = 0) {
+formatTrace <- function(trace, maxlen = 50, skip = 0, trimtop = FALSE) {
     if (skip > 0)
         trace <- trace[-(1 : skip)]
     out <- paste(trace, collapse = " -> ")
-    while (nchar(out) > maxlen && length(trace) > 1) {
-        trace <- trace[-1]
-        out <- paste("... ", paste(trace, collapse = " -> "))
-    }
+    if (trimtop)
+        while (nchar(out) > maxlen && length(trace) > 1) {
+            trace <- trace[-length(trace)]
+            out <- paste(paste(trace, collapse = " -> "), "... ")
+        }
+    else
+        while (nchar(out) > maxlen && length(trace) > 1) {
+            trace <- trace[-1]
+            out <- paste("... ", paste(trace, collapse = " -> "))
+        }
     out
 }
 
@@ -775,9 +781,9 @@ f2 <- function(stack, refs, i) {
 
 d2 <- transformPD(d1, f2)
 
-## **** have pathSummary optionally trim the top instead of the bottom
+## **** Include srcref in pathSummary if avaialble and relevant?
 
-## **** pull path control to pathSummary
+## **** pull path control from formatTrace into pathSummary
 
 ## **** need control argument in transformPD function?
 
