@@ -139,6 +139,7 @@ flameGraph <- function(stacks, counts, reorder = TRUE) {
     }
 }
 
+## This version vectorises the inner loop.
 flameGraph <- function(stacks, counts, reorder = TRUE) {
     mx <- max(sapply(stacks, length))
 
@@ -187,15 +188,92 @@ flameGraph <- function(stacks, counts, reorder = TRUE) {
     }
 }
 
+
+## Yet another version.  The next two functions compute the data to be
+## used for drawing as a data frame with columns left, bottom, right,
+## top, col, and label.
+fgDataLine <- function(k, stacks, counts) {
+    runs <- rle(sapply(stacks, `[`, k))
+    lens <- runs$lengths
+    n <- length(lens)
+    csums <- cumsum(tapply(counts, rep(1 : n, lens), sum))
+
+    top <- k
+    bottom <- k - 1
+    left <- c(0, csums[-n])
+    right <- csums
+    cols <- rgb(runif(n), runif(n), runif(n))
+    label <- runs$values
+
+    show <- ! is.na(label)
+    nshow <- sum(show)
+    data.frame(left = left[show], bottom = rep(bottom, nshow),
+               right = right[show], top = rep(top, nshow),
+               col = cols[show], label = label[show],
+               stringsAsFactors = FALSE)
+}
+
+fgData <- function(stacks, counts, reorder = TRUE) {
+    mx <- max(sapply(stacks, length))
+
+    ## For 'standard' flame graph order the stacks so they are
+    ## alphabetical within lines within calls, with missing entires
+    ## frst. This does a lexicographic sort by sorint on the top entry
+    ## first, then the next, and do on; since the sorts are stable
+    ## this keeps the top levels sorted within the lower ones.
+    if (reorder) {
+        ord <- seq_along(stacks)
+        for (i in (mx : 1))
+            ord <- ord[order(sapply(stacks[ord], `[`, 1), na.last = FALSE)]
+        stacks <- stacks[ord]
+        counts <- counts[ord]
+    }
+
+    do.call(rbind, lapply(1 : mx, fgDataLine, stacks, counts))
+}
+
+## This is computes the data with fdData and draws the graph with base
+## graphics. This is the bit we would need to change for grid, maybe
+## ggplot2, and for svg output.
+flameGraph <- function(stacks, counts, reorder = TRUE) {
+    fdg <- fgData(stacks, counts, reorder)
+    left <- fdg$left
+    bottom <- fdg$bottom
+    right <- fdg$right
+    top <- fdg$top
+    col <- fdg$col
+    label <- fdg$label
+
+    plot(c(min(left), max(right)), c(min(bottom), max(top)),
+         type = "n", axes = FALSE, xlab = "", ylab = "")
+
+    rect(left, bottom, right, top, col = col)
+    
+    ## half-em for half-character offset used by text() when pos
+    ## argument is used.
+    hm <- 0.5 * strwidth("m")
+
+    show <- (strheight(label) <= 1 &
+             strwidth(label) + 2 * hm <= 0.8 * (right - left))
+    if (any(show))
+        text(left[show], bottom[show] + 0.4, label[show], pos = 4)
+}
+
 ## produce a flame graph from an Rprof file
 fg <- function(file) {
-    d <- readPD(file)
+    if (is.character(file))
+        d <- readPD(file)
+    else
+        d <- file
     flameGraph(d$stacks, d$counts)
 }
 
 ## produce a time graph (like profr) from an Rprof file
 tg <- function(file) {
-    d <- readPD(file)
+    if (is.character(file))
+        d <- readPD(file)
+    else
+        d <- file
     r <- rle(d$trace)
     stacks <- d$stacks[r$values]
     counts <- r$lengths
@@ -993,7 +1071,6 @@ d2 <- transformPD(d1, f2)
 ## **** use compactPD for initial pd merge?
 ## **** use compactPD for chunk-wise reading?
 
-## **** flameGraph: compute rectangles, text, data;
-## ****     then render in base, grid, ggplot, or svg
+## **** Alternate rendering of flabeGraph in grid, ggplot, or svg
 
 ## **** would be useful if checkUsage could warn for non-namespace-globals
