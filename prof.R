@@ -100,7 +100,7 @@ flameGraph <- function(stacks, counts, reorder = TRUE) {
     if (reorder) {
         ord <- seq_along(stacks)
         for (i in (mx : 1))
-            ord <- ord[order(sapply(stacks[ord], `[`, 1), na.last = FALSE)]
+            ord <- ord[order(sapply(stacks[ord], `[`, i), na.last = FALSE)]
         stacks <- stacks[ord]
         counts <- counts[ord]
     }
@@ -150,7 +150,7 @@ flameGraph <- function(stacks, counts, reorder = TRUE) {
     if (reorder) {
         ord <- seq_along(stacks)
         for (i in (mx : 1))
-            ord <- ord[order(sapply(stacks[ord], `[`, 1), na.last = FALSE)]
+            ord <- ord[order(sapply(stacks[ord], `[`, i), na.last = FALSE)]
         stacks <- stacks[ord]
         counts <- counts[ord]
     }
@@ -223,7 +223,7 @@ fgData <- function(stacks, counts, reorder = TRUE) {
     if (reorder) {
         ord <- seq_along(stacks)
         for (i in (mx : 1))
-            ord <- ord[order(sapply(stacks[ord], `[`, 1), na.last = FALSE)]
+            ord <- ord[order(sapply(stacks[ord], `[`, i), na.last = FALSE)]
         stacks <- stacks[ord]
         counts <- counts[ord]
     }
