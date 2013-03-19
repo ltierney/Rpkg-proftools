@@ -1,3 +1,10 @@
+alphaPathOrd <- function(stacks, counts) {
+    mx <- max(sapply(stacks, length))
+    ord <- seq_along(stacks)
+    for (i in (mx : 1))
+        ord <- ord[order(sapply(stacks[ord], `[`, i), na.last = FALSE)]
+    ord
+}
 
 hotPathOrdOne <- function(k, stacks, counts, ord) {
     s <- sapply(stacks[ord], `[`, k)
@@ -42,8 +49,13 @@ hotPathOrd <- function(stacks, counts) {
 fgData <- function(stacks, counts, reorder = TRUE) {
     mx <- max(sapply(stacks, length))
 
-    if (reorder) {
-        ord <- hotPathOrd(stacks, counts)
+    if (is.logical(reorder))
+        reorder <- if (reorder) "alpha" else "no"
+    if (reorder != "no") {
+        if (reorder == "hot")
+            ord <- hotPathOrd(stacks, counts)
+        else
+            ord <- alphaPathOrd(stacks, counts)
         stacks <- stacks[ord]
         counts <- counts[ord]
     }
@@ -51,12 +63,18 @@ fgData <- function(stacks, counts, reorder = TRUE) {
     do.call(rbind, lapply(1 : mx, fgDataLine, stacks, counts))
 }
 
+fg <- function(file, reorder = "alpha") {
+    if (is.character(file))
+        d <- readPD(file)
+    else
+        d <- file
+    flameGraph(d$stacks, d$counts, reorder)
+}
 
+## **** color according to fun?
 ## remap stacks, refs, counts, gccounts
 ## remap trace
 ## stacks <- stacks[ord]
 ## counts <- counts[ord]
 ## refs <- refs[ord]
 ## ... trace ...
-## pathSummary(prunePD(d, -3)) fails -- something in compatcPD
-## may neet to check out mapply uses for bad SIMPLIFY behavior
