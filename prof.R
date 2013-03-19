@@ -841,9 +841,9 @@ refSummary <- function(pd, byTotal = TRUE,
 
 }
 
-keepIDX <- function(idx) {
+keepIDX <- function(idx, pd) {
     if (is.character(idx))
-        which(sapply(d$stacks, function(s) any(idx %in% s)))
+        which(sapply(pd$stacks, function(s) any(idx %in% s)))
     else if (is.logical(idx))
         which(idx)
     else 
@@ -851,7 +851,7 @@ keepIDX <- function(idx) {
 }
 
 subsetPD <- function(pd, which) {
-    keep <- keepIDX(which)
+    keep <- keepIDX(which, pd)
 
     pd$stacks <- pd$stacks[keep]
     pd$refs <- pd$refs[keep]
@@ -869,7 +869,7 @@ subsetPD <- function(pd, which) {
 }
 
 focusPD  <- function(pd, which) {
-    keep <- keepIDX(which)
+    keep <- keepIDX(which, pd)
     nkeep <- setdiff(seq_along(pd$stacks), keep)
     
     pd$stacks[nkeep] <- list("<Other>")
