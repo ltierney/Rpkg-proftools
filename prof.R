@@ -45,7 +45,6 @@ splitStacks <- function(data) {
     rsstacks <- lapply(strsplit(stacks, " +"),
                  function(x) sub("\"(.+)\"", "\\1", rev(x)))
     refpat <- "[[:digit:]]+#[[:digit:]]+$"
-    refs <- lapply(rsstacks, function(x) grepl(refpat, x))
     stacks <- lapply(rsstacks, function(x) x[! grepl(refpat, x)])
     stackrefs <- lapply(rsstacks, function(x) {
         isref <- grepl(refpat, x)
@@ -411,7 +410,7 @@ leafRef <- function(line, refs, useSite)
     cbind(fun = "", refs = NA_character_)
 
 refCounts <- function(pd) {
-    val <- entryCounts(pd, lineRefs, leafRef, useSite)
+    val <- entryCounts(pd, lineRefs, leafRef, TRUE)
     val$fun <- val$self <- val$gcself <- NULL
     val[! is.na(val$refs), ]
 }
@@ -1040,9 +1039,15 @@ f2 <- function(stack, refs, i) {
 
 d2 <- transformPD(d1, f2)
 
+## **** writeCG and maybe some other things can fail if a stack line
+## **** is empty, which can happen if the Rprof file contains a line
+## **** with only <GC>, for example. There won't be many, and it might
+## **** be best to just drop them. ANything matching the pattern
+## **** '"<GC>" $' should do.
+
 ## **** formatTrace is inefficient due to excessive paste calls in while loop
 ## **** pull path control from formatTrace into pathSummary
-### **** allow numbers instead of file names in pathSummary to shorten paths?
+## **** allow numbers instead of file names in pathSummary to shorten paths?
 
 ## **** rename funSummaryXYZ since used in callSummary too
 ## **** can these be used in pathSummary also?
