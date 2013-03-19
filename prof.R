@@ -131,7 +131,7 @@ flameGraph <- function(stacks, counts, reorder = TRUE) {
             if (! is.na(label))
                 rect(left, bottom, right, top,
                      col = rgb(runif(1), runif(1), runif(1)))
-            if (strheight(label) <= 1 &&
+            if (strheight(label) <= 0.9 &&
                 strwidth(label) + 2 * hm <= 0.8 * (right - left))
                 text(left, bottom + 0.4, label, pos = 4)
         }
@@ -180,7 +180,7 @@ flameGraph <- function(stacks, counts, reorder = TRUE) {
             rect(left[show], bottom, right[show], top, col = cols[show])
 
         show <- (! is.na(labels) &
-                strheight(labels) <= 1 &
+                strheight(labels) <= 0.9 &
                 strwidth(labels) + 2 * hm <= 0.8 * (right - left))
         if (any(show))
             text(left[show], bottom + 0.4, labels[show], pos = 4)
@@ -252,7 +252,7 @@ flameGraph <- function(stacks, counts, reorder = TRUE) {
     ## argument is used.
     hm <- 0.5 * strwidth("m")
 
-    show <- (strheight(label) <= 1 &
+    show <- (strheight(label) <= 0.9 &
              strwidth(label) + 2 * hm <= 0.8 * (right - left))
     if (any(show))
         text(left[show], bottom[show] + 0.4, label[show], pos = 4)
