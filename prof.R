@@ -997,8 +997,15 @@ prunePD <- function(pd, what, merge = FALSE) {
 
     prune <- function(stack, refs, i) {
         n <- idx[i]
+        slen <- length(stack)
+
+        if (n < 0)
+            if (-n < slen)
+                n <- slen + n
+            else
+                n <- 0
+
         if (n > 0) {
-            slen <- length(stack)
             if (n < slen) {
                 drop <- (slen - n + 1) : slen
                 stack <- stack[-drop]
