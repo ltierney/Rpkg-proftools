@@ -883,6 +883,10 @@ focusPD  <- function(pd, which) {
 }
 
 compactPD <- function(pd) {
+    ## **** need simplify here since mapply creates a matrix if all
+    ## **** elements of the result happen to be the same length. Might
+    ## **** be more robust to use paste() rather than c() (probably
+    ## **** what I intended originally).
     key <- mapply(c, pd$stacks, pd$refs, SIMPLIFY = FALSE)
     map <- match(key, unique(key))
     ct <- aggregateCounts(data.frame(key = map),
