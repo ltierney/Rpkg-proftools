@@ -6,34 +6,6 @@ alphaPathOrd <- function(stacks, counts) {
     ord
 }
 
-hotPathOrdOne <- function(k, stacks, counts, ord) {
-    s <- sapply(stacks[ord], `[`, k)
-    v <- aggregate(list(total = counts[ord]), list(fun = s), sum)
-    order(v$total[match(s, v$fun)], decreasing = TRUE, na.last=FALSE)
-}
-
-hotPathOrd <- function(stacks, counts) {
-    mx <- max(sapply(stacks, length))
-    ord <- seq_along(stacks)
-    for (i in (mx : 1)) {
-        ord1 <- hotPathOrdOne(i, stacks, counts, ord)
-        ord <- ord[order(ord1, na.last = FALSE)]
-    }
-    ord
-}
-
-hotPathOrd <- function(stacks, counts) {
-    mx <- max(sapply(stacks, length))
-    ord <- seq_along(stacks)
-    for (i in (mx : 1)) {
-        s <- sapply(stacks[ord], `[`, i)
-        v <- aggregate(list(total = -counts[ord]), list(fun = s), sum)
-        ss <- v$total[match(s, v$fun)]
-        ord <- ord[order(ss, na.last = TRUE)]
-    }
-    ord
-}
-
 hotPathOrd <- function(stacks, counts) {
     mx <- max(sapply(stacks, length))
     ord <- seq_along(stacks)
