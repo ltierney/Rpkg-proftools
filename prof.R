@@ -94,7 +94,7 @@ flameGraph <- function(stacks, counts, reorder = TRUE) {
 
     ## For 'standard' flame graph order the stacks so they are
     ## alphabetical within lines within calls, with missing entires
-    ## frst. This does a lexicographic sort by sorint on the top entry
+    ## first. This does a lexicographic sort by sorting on the top entry
     ## first, then the next, and do on; since the sorts are stable
     ## this keeps the top levels sorted within the lower ones.
     if (reorder) {
@@ -144,7 +144,7 @@ flameGraph <- function(stacks, counts, reorder = TRUE) {
 
     ## For 'standard' flame graph order the stacks so they are
     ## alphabetical within lines within calls, with missing entires
-    ## frst. This does a lexicographic sort by sorint on the top entry
+    ## first. This does a lexicographic sort by sorting on the top entry
     ## first, then the next, and do on; since the sorts are stable
     ## this keeps the top levels sorted within the lower ones.
     if (reorder) {
@@ -217,7 +217,7 @@ fgData <- function(stacks, counts, reorder = TRUE) {
 
     ## For 'standard' flame graph order the stacks so they are
     ## alphabetical within lines within calls, with missing entires
-    ## frst. This does a lexicographic sort by sorint on the top entry
+    ## first. This does a lexicographic sort by sorting on the top entry
     ## first, then the next, and do on; since the sorts are stable
     ## this keeps the top levels sorted within the lower ones.
     if (reorder) {
