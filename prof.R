@@ -883,7 +883,7 @@ focusPD  <- function(pd, which) {
 }
 
 compactPD <- function(pd) {
-    key <- mapply(c, pd$stacks, pd$refs)
+    key <- mapply(c, pd$stacks, pd$refs, SIMPLIFY = FALSE)
     map <- match(key, unique(key))
     ct <- aggregateCounts(data.frame(key = map),
                           cbind(counts = pd$counts, gccounts = pd$gccounts))
