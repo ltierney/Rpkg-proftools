@@ -144,7 +144,7 @@ fgDataLine <- function(k, stacks, counts) {
                stringsAsFactors = FALSE)
 }
 
-fgData <- function(stacks, counts, reorder = c("alpha", "hot", "no")) {
+fgData <- function(stacks, counts, reorder = c("alpha", "hot", "no"), colormap) {
     mx <- max(sapply(stacks, length))
 
     reorder <- match.arg(reorder)
@@ -160,14 +160,17 @@ fgData <- function(stacks, counts, reorder = c("alpha", "hot", "no")) {
         counts <- counts[ord]
     }
 
-    do.call(rbind, lapply(1 : mx, fgDataLine, stacks, counts))
+    val <- do.call(rbind, lapply(1 : mx, fgDataLine, stacks, counts))
+    if (! is.null(colormap))
+        val$col <- colormap(val$label)
+    val
 }
 
 ## This is computes the data with fdData and draws the graph with base
 ## graphics. This is the bit we would need to change for grid, maybe
 ## ggplot2, and for svg output.
-flameGraph <- function(stacks, counts, reorder) {
-    fdg <- fgData(stacks, counts, reorder)
+flameGraph <- function(stacks, counts, reorder, colormap) {
+    fdg <- fgData(stacks, counts, reorder, colormap)
     left <- fdg$left
     bottom <- fdg$bottom
     right <- fdg$right
@@ -190,8 +193,8 @@ flameGraph <- function(stacks, counts, reorder) {
         text(left[show], bottom[show] + 0.4, label[show], pos = 4)
 }
 
-svgFlameGraph <- function(file, stacks, counts, reorder) {
-    fdg <- fgData(stacks, counts, reorder)
+svgFlameGraph <- function(file, stacks, counts, reorder, colormap) {
+    fdg <- fgData(stacks, counts, reorder, colormap)
     mx <- max(fdg$top)
     totalCount <- max(fdg$right)
     counts <- fdg$right-fdg$left
@@ -247,20 +250,20 @@ writeFile <- function(file, svgCode, mx){
 }
 
 ## produce a flame graph from an Rprof file
-fg <- function(file, svgfile, reorder = c("alpha", "hot", "no")) {
+fg <- function(file, svgfile, reorder = c("alpha", "hot", "no"), colormap = NULL) {
     reorder <- match.arg(reorder)
     if (is.character(file))
         d <- readPD(file)
     else
         d <- file
     if (! missing(svgfile))
-        svgFlameGraph(svgfile, d$stacks, d$counts, reorder)
+        svgFlameGraph(svgfile, d$stacks, d$counts, reorder, colormap)
     else
-        flameGraph(d$stacks, d$counts, reorder)
+        flameGraph(d$stacks, d$counts, reorder, colormap)
 }
 
 ## produce a time graph (like profr) from an Rprof file
-tg <- function(file, svgfile) {
+tg <- function(file, svgfile, colormap = NULL) {
     if (is.character(file))
         d <- readPD(file)
     else
@@ -269,10 +272,10 @@ tg <- function(file, svgfile) {
     stacks <- d$stacks[r$values]
     counts <- r$lengths
     if (! missing(svgfile))
-        svgFlameGraph(svgfile, stacks, counts, "no")
+        svgFlameGraph(svgfile, stacks, counts, "no", colormap)
     else
-        flameGraph(stacks, counts, "no")
-}    
+        flameGraph(stacks, counts, "no", colormap)
+}
 
 
 ###
