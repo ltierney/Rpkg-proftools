@@ -32,7 +32,17 @@ fgData <- function(stacks, counts, reorder = TRUE) {
         counts <- counts[ord]
     }
     
-    do.call(rbind, lapply(1 : mx, fgDataLine, stacks, counts))
+    val <- do.call(rbind, lapply(1 : mx, fgDataLine, stacks, counts))
+    if (FALSE) {
+        nm <- unique(val$label)
+        nc <- length(nm)
+        cm <- rainbow(nc)
+        cm <- sample(heat.colors(nc), nc)
+        val$col <- cm[match(val$label, nm)]
+        nr <- nrow(val)
+        val$col <- sample(heat.colors(nr), nr)
+    }
+    val
 }
 
 fg <- function(file, reorder = "alpha") {
@@ -43,6 +53,9 @@ fg <- function(file, reorder = "alpha") {
     flameGraph(d$stacks, d$counts, reorder)
 }
 
+## **** reduce strheight limit more?
+## **** subsetting variations; record total counts
+## **** heat.colors;
 ## **** color according to fun?
 ## remap stacks, refs, counts, gccounts
 ## remap trace
