@@ -94,6 +94,33 @@ readPD <- function(file) {
 ### Flame graph and time graph
 ###
 
+## For 'standard' flame graph order the stacks so they are
+## alphabetical within lines within calls, with missing entires
+## first. This does a lexicographic sort by sorting on the top entry
+## first, then the next, and do on; since the sorts are stable this
+## keeps the top levels sorted within the lower ones.
+alphaPathOrd <- function(stacks, counts) {
+    mx <- max(sapply(stacks, length))
+    ord <- seq_along(stacks)
+    for (i in (mx : 1))
+        ord <- ord[order(sapply(stacks[ord], `[`, i), na.last = FALSE)]
+    ord
+}
+
+## The Hot Path order orders each level according to the number of
+## hits within the call chain upt to that point.
+hotPathOrd <- function(stacks, counts) {
+    mx <- max(sapply(stacks, length))
+    ord <- seq_along(stacks)
+    for (i in (mx : 1)) {
+        key <- sapply(stacks[ord], `[`, i)
+        tbl <- aggregate(list(val = -counts[ord]), list(key = key), sum)
+        val <- tbl$val[match(key, tbl$key)]
+        ord <- ord[order(val, na.last = TRUE)]
+    }
+    ord
+}
+
 ## The next two functions compute the data to be used for drawing as a
 ## data frame with columns left, bottom, right, top, col, and label.
 fgDataLine <- function(k, stacks, counts) {
@@ -117,18 +144,18 @@ fgDataLine <- function(k, stacks, counts) {
                stringsAsFactors = FALSE)
 }
 
-fgData <- function(stacks, counts, reorder = TRUE) {
+fgData <- function(stacks, counts, reorder = c("alpha", "hot", "no")) {
     mx <- max(sapply(stacks, length))
 
-    ## For 'standard' flame graph order the stacks so they are
-    ## alphabetical within lines within calls, with missing entires
-    ## first. This does a lexicographic sort by sorting on the top entry
-    ## first, then the next, and do on; since the sorts are stable
-    ## this keeps the top levels sorted within the lower ones.
-    if (reorder) {
-        ord <- seq_along(stacks)
-        for (i in (mx : 1))
-            ord <- ord[order(sapply(stacks[ord], `[`, i), na.last = FALSE)]
+    reorder <- match.arg(reorder)
+    if (reorder != "no") {
+        ## ord <- seq_along(stacks)
+        ## for (i in (mx : 1))
+        ##     ord <- ord[order(sapply(stacks[ord], `[`, i), na.last = FALSE)]
+        if (reorder == "hot")
+            ord <- hotPathOrd(stacks, counts)
+        else
+            ord <- alphaPathOrd(stacks, counts)
         stacks <- stacks[ord]
         counts <- counts[ord]
     }
@@ -139,7 +166,7 @@ fgData <- function(stacks, counts, reorder = TRUE) {
 ## This is computes the data with fdData and draws the graph with base
 ## graphics. This is the bit we would need to change for grid, maybe
 ## ggplot2, and for svg output.
-flameGraph <- function(stacks, counts, reorder = TRUE) {
+flameGraph <- function(stacks, counts, reorder) {
     fdg <- fgData(stacks, counts, reorder)
     left <- fdg$left
     bottom <- fdg$bottom
@@ -163,7 +190,7 @@ flameGraph <- function(stacks, counts, reorder = TRUE) {
         text(left[show], bottom[show] + 0.4, label[show], pos = 4)
 }
 
-svgFlameGraph <- function(file, stacks, counts, reorder = TRUE) {
+svgFlameGraph <- function(file, stacks, counts, reorder) {
     fdg <- fgData(stacks, counts, reorder)
     mx <- max(fdg$top)
     totalCount <- max(fdg$right)
@@ -180,7 +207,7 @@ svgFlameGraph <- function(file, stacks, counts, reorder = TRUE) {
     "\" rx=\"2\" ry=\"2\" onmouseover=\"s('", labels, " (",
     counts, " samples, ", percents, "%)')\" onmouseout=\"c()\" />", 
     sep="")
-     
+
     show <- (! is.na(labels) & 10*nchar(labels)<widths)
     if (any(show))
         svgCode = append(svgCode, paste("<text text-anchor=\"\" x=\"", 
@@ -220,15 +247,16 @@ writeFile <- function(file, svgCode, mx){
 }
 
 ## produce a flame graph from an Rprof file
-fg <- function(file, svgfile) {
+fg <- function(file, svgfile, reorder = c("alpha", "hot", "no")) {
+    reorder <- match.arg(reorder)
     if (is.character(file))
         d <- readPD(file)
     else
         d <- file
     if (! missing(svgfile))
-        svgFlameGraph(svgfile, d$stacks, d$counts)
+        svgFlameGraph(svgfile, d$stacks, d$counts, reorder)
     else
-        flameGraph(d$stacks, d$counts)
+        flameGraph(d$stacks, d$counts, reorder)
 }
 
 ## produce a time graph (like profr) from an Rprof file
@@ -241,9 +269,9 @@ tg <- function(file, svgfile) {
     stacks <- d$stacks[r$values]
     counts <- r$lengths
     if (! missing(svgfile))
-        svgFlameGraph(svgfile, stacks, counts, FALSE)
+        svgFlameGraph(svgfile, stacks, counts, "no")
     else
-        flameGraph(stacks, counts, FALSE)
+        flameGraph(stacks, counts, "no")
 }    
 
 
