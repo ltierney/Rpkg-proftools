@@ -264,7 +264,7 @@ flameGraph <- function(stacks, counts, reorder = TRUE) {
 }
 
 ## This one doesn't use fgData
-svgFlameGraph <- function(stacks, counts, reorder = TRUE){
+svgFlameGraph <- function(file, stacks, counts, reorder = TRUE){
     mx <- max(sapply(stacks, length))
     
     if (reorder) {
@@ -305,10 +305,10 @@ svgFlameGraph <- function(stacks, counts, reorder = TRUE){
             labels[show], " (", countSums[show], " samples, ", percents[show], 
             "%)')\" onmouseout=\"c()\" >", labels[show],"</text>", sep=""))
     }
-    writeFile(svgCode, mx)
+    writeFile(file, svgCode, mx)
 }
 ## This one uses fgData
-svgFlameGraph <- function(stacks, counts, reorder = TRUE) {
+svgFlameGraph <- function(file, stacks, counts, reorder = TRUE) {
     fdg <- fgData(stacks, counts, reorder)
     mx <- max(fdg$top)
     totalCount <- max(fdg$right)
@@ -333,10 +333,10 @@ svgFlameGraph <- function(stacks, counts, reorder = TRUE) {
         labels[show], " (", counts[show], " samples, ", percents[show], 
         "%)')\" onmouseout=\"c()\" >", labels[show],"</text>", sep=""))
         
-    writeFile(svgCode, mx)
+    writeFile(file, svgCode, mx)
 }
 ## This writes the header of the svg file
-writeFile <- function(svgCode, mx){
+writeFile <- function(file, svgCode, mx){
     write(c(paste("<?xml version=\"1.0\" standalone=\"no\"?>
     <!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">
     <svg version=\"1.1\" width=\"1200\" height=\"306\" onload=\"init(evt)\" viewBox=\"0 0 1200 306\" xmlns=\"http://www.w3.org/2000/svg\" >
@@ -361,23 +361,23 @@ writeFile <- function(svgCode, mx){
     <rect x=\"0.0\" y=\"0\" width=\"1200.0\" height=\"", 16*mx+66, "\" fill=\"url(#background)\"  />
     <text text-anchor=\"middle\" x=\"600\" y=\"24\" font-size=\"17\" font-family=\"Verdana\" fill=\"rgb(0,0,0)\"  >Call Graph</text>
     <text text-anchor=\"left\" x=\"10\" y=\"", 16*mx+50, "\" font-size=\"12\" font-family=\"Verdana\" fill=\"rgb(0,0,0)\"  >Function:</text>
-    <text text-anchor=\"\" x=\"70\" y=\"", 16*mx+50, "\" font-size=\"12\" font-family=\"Verdana\" fill=\"rgb(0,0,0)\" id=\"details\" > </text>", sep=""), svgCode, "</svg>"), file="myGraph.svg")
+    <text text-anchor=\"\" x=\"70\" y=\"", 16*mx+50, "\" font-size=\"12\" font-family=\"Verdana\" fill=\"rgb(0,0,0)\" id=\"details\" > </text>", sep=""), svgCode, "</svg>"), file = file)
 }
 
 ## produce a flame graph from an Rprof file
-fg <- function(file, svg=FALSE) {
+fg <- function(file, svgfile) {
     if (is.character(file))
         d <- readPD(file)
     else
         d <- file
-    if(svg)
-        svgFlameGraph(d$stacks, d$counts)
+    if (! missing(svgfile))
+        svgFlameGraph(svgfile, d$stacks, d$counts)
     else
         flameGraph(d$stacks, d$counts)
 }
 
 ## produce a time graph (like profr) from an Rprof file
-tg <- function(file, svg=FALSE) {
+tg <- function(file, svgfile) {
     if (is.character(file))
         d <- readPD(file)
     else
@@ -385,8 +385,8 @@ tg <- function(file, svg=FALSE) {
     r <- rle(d$trace)
     stacks <- d$stacks[r$values]
     counts <- r$lengths
-    if(svg)
-        svgFlameGraph(stacks, counts, FALSE)
+    if (! missing(svgfile))
+        svgFlameGraph(svgfile, stacks, counts, FALSE)
     else
         flameGraph(stacks, counts, FALSE)
 }    
