@@ -263,17 +263,121 @@ flameGraph <- function(stacks, counts, reorder = TRUE) {
         text(left[show], bottom[show] + 0.4, label[show], pos = 4)
 }
 
+## This one doesn't use fgData
+svgFlameGraph <- function(stacks, counts, reorder = TRUE){
+    mx <- max(sapply(stacks, length))
+    
+    if (reorder) {
+        ord <- seq_along(stacks)
+        for (i in (mx : 1))
+            ord <- ord[order(sapply(stacks[ord], `[`, i), na.last = FALSE)]
+        stacks <- stacks[ord]
+        counts <- counts[ord]
+    }
+    svgCode <- c()
+    totalCount <- sum(counts)
+    for (k in 1 : mx) {
+        runs <- rle(sapply(stacks, `[`, k))
+        lens <- runs$lengths
+        n <- length(lens)
+        countSums <- tapply(counts, rep(1 : n, lens), sum)
+        csums <- cumsum(countSums)
+        percents <- round(countSums*100/totalCount, 2)
+        widths <- round(percents*1180/100, 2)
+        y <- 33 + (mx-k)*16
+        x <- cumsum(c(10, widths[-n]))
+
+        cols <- rgb(runif(n), runif(n), runif(n))
+        labels <- runs$values
+
+        show <- ! is.na(labels)
+        if (any(show))
+            svgCode = append(svgCode, paste("<rect x=\"", x[show], "\" y=\"", y, 
+            "\" width=\"", widths[show], "\" height=\"15.0\" fill=\"", cols[show], 
+            "\" rx=\"2\" ry=\"2\" onmouseover=\"s('", labels[show], " (",
+            countSums[show], " samples, ", percents[show], "%)')\" onmouseout=\"c()\" />", 
+             sep=""))
+
+        show <- (! is.na(labels) & 10*nchar(labels)<widths)
+        if (any(show))
+            svgCode = append(svgCode, paste("<text text-anchor=\"\" x=\"", x[show]+3,
+            "\" y=\"", y+10.5, "\" font-size=\"12\" font-family=\"Verdana\" fill=\"rgb(0,0,0)\" onmouseover=\"s('", 
+            labels[show], " (", countSums[show], " samples, ", percents[show], 
+            "%)')\" onmouseout=\"c()\" >", labels[show],"</text>", sep=""))
+    }
+    writeFile(svgCode, mx)
+}
+## This one uses fgData
+svgFlameGraph <- function(stacks, counts, reorder = TRUE) {
+    fdg <- fgData(stacks, counts, reorder)
+    mx <- max(fdg$top)
+    totalCount <- max(fdg$right)
+    counts <- fdg$right-fdg$left
+    percents <- round(counts*100/totalCount, 2)
+    widths <- round(percents*1180/100, 2)
+    y <- 33 + (mx-fdg$top)*16
+    x <- 10+round(fdg$left*1180/totalCount, 2)
+    col <- fdg$col
+    labels <- fdg$label
+    
+    svgCode = paste("<rect x=\"", x, "\" y=\"", y, 
+    "\" width=\"", widths, "\" height=\"15.0\" fill=\"", col, 
+    "\" rx=\"2\" ry=\"2\" onmouseover=\"s('", labels, " (",
+    counts, " samples, ", percents, "%)')\" onmouseout=\"c()\" />", 
+    sep="")
+     
+    show <- (! is.na(labels) & 10*nchar(labels)<widths)
+    if (any(show))
+        svgCode = append(svgCode, paste("<text text-anchor=\"\" x=\"", 
+        x[show]+3, "\" y=\"", y[show]+10.5, "\" font-size=\"12\" font-family=\"Verdana\" fill=\"rgb(0,0,0)\" onmouseover=\"s('", 
+        labels[show], " (", counts[show], " samples, ", percents[show], 
+        "%)')\" onmouseout=\"c()\" >", labels[show],"</text>", sep=""))
+        
+    writeFile(svgCode, mx)
+}
+## This writes the header of the svg file
+writeFile <- function(svgCode, mx){
+    write(c(paste("<?xml version=\"1.0\" standalone=\"no\"?>
+    <!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">
+    <svg version=\"1.1\" width=\"1200\" height=\"306\" onload=\"init(evt)\" viewBox=\"0 0 1200 306\" xmlns=\"http://www.w3.org/2000/svg\" >
+    <defs >
+    <linearGradient id=\"background\" y1=\"0\" y2=\"1\" x1=\"0\" x2=\"0\" >
+        <stop stop-color=\"#eeeeee\" offset=\"5%\" />
+        <stop stop-color=\"#eeeeb0\" offset=\"95%\" />
+    </linearGradient>
+    </defs>
+    <style type=\"text/css\">
+    rect[rx]:hover { stroke:black; stroke-width:1; }
+    text:hover { stroke:black; stroke-width:1; stroke-opacity:0.35; }
+    </style>
+    <script type=\"text/ecmascript\">
+    <![CDATA[
+    var details;
+    function init(evt) { details = document.getElementById(\"details\").firstChild; }
+    function s(info) { details.nodeValue = info; }
+    function c() { details.nodeValue = ' '; }
+    ]]>
+    </script>
+    <rect x=\"0.0\" y=\"0\" width=\"1200.0\" height=\"", 16*mx+66, "\" fill=\"url(#background)\"  />
+    <text text-anchor=\"middle\" x=\"600\" y=\"24\" font-size=\"17\" font-family=\"Verdana\" fill=\"rgb(0,0,0)\"  >Call Graph</text>
+    <text text-anchor=\"left\" x=\"10\" y=\"", 16*mx+50, "\" font-size=\"12\" font-family=\"Verdana\" fill=\"rgb(0,0,0)\"  >Function:</text>
+    <text text-anchor=\"\" x=\"70\" y=\"", 16*mx+50, "\" font-size=\"12\" font-family=\"Verdana\" fill=\"rgb(0,0,0)\" id=\"details\" > </text>", sep=""), svgCode, "</svg>"), file="myGraph.svg")
+}
+
 ## produce a flame graph from an Rprof file
-fg <- function(file) {
+fg <- function(file, svg=FALSE) {
     if (is.character(file))
         d <- readPD(file)
     else
         d <- file
-    flameGraph(d$stacks, d$counts)
+    if(svg)
+        svgFlameGraph(d$stacks, d$counts)
+    else
+        flameGraph(d$stacks, d$counts)
 }
 
 ## produce a time graph (like profr) from an Rprof file
-tg <- function(file) {
+tg <- function(file, svg=FALSE) {
     if (is.character(file))
         d <- readPD(file)
     else
@@ -281,7 +385,10 @@ tg <- function(file) {
     r <- rle(d$trace)
     stacks <- d$stacks[r$values]
     counts <- r$lengths
-    flameGraph(stacks, counts, FALSE)
+    if(svg)
+        svgFlameGraph(stacks, counts, FALSE)
+    else
+        flameGraph(stacks, counts, FALSE)
 }    
 
 
