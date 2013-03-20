@@ -318,7 +318,7 @@ svgFlameGraph <- function(file, stacks, counts, reorder = TRUE) {
     y <- 33 + (mx-fdg$top)*16
     x <- 10+round(fdg$left*1180/totalCount, 2)
     col <- fdg$col
-    labels <- fdg$label
+    labels <- unlist(lapply(fdg$label, URLencode))
     
     svgCode = paste("<rect x=\"", x, "\" y=\"", y, 
     "\" width=\"", widths, "\" height=\"15.0\" fill=\"", col, 
