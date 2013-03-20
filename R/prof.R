@@ -616,27 +616,6 @@ formatTrace <- function(trace, maxlen = 50, skip = 0, trimtop = FALSE) {
     out
 }
 
-d <- readPD("Rprof-lmfit-new.out")
-cts <- list(counts = d$counts, gccounts = d$gccounts)
-countHits(d$stacks, cts)
-
-countSelfHits(d$stacks, cts)
-countSelfHits(d$refs, cts)
-
-## this drops the final ref
-v <- mapply(function (x, y)
-            ifelse(is.na(y), x, paste0(x, " (", y,")")),
-            d$stacks, recodeRefsList(d$refs, d$files))
-countHits(v, cts)
-
-## this attributes the final ref to "<Unknown>"
-v <- mapply(function (x, y) {
-            x <- c(x, "<Unknown>")
-            ifelse(is.na(y), x, paste0(x, " (", y,")"))
-            },
-            d$stacks, recodeRefsList(d$refs, d$files))
-countHits(v, cts)
-
 printPaths <- function(pd, n, ...) {
     ord = rev(order(pd$counts))
     if (! missing(n) && length(ord) > n)
@@ -1021,39 +1000,6 @@ prunePD <- function(pd, what, merge = FALSE) {
 
     transformPD(pd, prune)
 }
-
-dl <- subsetPD(d, sapply(d$stacks, function(s) "lm.fit" %in% s))
-    
-d0 <- d
-d0$stacks[[12]] <- d0$stacks[[13]] <- "<Other>"
-d0$refs[[12]] <- d0$refs[[13]] <- c(NA_character_, NA_character_)
-d0 <- compactPD(d0)
-
-f1 <- function(stack, refs, i) {
-    if (".completeToken" %in% stack)
-        list(stack = "<Other>", refs = c(NA_character_, NA_character_))
-    else
-        list(stack = stack, refs = refs)
-}
-
-d1 <- transformPD(d, f1)
-stopifnot(identical(compactPD(d0), d1))
-
-f2 <- function(stack, refs, i) {
-    path <- c("source", "withVisible", "eval", "eval")
-    n <- length(path)
-    idx <- 1 : n
-    if (length(stack) >= n  && identical(stack[idx], path)) {
-        if (length(stack) > n)
-            list(stack = stack[-idx], refs = refs[-idx])
-        else
-            list(stack = "<Other>", refs = c(NA_character_, NA_character_))
-    }
-    else
-        list(stack = stack, refs = refs)
-}
-
-d2 <- transformPD(d1, f2)
 
 ## **** formatTrace is inefficient due to excessive paste calls in while loop
 ## **** pull path control from formatTrace into pathSummary
