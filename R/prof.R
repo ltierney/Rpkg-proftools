@@ -993,38 +993,3 @@ prunePD <- function(pd, what, merge = FALSE) {
 
     transformPD(pd, prune)
 }
-
-## **** formatTrace is inefficient due to excessive paste calls in while loop
-## **** pull path control from formatTrace into pathSummary
-## **** allow numbers instead of file names in pathSummary to shorten paths?
-
-## **** rename funSummaryXYZ since used in callSummary too
-## **** can these be used in pathSummary also?
-
-## **** pathSummary is breaking ties alphabetically -- change with skip, maxlen
-
-## **** Hot paths -- print nicely, but also allow examination of
-## **** source refs and such.
-
-## **** show hot files, hot lines, calls within line
-## **** show hot paths -- tree view with collapsing of some kind
-## **** show call tree
-
-## **** need control argument in transformPD function?
-
-## **** remove lines where certain functions are called?
-## **** re-root call trees (e.g. to separate out lazy evaluation)
-## **** merge -- cycles or subtrees
-
-## **** figure out how to generate call graphs as in proftools
-## **** figure out how to generate gprof output
-
-## **** use [...] instead of <...> for GC and Anonymous?
-## **** use file#line instead of file:line?
-
-## **** use compactPD for initial pd merge?
-## **** use compactPD for chunk-wise reading?
-
-## **** Alternate rendering of flabeGraph in grid, ggplot, or svg
-
-## **** would be useful if checkUsage could warn for non-namespace-globals
