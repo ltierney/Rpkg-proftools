@@ -435,21 +435,15 @@ commonFile <- function(refs) {
 ## result returned by this function is a named vector with one element
 ## per funciton for which the home file is assumed know.  The names
 ## are the names of the callers, and the values are the indices of the
-## files in whicn the callers are defined.
-homeFileMap <- function(cc) {
-    map <- tapply(cc$callee.site, cc$caller, commonFile)
-    map <- map[! is.na(map)]
-    map
-}
-
-homeFileMapSelf <- function(pd) {
-    ln <- sapply(pd$stacks, length)
-    stacks <- pd$stacks[ln > 0]
-    refs <- pd$refs[ln > 0]
-    lfuns <- sapply(stacks, function(x) x[length(x)])
-    lrefs <- sapply(refs, function(x) x[length(x)])
-    structure(refFN(lrefs[! is.na(lrefs)]),
-              names = lfuns[ ! is.na(lrefs)])
+## files in whicn the callers are defined.  For leaf calls NA sites
+## are ignored. Possibly a disagreement of the leaf call site with
+## other calls should be ignored as well.
+homeFileMap <- function(pd, cc) {
+    lsites <- leafCallRefs(pd)
+    site <- c(cc$callee.site, lsites$site)
+    caller <- c(cc$caller, lsites$fun)
+    map <- tapply(site, caller, commonFile)
+    map[! is.na(map)]
 }
 
 leafCallRefs <- function(pd) {
@@ -491,7 +485,7 @@ getCGdata <- function(pd, GC) {
     fc <- funCounts(pd, FALSE)
     cc <- callCounts(pd, TRUE, FALSE)
 
-    hfm <- homeFileMap(cc)
+    hfm <- homeFileMap(pd, cc)
 
     fc$fl <- hfm[match(fc$fun, names(hfm))]
     cc$cfl <- hfm[match(cc$callee, names(hfm))]
