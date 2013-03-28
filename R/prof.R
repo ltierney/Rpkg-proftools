@@ -224,7 +224,7 @@ svgFlameGraph <- function(file, stacks, counts, reorder, colormap) {
 writeFile <- function(file, svgCode, mx){
     write(c(paste("<?xml version=\"1.0\" standalone=\"no\"?>
     <!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">
-    <svg version=\"1.1\" width=\"1200\" height=\"306\" onload=\"init(evt)\" viewBox=\"0 0 1200 306\" xmlns=\"http://www.w3.org/2000/svg\" >
+    <svg version=\"1.1\" width=\"1200\" height=\"", 16*mx+66, "\" onload=\"init(evt)\" viewBox=\"0 0 1200 ", 16*mx+66, "\" xmlns=\"http://www.w3.org/2000/svg\" >
     <defs >
     <linearGradient id=\"background\" y1=\"0\" y2=\"1\" x1=\"0\" x2=\"0\" >
         <stop stop-color=\"#eeeeee\" offset=\"5%\" />
