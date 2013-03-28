@@ -431,7 +431,7 @@ commonFile <- function(refs) {
 
 ## For each caller check whether all calls have a common file index.
 ## If they do, then assume this is the file in which the caller is
-## defined.  Otherwise tread the caller's home file as unkown. The
+## defined.  Otherwise treat the caller's home file as unkown. The
 ## result returned by this function is a named vector with one element
 ## per funciton for which the home file is assumed know.  The names
 ## are the names of the callers, and the values are the indices of the
@@ -441,6 +441,27 @@ homeFileMap <- function(cc) {
     map <- map[! is.na(map)]
     map
 }
+
+homeFileMapSelf <- function(pd) {
+    ln <- sapply(pd$stacks, length)
+    stacks <- pd$stacks[ln > 0]
+    refs <- pd$refs[ln > 0]
+    lfuns <- sapply(stacks, function(x) x[length(x)])
+    lrefs <- sapply(refs, function(x) x[length(x)])
+    structure(refFN(lrefs[! is.na(lrefs)]),
+              names = lfuns[ ! is.na(lrefs)])
+}
+
+leafCallRefs <- function(pd) {
+    ln <- sapply(pd$stacks, length)
+    stacks <- pd$stacks[ln > 0]
+    refs <- pd$refs[ln > 0]
+    lfuns <- sapply(stacks, function(x) x[length(x)])
+    lrefs <- sapply(refs, function(x) x[length(x)])
+    goodrefs <- ! is.na(lrefs)
+    list(fun = lfuns[goodrefs], site = lrefs[goodrefs])
+}
+
 
 ## Extract the file indices and line numbers from source references of
 ## the form FN#LN.
