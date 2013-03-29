@@ -508,7 +508,7 @@ writeSelfEntry <- function(con, fun, fc, files) {
         file = con)
 
     if (gcself > 0)
-        cat(sprintf("cfn=<GC>\ncalls=%d 0\n0 %d\n", gcself, gcself),
+        cat(sprintf("cfl=??\ncfn=<GC>\ncalls=%d 0\n0 %d\n", gcself, gcself),
             sep = "", file = con)
 }
     
@@ -535,7 +535,7 @@ writeFunEntries <- function(con, fun, data) {
 writeGCEntry <- function(con, data)  {
     gcself <- data$gcself
     if (gcself > 0)
-        cat(sprintf("\nfn=<GC>\n0 %d\n", gcself), file = con)
+        cat(sprintf("\nfl=??\nfn=<GC>\n0 %d\n", gcself), file = con)
 }
 
 writeCG <- function(con, pd, GC = TRUE) {
