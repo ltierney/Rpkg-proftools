@@ -495,7 +495,9 @@ getCGdata <- function(pd, GC) {
     if (! GC)
         fc$gcself <- 0
 
-    list(fc = fc, cc = cc, gcself = sum(fc$gcself), files = pd$files)
+    list(fc = fc, cc = cc, gcself = sum(fc$gcself),
+         funs = fc$fun,
+         files = pd$files)
 }
 
 writeSelfEntry <- function(con, fun, fc, files) {
@@ -548,7 +550,7 @@ writeCG <- function(con, pd, GC = TRUE) {
     
     cat("events: Hits\n", file = con)
 
-    for (fun in data$fc$fun)
+    for (fun in data$funs)
         writeFunEntries(con, fun, data)
 
     writeGCEntry(con, data)
