@@ -470,7 +470,7 @@ refLN <- function(refs)
 ##     fc = function counts
 ##     cc = call counts and call site references
 ##
-## To fc we add the indes of the xome file for each cunction (NA if
+## To fc we add the indes of the home file for each cunction (NA if
 ## not known) in fl.
 ##
 ## To cc we add in cfl the index of the home file of the function
