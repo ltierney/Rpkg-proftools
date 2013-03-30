@@ -505,9 +505,10 @@ writeSelfEntry <- function(con, fun, fc, files) {
     file <- if (is.na(fn)) "??" else files[fn]
     self <- fc$self[fc$fun == fun]
     gcself <- fc$gcself[fc$fun == fun]
+    line <- 0
 
-    cat(sprintf("\nfl=%s\nfn=%s\n0 %d\n",  file, fun, self - gcself),
-        file = con)
+    cat(sprintf("\nfl=%s\nfn=%s\n", file, fun), file = con)
+    cat(sprintf("%d %d\n", line, self - gcself), file = con)
 
     if (gcself > 0)
         cat(sprintf("cfl=??\ncfn=<GC>\ncalls=%d 0\n0 %d\n", gcself, gcself),
