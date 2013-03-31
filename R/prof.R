@@ -501,15 +501,17 @@ getCGdata <- function(pd, GC) {
 }
 
 writeSelfEntry <- function(con, fun, fc, files) {
-    fn <- fc$fl[fc$fun == fun]
+    fn <- fc$fl[fc$fun == fun][1]
     file <- if (is.na(fn)) "??" else files[fn]
     self <- fc$self[fc$fun == fun]
     gcself <- fc$gcself[fc$fun == fun]
-    line <- 0
+    site <- fc$site[fc$fun == fun]
+    line <- ifelse(is.na(site), 0, refLN(site))
 
     cat(sprintf("\nfl=%s\nfn=%s\n", file, fun), file = con)
-    cat(sprintf("%d %d\n", line, self - gcself), file = con)
+    cat(sprintf("%d %d\n", line, self - gcself), sep = "", file = con)
 
+    gcself <- sum(gcself)
     if (gcself > 0)
         cat(sprintf("cfl=??\ncfn=<GC>\ncalls=%d 0\n0 %d\n", gcself, gcself),
             sep = "", file = con)
