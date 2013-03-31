@@ -523,6 +523,82 @@ np2x <- function(pd, score = c("total", "self", "none"),
     p
 }
 
-## End functions for plotting callgraph
+profileCallGraph2Dot <- function(pd, score = c("total", "self"),
+                                 transfer = function(x) x, colorMap = NULL,
+                                 filename = "Rprof.dot", landscape = FALSE,
+                                 mergeCycles = FALSE, edgesColored = TRUE,
+                                 rankdir = "LR", center = FALSE, size) {
+    if (missing(score))
+        score = "none"
+    else match.arg(score)
+    p <- np2x(pd, score, transfer, colorMap, mergeCycles, edgesColored)
+    g2d(p, filename, nodeColors = p$nodeColors, edgeColors = p$edgeColors,
+        landscape = landscape, rankdir = rankdir, size = size, center = center)
+}
 
-## End imported functions from proftools
+n2d <- function(name, color = NULL) {
+    if (is.null(color) || is.na(color))
+        paste("\"", name, "\";\n", sep = "")
+    else
+        paste("\"", name, "\"[style=filled,color=\"", color, "\"];\n",
+              sep = "")
+}
+
+e2d <- function(from, to, color = NULL) {
+    e <- paste("\"", from, "\" -> \"", to, "\"", sep = "")
+    if (is.null(color))
+        paste(e, ";\n", sep = "")
+    else
+        paste(e, "[color=\"", color, "\"];\n", sep = "")
+}
+
+# **** A plausible size is 10,7.5
+g2d <- function(g, filename = "g.dot", landscape = TRUE,
+                nodeColors = NULL, edgeColors = NULL,
+                size, center = FALSE, rankdir = c("TB","LR")) {
+    if (missing(rankdir))
+        rankdir = "LR"
+    else match.arg(rankdir)
+
+    con <- file(filename, open = "w")
+    on.exit(close(con))
+
+    cat("digraph xyz {\n", file = con)
+    if (! missing(size))
+        cat(paste("size=\"", size, "\";\n", sep = ""), file = con)
+    if (landscape)
+        cat("rotate=90;\n", file = con)
+    if (center)
+        cat("center=1;\n", file = con)
+    cat(paste("rankdir=", rankdir, ";\n", sep = ""), file = con)
+    for (i in seq(along = g$nodes)) {
+        from <- g$nodes[i]
+        cat(n2d(from, nodeColors[[i]]), file = con)
+        toList <- g$edges[[i]]
+        toColors <- edgeColors[[i]]
+        for (j in seq(along = toList))
+            cat(e2d(from, toList[[j]], toColors[[j]]), file = con)
+    }
+    cat("}", file = con)
+}
+
+colorScore <- function(score, colorMap) {
+    if (is.null(score) || is.na(score))
+        NULL
+    else if (! is.null(colorMap)) {
+        nc <- length(colorMap)
+        colorMap[min(nc, max(ceiling(nc * (1 - score)), 1))]
+    }
+    else {
+        score = min(max(score, 0), 1)
+        # from cgprof
+        maxhue = 0.6    # from red (.0) to magenta (.6), cf rainbow
+        minsat = 0.1    # low saturation
+        bri = 1.0       # brightness, always 100%
+
+        # following formulas are totally empirical
+        hue <- maxhue * (1.0 - score)
+        sat <- minsat + (3.0 - minsat) * score
+        paste(hue, ",", sat, ",", bri, sep = "")
+    }
+}
