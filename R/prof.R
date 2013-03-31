@@ -482,7 +482,7 @@ refLN <- function(refs)
 ## gcself entries in fc to zero, since the output functions only
 ## generate GC output for positive gcself counts.
 getCGdata <- function(pd, GC) {
-    fc <- funCounts(pd, FALSE)
+    fc <- getCGselfData(pd)
     cc <- callCounts(pd, TRUE, FALSE)
 
     hfm <- homeFileMap(pd, cc)
@@ -496,9 +496,12 @@ getCGdata <- function(pd, GC) {
         fc$gcself <- 0
 
     list(fc = fc, cc = cc, gcself = sum(fc$gcself),
-         funs = fc$fun,
+         funs = sort(unique(fc$fun)),
          files = pd$files)
 }
+
+getCGselfData <- function(pd)
+    funCounts(pd, FALSE)
 
 writeSelfEntry <- function(con, fun, fc, files) {
     fn <- fc$fl[fc$fun == fun][1]
