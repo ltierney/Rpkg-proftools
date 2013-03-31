@@ -813,7 +813,7 @@ callSummary <- function(pd, byTotal = TRUE,
         funSummaryHits(cc, label, gc && pd$haveGC)
 }
 
-refSummary <- function(pd, byTotal = TRUE,
+srcSummary <- function(pd, byTotal = TRUE,
                        value = c("pct", "time", "hits"),
                        gc = TRUE) {
     value <- match.arg(value)
