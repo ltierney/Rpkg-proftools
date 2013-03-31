@@ -467,7 +467,7 @@ refLN <- function(refs)
 
 ## Collect the data for the callgrind output. The basic data is
 ##
-##     fc = function counts
+##     fc = function counts and leaf call references
 ##     cc = call counts and call site references
 ##
 ## To fc we add the indes of the home file for each cunction (NA if
@@ -500,8 +500,15 @@ getCGdata <- function(pd, GC) {
          files = pd$files)
 }
 
-getCGselfData <- function(pd)
-    funCounts(pd, FALSE)
+getCGselfData <- function(pd) {
+    fc <- funCounts(pd, FALSE)
+    fc$total <- fc$gctotal <- NULL
+    f <- sapply(pd$stacks, function(x) x[length(x)])
+    r <- sapply(pd$refs, function(x) x[length(x)])
+    fs <- aggregateCounts(data.frame(fun = f, site = r),
+                          data.frame(self = pd$counts, gcself = pd$gccounts))
+    rbind(fs, fc[fc$self == 0, ])
+}
 
 writeSelfEntry <- function(con, fun, fc, files) {
     fn <- fc$fl[fc$fun == fun][1]
