@@ -144,7 +144,8 @@ fgDataLine <- function(k, stacks, counts) {
                stringsAsFactors = FALSE)
 }
 
-fgData <- function(stacks, counts, reorder = c("alpha", "hot", "no"), colormap) {
+fgData <- function(stacks, counts, reorder = c("alpha", "hot", "no"),
+                   colormap) {
     mx <- max(sapply(stacks, length))
 
     reorder <- match.arg(reorder)
@@ -193,6 +194,9 @@ flameGraph <- function(stacks, counts, reorder, colormap) {
         text(left[show], bottom[show] + 0.4, label[show], pos = 4)
 }
 
+htmlencode <- function(x)
+    sub(">", "&gt;", sub("<", "&lt;", x))
+
 svgFlameGraph <- function(file, stacks, counts, reorder, colormap) {
     fdg <- fgData(stacks, counts, reorder, colormap)
     mx <- max(fdg$top)
@@ -203,7 +207,7 @@ svgFlameGraph <- function(file, stacks, counts, reorder, colormap) {
     y <- 33 + (mx-fdg$top)*16
     x <- 10+round(fdg$left*1180/totalCount, 2)
     col <- fdg$col
-    labels <- unlist(lapply(fdg$label, URLencode))
+    labels <- htmlencode(fdg$label)
     
     svgCode = paste("<rect x=\"", x, "\" y=\"", y, 
     "\" width=\"", widths, "\" height=\"15.0\" fill=\"", col, 
