@@ -253,32 +253,50 @@ writeFile <- function(file, svgCode, mx){
     <text text-anchor=\"\" x=\"70\" y=\"", 16*mx+50, "\" font-size=\"12\" font-family=\"Verdana\" fill=\"rgb(0,0,0)\" id=\"details\" > </text>", sep=""), svgCode, "</svg>"), file = file)
 }
 
+## Merge non-NA refs into stacks. Add <Internal> for lef refs.
+refStacks <- function(d) {
+    rs <-function(s, r, d) {
+        if (is.na(r[length(r)]))
+            r <- r[-length(r)]
+        else
+            s <- c(s, "<Internal>")
+        fl <- d$files[refFN(r)]
+        ln <- refLN(r)
+        paste0(s, ifelse(is.na(r), "", sprintf(" (%s:%d)", fl, ln)))
+    }
+    lapply(1:length(d$stacks), function(i) rs(d$stacks[[i]], d$refs[[i]], d))
+}
+
 ## produce a flame graph from an Rprof file
-fg <- function(file, svgfile, reorder = c("alpha", "hot", "no"), colormap = NULL) {
+fg <- function(file, svgfile, reorder = c("hot", "alpha", "no"),
+               colormap = NULL, srclines = FALSE) {
     reorder <- match.arg(reorder)
     if (is.character(file))
         d <- readPD(file)
     else
         d <- file
+    counts <- d$counts
+    stacks <- if (srclines) refStacks(d) else d$stacks
     if (! missing(svgfile))
-        svgFlameGraph(svgfile, d$stacks, d$counts, reorder, colormap)
+        svgFlameGraph(svgfile, stacks, counts, reorder, colormap)
     else
-        flameGraph(d$stacks, d$counts, reorder, colormap)
+        flameGraph(stacks, counts, reorder, colormap)
 }
 
 ## produce a time graph (like profr) from an Rprof file
-tg <- function(file, svgfile, colormap = NULL) {
+tg <- function(file, svgfile, colormap = NULL, srclines = FALSE) {
     if (is.character(file))
         d <- readPD(file)
     else
         d <- file
     r <- rle(d$trace)
-    stacks <- d$stacks[r$values]
+    stacks <- if (srclines) refStacks(d) else d$stacks
+    tstacks <- stacks[r$values]
     counts <- r$lengths
     if (! missing(svgfile))
-        svgFlameGraph(svgfile, stacks, counts, "no", colormap)
+        svgFlameGraph(svgfile, tstacks, counts, "no", colormap)
     else
-        flameGraph(stacks, counts, "no", colormap)
+        flameGraph(tstacks, counts, "no", colormap)
 }
 
 
