@@ -2,8 +2,7 @@
 
 readProfileData <- function(pd) {
     rpg <- rawProfCallGraph(pd)
-    pge <- profCallGraphEdges(rpg)
-    cycles <- findCycles(findReachable(pge))
+    cycles <- findCycles(rpg)
     if (! is.null(cycles))
         addCycleInfo(pd, rpg$data, cycles)
     rpg$cycles <- cycles
@@ -82,7 +81,8 @@ makeCycleMap <- function(cycles) {
     cycleMap
 }
 
-findCycles <- function(reachable) {
+findCycles <- function(rpg) {
+    reachable <- findReachable(profCallGraphEdges(rpg))
     names <- lsEnv(reachable)
     cycles <- NULL
     for (n in names) {
