@@ -4,9 +4,8 @@ readProfileData <- function(pd) {
     rpg <- rawProfCallGraph(pd)
     pge <- profCallGraphEdges(rpg)
     cycles <- findCycles(findReachable(pge))
-    cycleMap <- makeCycleMap(cycles)
     if (! is.null(cycles))
-        addCycleInfo(pd, rpg$data, cycleMap)
+        addCycleInfo(pd, rpg$data, cycles)
     rpg$cycles <- cycles
     rpg
 }
@@ -14,12 +13,14 @@ readProfileData <- function(pd) {
 lsEnv <- function(env)
     ls(env, all.names = TRUE)
 
-addCycleInfo <- function(pd, data, map) {
+addCycleInfo <- function(pd, data, cycles) {
+    map <- makeCycleMap(cycles)
     rvStacks <- lapply(pd$stacks, rev)
     inCycle <- function(name) exists(name, envir = map, inherits = FALSE)
     cycleName <- function(name) get(name, envir = map, inherits = FALSE)
     renameCycles <- function(line)
-        unlist(lapply(line, function(n) if (inCycle(n)) cycleName(n) else n))
+        unlist(lapply(line,
+                      function(n) if (inCycle(n)) cycleName(n) else n))
     # **** speed up by inlining loop and calls to 'exists', 'get'
     renameCycles <- function(line) {
         len <- length(line)
@@ -43,13 +44,15 @@ addCycleInfo <- function(pd, data, map) {
                 incProfCallGraphNodeEntry(n, "total", data, count)
         if (length(line) > 1) {
             if (isIn(line[1], cnames) || isIn(line[1], cnames))
-                incProfCallGraphEdgeEntry(line[2], line[1], "self", data, count)
+                incProfCallGraphEdgeEntry(line[2], line[1], "self",
+                                          data, count)
             le <- lineEdges(line)
             for (i in seq(along = le$nodes)) {
                 from <- le$nodes[i]
                 for (to in le$edges[[i]])
                     if (isIn(from, cnames) || isIn(to, cnames))
-                        incProfCallGraphEdgeEntry(from, to, "total", data, count)
+                        incProfCallGraphEdgeEntry(from, to, "total",
+                                                  data, count)
             }
         }
     }
