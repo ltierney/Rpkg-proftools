@@ -1,12 +1,13 @@
 ## Imported (modified) functions from proftools
 
 readProfileData <- function(pd) {
-    rpg <- rawProfCallGraph(pd)
-    cycles <- findCycles(rpg$data)
+    data <- rawProfCallGraph(pd)
+    cycles <- findCycles(data)
     if (! is.null(cycles))
-        addCycleInfo(pd, rpg$data, cycles)
-    rpg$cycles <- cycles
-    rpg
+        addCycleInfo(pd, data, cycles)
+    ## **** add a class -- proftools_callgraph?
+    list(interval = pd$interval, count = sum(pd$count),
+         data = data, cycles = cycles)
 }
 
 lsEnv <- function(env)
@@ -145,25 +146,27 @@ profCallGraphEdges <- function(data) {
     edges
 }
 
-rawProfCallGraph <- function(pd, GC = TRUE) {
-	data <- mkHash()
+rawProfCallGraph <- function(pd) {
+    data <- mkHash()
     rvStacks <- lapply(pd$stacks, rev)
     fun <- function(line, count) {
         incProfCallGraphNodeEntry(line[1], "self", data, count)
         for (n in unique(line))
             incProfCallGraphNodeEntry(n, "total", data, count)
         if (length(line) > 1) {
-            incProfCallGraphEdgeEntry(line[2], line[1], "self", data, count)
+            incProfCallGraphEdgeEntry(line[2], line[1], "self",
+                                      data, count)
             le <- lineEdges(line)
             for (i in seq(along = le$nodes)) {
                 from <- le$nodes[i]
                 for (to in le$edges[[i]])
-                    incProfCallGraphEdgeEntry(from, to, "total", data, count)
+                    incProfCallGraphEdgeEntry(from, to, "total",
+                                              data, count)
             }
         }    
     }
-	mapply(fun, rvStacks, pd$counts)
-	list(interval = pd$interval, count = sum(pd$count), data = data)
+    mapply(fun, rvStacks, pd$counts)
+    data
 }
 
 getProfCallGraphEdgeEntry <- function(from, to, env) {
