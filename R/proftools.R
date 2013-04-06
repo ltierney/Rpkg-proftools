@@ -2,7 +2,7 @@
 
 readProfileData <- function(pd) {
     rpg <- rawProfCallGraph(pd)
-    cycles <- findCycles(rpg)
+    cycles <- findCycles(rpg$data)
     if (! is.null(cycles))
         addCycleInfo(pd, rpg$data, cycles)
     rpg$cycles <- cycles
@@ -128,18 +128,18 @@ findMatCycles <- function(m) {
     cycles
 }
 
-findCycles <- function(rpg) {
-    edges <- profCallGraphEdges(rpg)
+findCycles <- function(data) {
+    edges <- profCallGraphEdges(data)
     funs <- edges2funs(edges)
     m1 <- edges2mat(funs, edges)
     mr <- findReachableMat(m1)
     lapply(findMatCycles(mr), function(v) funs[v])
 }
 
-profCallGraphEdges <- function(pd) {
+profCallGraphEdges <- function(data) {
     edges <- mkHash()
-    for (from in lsEnv(pd$data)) {
-        entry <- getProfCallGraphNodeEntry(from, pd$data)
+    for (from in lsEnv(data)) {
+        entry <- getProfCallGraphNodeEntry(from, data)
         assign(from, lsEnv(entry$edges), envir = edges)
     }
     edges
@@ -310,7 +310,7 @@ printProfileCallGraph <- function(pd, file = stdout(), percent = TRUE) {
     self <- sapply(nodes, function(n) get(n, envir = pd$data)$self)
     selfpct <- 100 * self / pd$count
     selftime <- self * pd$interval/1e+06
-    pge <- profCallGraphEdges(pd)
+    pge <- profCallGraphEdges(pd$data)
     rpge <- revProfCallGraphMap(pd$data)
 
     pd$cnames <- cnames
