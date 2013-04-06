@@ -6,7 +6,7 @@ readProfileData <- function(pd) {
     cycles <- findCycles(findReachable(pge))
     cycleMap <- makeCycleMap(cycles)
     if (! is.null(cycles))
-        addCycleInfo(pd, rpg, cycleMap)
+        addCycleInfo(pd, rpg$data, cycleMap)
     rpg$cycles <- cycles
     rpg
 }
@@ -14,7 +14,7 @@ readProfileData <- function(pd) {
 lsEnv <- function(env)
     ls(env, all.names = TRUE)
 
-addCycleInfo <- function(pd, rgp, map) {
+addCycleInfo <- function(pd, data, map) {
     rvStacks <- lapply(pd$stacks, rev)
     inCycle <- function(name) exists(name, envir = map, inherits = FALSE)
     cycleName <- function(name) get(name, envir = map, inherits = FALSE)
@@ -37,19 +37,19 @@ addCycleInfo <- function(pd, rgp, map) {
     fun <- function(line, count) {
         line <- compressLineRuns(renameCycles(line))
         if (isIn(line[1], cnames))
-            incProfCallGraphNodeEntry(line[1], "self", rgp$data, count)
+            incProfCallGraphNodeEntry(line[1], "self", data, count)
         for (n in unique(line))
             if (isIn(n, cnames))
-                incProfCallGraphNodeEntry(n, "total", rgp$data, count)
+                incProfCallGraphNodeEntry(n, "total", data, count)
         if (length(line) > 1) {
             if (isIn(line[1], cnames) || isIn(line[1], cnames))
-                incProfCallGraphEdgeEntry(line[2], line[1], "self", rgp$data, count)
+                incProfCallGraphEdgeEntry(line[2], line[1], "self", data, count)
             le <- lineEdges(line)
             for (i in seq(along = le$nodes)) {
                 from <- le$nodes[i]
                 for (to in le$edges[[i]])
                     if (isIn(from, cnames) || isIn(to, cnames))
-                        incProfCallGraphEdgeEntry(from, to, "total", rgp$data, count)
+                        incProfCallGraphEdgeEntry(from, to, "total", data, count)
             }
         }
     }
