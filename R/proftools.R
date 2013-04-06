@@ -81,24 +81,46 @@ makeCycleMap <- function(cycles) {
     cycleMap
 }
 
-findCycles <- function(rpg) {
-    reachable <- findReachable(profCallGraphEdges(rpg))
-    names <- lsEnv(reachable)
+## New findCycles
+## Uses an incidence matrix and matrix multiplication.
+## Could use a sparse representation but proably not worth the trouble.
+edges2funs <- function(edges) {
+    ln <- as.list(pge, all = TRUE)
+    sort(unique(c(names(ln), unlist(ln))))
+}
+
+edges2mat <- function(funs, edges) {
+    m <- diag(length(funs))
+    for (i in seq_along(funs))
+        m[i, match(pge[[funs[i]]], funs)] <- 1
+    m
+}
+
+findReachableMat <- function(m) {
+    nr <- nrow(m)
+    n <- 2
+    m <- m %*% m
+    while (n <= nr) {
+        n <- 2 * n
+        m <- m %*% m
+    }
+    m
+}
+
+findMatCycles <- function(m) {
+    nr <- nrow(m)
     cycles <- NULL
-    for (n in names) {
-        if (exists(n, envir = reachable, inherits = FALSE)) {
-            v <- n
-            toenv <- get(n, envir = reachable)
-            rm(list = n, envir = reachable)
-            for (to in lsEnv(toenv)) {
-                if (exists(to, envir = reachable, inherits = FALSE)) {
-                    backenv <- get(to, envir = reachable)
-                    if (exists(n, envir = backenv, inherits = FALSE)) {
-                        v <- c(v, to)
-                        rm(list = to, envir = reachable)
-                    }
+    visited <- rep(FALSE, nr)
+
+    for (i in 1 : (nr - 1)) {
+        if (! visited[i]) {
+            visited[i] <- TRUE ## not really needed
+            v <- i
+            for (j in (i + 1) : nr)
+	        if (m[i, j] > 0 && m[j, i] > 0) {
+	            v <- c(v, j)
+                    visited[j] <- TRUE
                 }
-            }
             if (length(v) > 1)
                 cycles <- c(cycles, list(v))
         }
@@ -106,41 +128,12 @@ findCycles <- function(rpg) {
     cycles
 }
 
-findReachable <- function(edges) {
-    reachable <- mkHash()
-    names <- lsEnv(edges)
-    for (n in names) {
-        toenv <- mkHash()
-        for (to in get(n, envir = edges))
-            assign(to, TRUE, envir = toenv)
-        assign(n, TRUE, envir = toenv)
-        assign(n, toenv, envir = reachable)
-    }
-    n <- length(names)
-    k <- 1
-    while (k < n) {
-        reachable <- findReachable2(names, reachable)
-        k <- 2 * k
-    }
-    reachable
-}
-
-findReachable2 <- function(names, r1) {
-    val <- mkHash()
-    for (n in names) {
-        toenv <- mkHash()
-        for (to in lsEnv(get(n, envir = r1)))
-            assign(to, TRUE, envir = toenv)
-        assign(n, toenv, envir = val)
-    }
-    for (n in names) {
-        toenv <- get(n, envir = r1)
-        toenv2 <- get(n, envir = val)
-        for (to in lsEnv(toenv))
-            for (to2 in lsEnv(get(to, envir = r1)))
-                assign(to2, TRUE, envir = toenv2)
-    }
-    val
+findCycles <- function(rpg) {
+    edges <- profCallGraphEdges(rpg)
+    funs <- edges2funs(edges)
+    m1 <- edges2mat(funs, edges)
+    mr <- findReachableMat(m1)
+    lapply(findMatCycles(mr), function(v) funs[v])
 }
 
 profCallGraphEdges <- function(pd) {
