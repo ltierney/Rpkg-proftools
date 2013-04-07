@@ -86,14 +86,14 @@ makeCycleMap <- function(cycles) {
 ## Uses an incidence matrix and matrix multiplication.
 ## Could use a sparse representation but proably not worth the trouble.
 edges2funs <- function(edges) {
-    ln <- as.list(pge, all = TRUE)
+    ln <- as.list(edges, all = TRUE)
     sort(unique(c(names(ln), unlist(ln))))
 }
 
 edges2mat <- function(funs, edges) {
     m <- diag(length(funs))
     for (i in seq_along(funs))
-        m[i, match(pge[[funs[i]]], funs)] <- 1
+        m[i, match(edges[[funs[i]]], funs)] <- 1
     m
 }
 
