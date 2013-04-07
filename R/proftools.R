@@ -1,77 +1,141 @@
-## Imported (modified) functions from proftools
+.EmptyEnv <- if (exists("emptyenv")) emptyenv() else NULL
+mkHash <- function() new.env(hash = TRUE, parent = .EmptyEnv)
 
-readProfileData <- function(pd) {
-    data <- rawProfCallGraph(pd)
-    cycles <- findCycles(data)
-    if (! is.null(cycles))
-        addCycleInfo(pd, data, cycles)
-    ## **** add a class -- proftools_callgraph?
-    list(interval = pd$interval, count = sum(pd$count),
-         data = data, cycles = cycles)
+n2d <- function(name, color = NULL) {
+    if (is.null(color) || is.na(color))
+        paste("\"", name, "\";\n", sep = "")
+    else
+        paste("\"", name, "\"[style=filled,color=\"", color, "\"];\n",
+              sep = "")
+}
+
+e2d <- function(from, to, color = NULL) {
+    e <- paste("\"", from, "\" -> \"", to, "\"", sep = "")
+    if (is.null(color))
+        paste(e, ";\n", sep = "")
+    else
+        paste(e, "[color=\"", color, "\"];\n", sep = "")
+}
+
+# **** A plausible size is 10,7.5
+g2d <- function(g, filename = "g.dot", landscape = TRUE,
+                nodeColors = NULL, edgeColors = NULL,
+                size, center = FALSE, rankdir = c("TB","LR")) {
+    if (missing(rankdir))
+        rankdir = "LR"
+    else match.arg(rankdir)
+
+    con <- file(filename, open = "w")
+    on.exit(close(con))
+
+    cat("digraph xyz {\n", file = con)
+    if (! missing(size))
+        cat(paste("size=\"", size, "\";\n", sep = ""), file = con)
+    if (landscape)
+        cat("rotate=90;\n", file = con)
+    if (center)
+        cat("center=1;\n", file = con)
+    cat(paste("rankdir=", rankdir, ";\n", sep = ""), file = con)
+    for (i in seq(along = g$nodes)) {
+        from <- g$nodes[i]
+        cat(n2d(from, nodeColors[[i]]), file = con)
+        toList <- g$edges[[i]]
+        toColors <- edgeColors[[i]]
+        for (j in seq(along = toList))
+            cat(e2d(from, toList[[j]], toColors[[j]]), file = con)
+    }
+    cat("}", file = con)
+}
+
+g2g <- function(g) {
+    if (! require("graph"))
+        stop("package graph is needed but not available")
+    # **** eventually maybe do new("graph::graphNEL") here
+    nodes <- g$nodes
+    mke <- function(e) list(edges = match(e, nodes))
+    eL <- lapply(g$edges, mke)
+    names(eL) <- nodes
+    new("graphNEL", nodes = nodes, edgeL = eL, edgemode = "directed")
+}
+
+getProfCallGraphNodeEntry <- function(name, env)
+    get(name, envir = env)
+
+incProfCallGraphNodeEntry <- function(name, what, env, count) {
+    if (exists(name, envir = env, inherits = FALSE))
+        entry <- get(name, envir = env)
+    else 
+        entry <- list(self = 0, total = 0, edges = mkHash())
+    entry[[what]] <- entry[[what]] + count
+    assign(name, entry, envir = env)    
+}
+
+getProfCallGraphEdgeEntry <- function(from, to, env) {
+    fromEntry <- getProfCallGraphNodeEntry(from, env)
+    get(to, envir = fromEntry$edges)
+}
+
+incProfCallGraphEdgeEntry <- function(from, to, what, env, count) {
+    fromEntry <- getProfCallGraphNodeEntry(from, env)
+    if (exists(to, envir = fromEntry$edges, inherits = FALSE))
+        entry <- get(to, envir = fromEntry$edges)
+    else entry <- list(self = 0, total = 0)
+    entry[[what]] <- entry[[what]] + count
+    assign(to, entry, envir = fromEntry$edges)
+}
+
+rawProfCallGraph <- function(pd) {
+    data <- mkHash()
+    rvStacks <- lapply(pd$stacks, rev)
+    fun <- function(line, count) {
+        incProfCallGraphNodeEntry(line[1], "self", data, count)
+        for (n in unique(line))
+            incProfCallGraphNodeEntry(n, "total", data, count)
+        if (length(line) > 1) {
+            incProfCallGraphEdgeEntry(line[2], line[1], "self",
+                                      data, count)
+            le <- lineEdges(line)
+            for (i in seq(along = le$nodes)) {
+                from <- le$nodes[i]
+                for (to in le$edges[[i]])
+                    incProfCallGraphEdgeEntry(from, to, "total",
+                                              data, count)
+            }
+        }    
+    }
+    mapply(fun, rvStacks, pd$counts)
+    data
+}
+
+charMatch <- function(x, table, nomatch = NA)
+    match(x, table, nomatch)
+
+isIn <- function(x, table)
+    match(x, table, 0)
+
+lineEdges <- function(line) {
+    if (length(line) > 1) {
+        from <- unique(line[-1])
+        edges <- rep(list(character(0)), length(from))
+        for (i in 2 : length(line)) {
+            j <- charMatch(line[i], from)
+            if (! isIn(line[i - 1], edges[[j]]))
+                edges[[j]] <- c(edges[[j]], line[i - 1])
+        }
+        list(nodes = from, edges = edges)
+    }
 }
 
 lsEnv <- function(env)
     ls(env, all.names = TRUE)
 
-addCycleInfo <- function(pd, data, cycles) {
-    map <- makeCycleMap(cycles)
-    rvStacks <- lapply(pd$stacks, rev)
-    inCycle <- function(name) exists(name, envir = map, inherits = FALSE)
-    cycleName <- function(name) get(name, envir = map, inherits = FALSE)
-    renameCycles <- function(line)
-        unlist(lapply(line,
-                      function(n) if (inCycle(n)) cycleName(n) else n))
-    # **** speed up by inlining loop and calls to 'exists', 'get'
-    renameCycles <- function(line) {
-        len <- length(line)
-        if (len > 0)
-            for (i in 1 : len) {
-                n <- line[i]
-                ## if (.Internal(exists(n, map, "any", FALSE)))
-                ##     line[i] <- .Internal(get(n, map, "any", FALSE))
-                if (exists(n, envir = map, inherits = FALSE))
-                    line[i] <- get(n, envir = map, inherits = FALSE)
-            }
-        line
+profCallGraphEdges <- function(data) {
+    edges <- mkHash()
+    for (from in lsEnv(data)) {
+        entry <- getProfCallGraphNodeEntry(from, data)
+        assign(from, lsEnv(entry$edges), envir = edges)
     }
-    cnames <- unique(unlist(lapply(lsEnv(map), get, map)))
-    fun <- function(line, count) {
-        line <- compressLineRuns(renameCycles(line))
-        if (isIn(line[1], cnames))
-            incProfCallGraphNodeEntry(line[1], "self", data, count)
-        for (n in unique(line))
-            if (isIn(n, cnames))
-                incProfCallGraphNodeEntry(n, "total", data, count)
-        if (length(line) > 1) {
-            if (isIn(line[1], cnames) || isIn(line[1], cnames))
-                incProfCallGraphEdgeEntry(line[2], line[1], "self",
-                                          data, count)
-            le <- lineEdges(line)
-            for (i in seq(along = le$nodes)) {
-                from <- le$nodes[i]
-                for (to in le$edges[[i]])
-                    if (isIn(from, cnames) || isIn(to, cnames))
-                        incProfCallGraphEdgeEntry(from, to, "total",
-                                                  data, count)
-            }
-        }
-    }
-	mapply(fun, rvStacks, pd$counts)
-}
-
-compressLineRuns <- function(line) {
-    if (length(line) > 1) {
-        keep <- rep(TRUE, length(line))
-        last <- line[1]
-        for (i in 2 : length(line)) {
-            val <- line[i]
-            if (val == last)
-                keep[i] <- FALSE
-            else last <- val
-        }
-        line[keep]
-    }
-    else line
+    edges
 }
 
 makeCycleMap <- function(cycles) {
@@ -118,8 +182,8 @@ findMatCycles <- function(m) {
             visited[i] <- TRUE ## not really needed
             v <- i
             for (j in (i + 1) : nr)
-	        if (m[i, j] > 0 && m[j, i] > 0) {
-	            v <- c(v, j)
+                if (m[i, j] > 0 && m[j, i] > 0) {
+                    v <- c(v, j)
                     visited[j] <- TRUE
                 }
             if (length(v) > 1)
@@ -137,62 +201,133 @@ findCycles <- function(data) {
     lapply(findMatCycles(mr), function(v) funs[v])
 }
 
-profCallGraphEdges <- function(data) {
-    edges <- mkHash()
-    for (from in lsEnv(data)) {
-        entry <- getProfCallGraphNodeEntry(from, data)
-        assign(from, lsEnv(entry$edges), envir = edges)
+compressLineRuns <- function(line) {
+    if (length(line) > 1) {
+        keep <- rep(TRUE, length(line))
+        last <- line[1]
+        for (i in 2 : length(line)) {
+            val <- line[i]
+            if (val == last)
+                keep[i] <- FALSE
+            else last <- val
+        }
+        line[keep]
     }
-    edges
+    else line
 }
 
-rawProfCallGraph <- function(pd) {
-    data <- mkHash()
+addCycleInfo <- function(pd, data, cycles) {
+    map <- makeCycleMap(cycles)
     rvStacks <- lapply(pd$stacks, rev)
+    inCycle <- function(name) exists(name, envir = map, inherits = FALSE)
+    cycleName <- function(name) get(name, envir = map, inherits = FALSE)
+    renameCycles <- function(line)
+        unlist(lapply(line,
+                      function(n) if (inCycle(n)) cycleName(n) else n))
+    # **** speed up by inlining loop and calls to 'exists', 'get'
+    renameCycles <- function(line) {
+        len <- length(line)
+        if (len > 0)
+            for (i in 1 : len) {
+                n <- line[i]
+                ## if (.Internal(exists(n, map, "any", FALSE)))
+                ##     line[i] <- .Internal(get(n, map, "any", FALSE))
+                if (exists(n, envir = map, inherits = FALSE))
+                    line[i] <- get(n, envir = map, inherits = FALSE)
+            }
+        line
+    }
+    cnames <- unique(unlist(lapply(lsEnv(map), get, map)))
     fun <- function(line, count) {
-        incProfCallGraphNodeEntry(line[1], "self", data, count)
+        line <- compressLineRuns(renameCycles(line))
+        if (isIn(line[1], cnames))
+            incProfCallGraphNodeEntry(line[1], "self", data, count)
         for (n in unique(line))
-            incProfCallGraphNodeEntry(n, "total", data, count)
+            if (isIn(n, cnames))
+                incProfCallGraphNodeEntry(n, "total", data, count)
         if (length(line) > 1) {
-            incProfCallGraphEdgeEntry(line[2], line[1], "self",
-                                      data, count)
+            if (isIn(line[1], cnames) || isIn(line[1], cnames))
+                incProfCallGraphEdgeEntry(line[2], line[1], "self",
+                                          data, count)
             le <- lineEdges(line)
             for (i in seq(along = le$nodes)) {
                 from <- le$nodes[i]
                 for (to in le$edges[[i]])
-                    incProfCallGraphEdgeEntry(from, to, "total",
-                                              data, count)
+                    if (isIn(from, cnames) || isIn(to, cnames))
+                        incProfCallGraphEdgeEntry(from, to, "total",
+                                                  data, count)
             }
-        }    
+        }
     }
     mapply(fun, rvStacks, pd$counts)
-    data
 }
 
-getProfCallGraphEdgeEntry <- function(from, to, env) {
-    fromEntry <- getProfCallGraphNodeEntry(from, env)
-    get(to, envir = fromEntry$edges)
+readProfileData <- function(pd) {
+    data <- rawProfCallGraph(pd)
+    cycles <- findCycles(data)
+    if (! is.null(cycles))
+        addCycleInfo(pd, data, cycles)
+    ## **** add a class -- proftools_callgraph?
+    list(interval = pd$interval, count = sum(pd$count),
+         data = data, cycles = cycles)
 }
 
-incProfCallGraphEdgeEntry <- function(from, to, what, env, count) {
-    fromEntry <- getProfCallGraphNodeEntry(from, env)
-    if (exists(to, envir = fromEntry$edges, inherits = FALSE))
-        entry <- get(to, envir = fromEntry$edges)
-    else entry <- list(self = 0, total = 0)
-    entry[[what]] <- entry[[what]] + count
-    assign(to, entry, envir = fromEntry$edges)
+revProfCallGraphMap <- function(data) {
+    rg <- mkHash()
+    for (from in lsEnv(data)) {
+        entry <- getProfCallGraphNodeEntry(from, data)
+        for (to in lsEnv(entry$edges)) {
+            if (exists(to, envir = rg, inherits = FALSE))
+                edges <- get(to, envir = rg)
+            else edges <- character(0)
+            if (! from %in% edges)
+                assign(to, c(from, edges), envir = rg)
+        }
+    }
+    rg
 }
 
-getProfCallGraphNodeEntry <- function(name, env)
-    get(name, envir = env)
+flatProfile <- function(pd, byTotal = TRUE) {
+    nodes <- lsEnv(pd$data)
+    if (! is.null(pd$cycles)) {
+        map <- makeCycleMap(pd$cycles)
+        cnames <- unique(unlist(lapply(lsEnv(map), get, map)))
+        nodes <- nodes[! nodes %in% cnames]
+    }
 
-incProfCallGraphNodeEntry <- function(name, what, env, count) {
-    if (exists(name, envir = env, inherits = FALSE))
-        entry <- get(name, envir = env)
-    else 
-        entry <- list(self = 0, total = 0, edges = mkHash())
-    entry[[what]] <- entry[[what]] + count
-    assign(name, entry, envir = env)    
+    if (byTotal) {
+        total <- sapply(nodes, function(n) get(n, envir = pd$data)$total)
+        ord <- order(-total)
+    }
+    else {
+        self <- sapply(nodes, function(n) get(n, envir = pd$data)$self)
+        ord <- order(-self)
+    }
+
+    nodes <- nodes[ord]
+    self <- sapply(nodes, function(n) get(n, envir = pd$data)$self)
+    selftime <- self * pd$interval/1e+06
+    selfpct <- 100 * self / pd$count
+    total <- sapply(nodes, function(n) get(n, envir = pd$data)$total)
+    totaltime <- total * pd$interval/1e+06
+    totalpct <- 100 * total / pd$count
+    
+    if (byTotal) {
+        val <- cbind(round(totalpct, 2), round(totaltime, 2),
+                     round(selfpct, 2), round(selftime, 2))
+        colnames(val) <- c("total.pct", "total.time",
+                           "self.pct", "self.time")
+    }
+    else {
+        cumselftime <- cumsum(selftime)
+        val <- cbind(round(selfpct, 2), round(cumselftime, 2),
+                     round(selftime, 2), round(totalpct, 2),
+                     round(totaltime, 2))
+        colnames(val) <- c("self.pct", "cum.self.time", "self.time", 
+                           "total.pct", "total.time")
+    }
+    rownames(val) <- nodes
+    val
 }
 
 makePrimaryLine<- function(node, i, pg) {
@@ -351,44 +486,114 @@ printProfileCallGraph <- function(pd, file = stdout(), percent = TRUE) {
     }
 }
 
-revProfCallGraphMap <- function(data) {
-    rg <- mkHash()
-    for (from in lsEnv(data)) {
-        entry <- getProfCallGraphNodeEntry(from, data)
-        for (to in lsEnv(entry$edges)) {
-            if (exists(to, envir = rg, inherits = FALSE))
-                edges <- get(to, envir = rg)
-            else edges <- character(0)
-            if (! from %in% edges)
-                assign(to, c(from, edges), envir = rg)
-        }
-    }
-    rg
+getOmittedNodes <- function(pd, mergeCycles) {
+    map <- makeCycleMap(pd$cycles)
+    cnodes <- lsEnv(map)
+    if (mergeCycles)
+        cnodes
+    else if (is.null(pd$cycles))
+        character(0)
+    else unique(unlist(lapply(cnodes, get, map)))
 }
 
-lineEdges <- function(line) {
-    if (length(line) > 1) {
-        from <- unique(line[-1])
-        edges <- rep(list(character(0)), length(from))
-        for (i in 2 : length(line)) {
-            j <- charMatch(line[i], from)
-            if (! isIn(line[i - 1], edges[[j]]))
-                edges[[j]] <- c(edges[[j]], line[i - 1])
+extractProfileNodes <- function(pd, score = c("self", "total"),
+                                mergeCycles = TRUE) {
+    if (missing(score))
+        score <- "total"
+    else match.arg(score)
+    nodes <- lsEnv(pd$data)
+    omitted <- getOmittedNodes(pd, mergeCycles)
+    nodes <- nodes[! nodes %in% omitted]
+    getScore <- function(n) get(n, envir = pd$data)[[score]]
+    sval <- unlist(lapply(nodes, getScore)) / pd$count
+    list(nodes = nodes, scores = sval)
+}
+
+extractProfileEdges <- function(pd, score = c("self", "total"),
+                                mergeCycles = TRUE) {
+    if (missing(score))
+        score <- "total"
+    else match.arg(score)
+    nodes <- lsEnv(pd$data)
+    omitted <- getOmittedNodes(pd, mergeCycles)
+    nodes <- nodes[! nodes %in% omitted]
+    getToNodes <- function(n) {
+        to <- lsEnv(get(n, envir = pd$data)$edges)
+        to[! to %in% omitted]
+    }
+    edges <- lapply(nodes, getToNodes)
+    getScores <- function(n) {
+        env <- get(n, envir = pd$data)$edges
+        to <- lsEnv(env)
+        to <- to[! to %in% omitted]
+        unlist(lapply(to, function(v) get(v, envir = env)[[score]])) / pd$count
+    }
+    sval <- lapply(nodes, getScores)
+    list(edges = edges, scores = sval)
+}
+
+np2x <- function(pd, score = c("total", "self", "none"),
+                 transfer = function(x) x, colorMap = NULL,
+                 mergeCycles = FALSE, edgesColored = TRUE) {
+    match.arg(score)
+    if (score == "none") {
+        color <- ecolor <- NULL
+        nodes <- extractProfileNodes(pd, mergeCycles = mergeCycles)
+        edges <- extractProfileEdges(pd, mergeCycles = mergeCycles)
+        p <- list(nodes = nodes$nodes, edges = edges$edges)
+    }
+    else {
+        nodes <- extractProfileNodes(pd, score, mergeCycles = mergeCycles)
+        edges <- extractProfileEdges(pd, score, mergeCycles = mergeCycles)
+        p <- list(nodes = nodes$nodes, edges = edges$edges)
+        color <- lapply(transfer(nodes$scores), colorScore, colorMap)
+        if (edgesColored) {
+            ecolor <- vector("list", length(p$nodes))
+            for (i in seq(along = ecolor)) {
+                escore <- transfer(edges$scores[[i]])
+                ecolor[[i]] <- lapply(escore, colorScore, colorMap)
+            }
         }
-        list(nodes = from, edges = edges)
+        else ecolor <- NULL
+    }
+    p$nodeColors <- color
+    p$edgeColors <- ecolor
+    p
+}
+
+colorScore <- function(score, colorMap) {
+    if (is.null(score) || is.na(score))
+        NULL
+    else if (! is.null(colorMap)) {
+        nc <- length(colorMap)
+        colorMap[min(nc, max(ceiling(nc * (1 - score)), 1))]
+    }
+    else {
+        score = min(max(score, 0), 1)
+        # from cgprof
+        maxhue = 0.6    # from red (.0) to magenta (.6), cf rainbow
+        minsat = 0.1    # low saturation
+        bri = 1.0       # brightness, always 100%
+
+        # following formulas are totally empirical
+        hue <- maxhue * (1.0 - score)
+        sat <- minsat + (3.0 - minsat) * score
+        paste(hue, ",", sat, ",", bri, sep = "")
     }
 }
 
-charMatch <- function(x, table, nomatch = NA)
-    match(x, table, nomatch)
-
-isIn <- function(x, table)
-    match(x, table, 0)
-	
-.EmptyEnv <- if (exists("emptyenv")) emptyenv() else NULL
-mkHash <- function() new.env(hash = TRUE, parent = .EmptyEnv)
-
-## begin functions for plotting callgraph
+profileCallGraph2Dot <- function(pd, score = c("total", "self"),
+                                 transfer = function(x) x, colorMap = NULL,
+                                 filename = "Rprof.dot", landscape = FALSE,
+                                 mergeCycles = FALSE, edgesColored = TRUE,
+                                 rankdir = "LR", center = FALSE, size) {
+    if (missing(score))
+        score = "none"
+    else match.arg(score)
+    p <- np2x(pd, score, transfer, colorMap, mergeCycles, edgesColored)
+    g2d(p, filename, nodeColors = p$nodeColors, edgeColors = p$edgeColors,
+        landscape = landscape, rankdir = rankdir, size = size, center = center)
+}
 
 plotProfileCallGraph <- function(pd, layout = "dot", 
                                  score = c("total", "self"),
@@ -436,168 +641,4 @@ plotProfileCallGraph <- function(pd, layout = "dot",
          nodeAttrs = nodeAttrs, edgeAttrs = edgeAttrs, ...)
 }
 
-extractProfileNodes <- function(pd, score = c("self", "total"),
-                                mergeCycles = TRUE) {
-    if (missing(score))
-        score <- "total"
-    else match.arg(score)
-    nodes <- lsEnv(pd$data)
-    omitted <- getOmittedNodes(pd, mergeCycles)
-    nodes <- nodes[! nodes %in% omitted]
-    getScore <- function(n) get(n, envir = pd$data)[[score]]
-    sval <- unlist(lapply(nodes, getScore)) / pd$count
-    list(nodes = nodes, scores = sval)
-}
 
-extractProfileEdges <- function(pd, score = c("self", "total"),
-                                mergeCycles = TRUE) {
-    if (missing(score))
-        score <- "total"
-    else match.arg(score)
-    nodes <- lsEnv(pd$data)
-    omitted <- getOmittedNodes(pd, mergeCycles)
-    nodes <- nodes[! nodes %in% omitted]
-    getToNodes <- function(n) {
-        to <- lsEnv(get(n, envir = pd$data)$edges)
-        to[! to %in% omitted]
-    }
-    edges <- lapply(nodes, getToNodes)
-    getScores <- function(n) {
-        env <- get(n, envir = pd$data)$edges
-        to <- lsEnv(env)
-        to <- to[! to %in% omitted]
-        unlist(lapply(to, function(v) get(v, envir = env)[[score]])) / pd$count
-    }
-    sval <- lapply(nodes, getScores)
-    list(edges = edges, scores = sval)
-}
-
-getOmittedNodes <- function(pd, mergeCycles) {
-    map <- makeCycleMap(pd$cycles)
-    cnodes <- lsEnv(map)
-    if (mergeCycles)
-        cnodes
-    else if (is.null(pd$cycles))
-        character(0)
-    else unique(unlist(lapply(cnodes, get, map)))
-}
-
-g2g <- function(g) {
-    if (! require("graph"))
-        stop("package graph is needed but not available")
-    # **** eventually maybe do new("graph::graphNEL") here
-    nodes <- g$nodes
-    mke <- function(e) list(edges = match(e, nodes))
-    eL <- lapply(g$edges, mke)
-    names(eL) <- nodes
-    new("graphNEL", nodes = nodes, edgeL = eL, edgemode = "directed")
-}
-
-np2x <- function(pd, score = c("total", "self", "none"),
-                 transfer = function(x) x, colorMap = NULL,
-                 mergeCycles = FALSE, edgesColored = TRUE) {
-    match.arg(score)
-    if (score == "none") {
-        color <- ecolor <- NULL
-        nodes <- extractProfileNodes(pd, mergeCycles = mergeCycles)
-        edges <- extractProfileEdges(pd, mergeCycles = mergeCycles)
-        p <- list(nodes = nodes$nodes, edges = edges$edges)
-    }
-    else {
-        nodes <- extractProfileNodes(pd, score, mergeCycles = mergeCycles)
-        edges <- extractProfileEdges(pd, score, mergeCycles = mergeCycles)
-        p <- list(nodes = nodes$nodes, edges = edges$edges)
-        color <- lapply(transfer(nodes$scores), colorScore, colorMap)
-        if (edgesColored) {
-            ecolor <- vector("list", length(p$nodes))
-            for (i in seq(along = ecolor)) {
-                escore <- transfer(edges$scores[[i]])
-                ecolor[[i]] <- lapply(escore, colorScore, colorMap)
-            }
-        }
-        else ecolor <- NULL
-    }
-    p$nodeColors <- color
-    p$edgeColors <- ecolor
-    p
-}
-
-profileCallGraph2Dot <- function(pd, score = c("total", "self"),
-                                 transfer = function(x) x, colorMap = NULL,
-                                 filename = "Rprof.dot", landscape = FALSE,
-                                 mergeCycles = FALSE, edgesColored = TRUE,
-                                 rankdir = "LR", center = FALSE, size) {
-    if (missing(score))
-        score = "none"
-    else match.arg(score)
-    p <- np2x(pd, score, transfer, colorMap, mergeCycles, edgesColored)
-    g2d(p, filename, nodeColors = p$nodeColors, edgeColors = p$edgeColors,
-        landscape = landscape, rankdir = rankdir, size = size, center = center)
-}
-
-n2d <- function(name, color = NULL) {
-    if (is.null(color) || is.na(color))
-        paste("\"", name, "\";\n", sep = "")
-    else
-        paste("\"", name, "\"[style=filled,color=\"", color, "\"];\n",
-              sep = "")
-}
-
-e2d <- function(from, to, color = NULL) {
-    e <- paste("\"", from, "\" -> \"", to, "\"", sep = "")
-    if (is.null(color))
-        paste(e, ";\n", sep = "")
-    else
-        paste(e, "[color=\"", color, "\"];\n", sep = "")
-}
-
-# **** A plausible size is 10,7.5
-g2d <- function(g, filename = "g.dot", landscape = TRUE,
-                nodeColors = NULL, edgeColors = NULL,
-                size, center = FALSE, rankdir = c("TB","LR")) {
-    if (missing(rankdir))
-        rankdir = "LR"
-    else match.arg(rankdir)
-
-    con <- file(filename, open = "w")
-    on.exit(close(con))
-
-    cat("digraph xyz {\n", file = con)
-    if (! missing(size))
-        cat(paste("size=\"", size, "\";\n", sep = ""), file = con)
-    if (landscape)
-        cat("rotate=90;\n", file = con)
-    if (center)
-        cat("center=1;\n", file = con)
-    cat(paste("rankdir=", rankdir, ";\n", sep = ""), file = con)
-    for (i in seq(along = g$nodes)) {
-        from <- g$nodes[i]
-        cat(n2d(from, nodeColors[[i]]), file = con)
-        toList <- g$edges[[i]]
-        toColors <- edgeColors[[i]]
-        for (j in seq(along = toList))
-            cat(e2d(from, toList[[j]], toColors[[j]]), file = con)
-    }
-    cat("}", file = con)
-}
-
-colorScore <- function(score, colorMap) {
-    if (is.null(score) || is.na(score))
-        NULL
-    else if (! is.null(colorMap)) {
-        nc <- length(colorMap)
-        colorMap[min(nc, max(ceiling(nc * (1 - score)), 1))]
-    }
-    else {
-        score = min(max(score, 0), 1)
-        # from cgprof
-        maxhue = 0.6    # from red (.0) to magenta (.6), cf rainbow
-        minsat = 0.1    # low saturation
-        bri = 1.0       # brightness, always 100%
-
-        # following formulas are totally empirical
-        hue <- maxhue * (1.0 - score)
-        sat <- minsat + (3.0 - minsat) * score
-        paste(hue, ",", sat, ",", bri, sep = "")
-    }
-}
