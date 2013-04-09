@@ -64,10 +64,10 @@ getProfCallGraphNodeEntry <- function(name, env)
 incProfCallGraphNodeEntry <- function(name, what, env, count) {
     if (exists(name, envir = env, inherits = FALSE))
         entry <- get(name, envir = env)
-    else 
+    else
         entry <- list(self = 0, total = 0, edges = mkHash())
     entry[[what]] <- entry[[what]] + count
-    assign(name, entry, envir = env)    
+    assign(name, entry, envir = env)
 }
 
 getProfCallGraphEdgeEntry <- function(from, to, env) {
@@ -101,7 +101,7 @@ rawProfCallGraph <- function(pd) {
                     incProfCallGraphEdgeEntry(from, to, "total",
                                               data, count)
             }
-        }    
+        }
     }
     mapply(fun, rvStacks, pd$counts)
     data
@@ -323,7 +323,7 @@ flatProfile <- function(pd, byTotal = TRUE) {
         val <- cbind(round(selfpct, 2), round(cumselftime, 2),
                      round(selftime, 2), round(totalpct, 2),
                      round(totaltime, 2))
-        colnames(val) <- c("self.pct", "cum.self.time", "self.time", 
+        colnames(val) <- c("self.pct", "cum.self.time", "self.time",
                            "total.pct", "total.time")
     }
     rownames(val) <- nodes
@@ -422,12 +422,12 @@ makeCycleMemberLine <- function(n, cycle, pg) {
 
 printProfileCallGraph <- function(pd, file = stdout(), percent = TRUE) {
     if (is.character(file)) {
-        if (file == "") 
+        if (file == "")
             stop("'file' must be non-empty string")
         con <- file(file, "wb")
         on.exit(close(con))
     }
-    else if (inherits(file, "connection")) 
+    else if (inherits(file, "connection"))
         con <- file
     else stop("bad file argument")
 
@@ -595,7 +595,7 @@ profileCallGraph2Dot <- function(pd, score = c("total", "self"),
         landscape = landscape, rankdir = rankdir, size = size, center = center)
 }
 
-plotProfileCallGraph <- function(pd, layout = "dot", 
+plotProfileCallGraph <- function(pd, layout = "dot",
                                  score = c("total", "self"),
                                  transfer = function(x) x, colorMap = NULL,
                                  mergeCycles = FALSE, edgesColored = TRUE,
@@ -603,7 +603,7 @@ plotProfileCallGraph <- function(pd, layout = "dot",
     if (! require(Rgraphviz))
         stop("package Rgraphviz is needed but not available")
 
-    # **** eventually do an import here, or use Rgraphviz::plot
+    ## **** eventually do an import here, or use Rgraphviz::plot
     plot <- get("plot", envir = .GlobalEnv)
 
     if (missing(score))
