@@ -97,7 +97,7 @@ readPDlines <- function(con, hdr) {
 }
 @ %def
 
-The unique stack s are split into the function calls and their source
+The unique stacks are split into the function calls and their source
 references.
 \FIXME{Need to explain assumptions/conventions used here about references.}
 <<[[splitStacks]] function>>=
@@ -139,6 +139,9 @@ countStacks <- function(trace, inGC)
     list(counts = as.numeric(table(trace)),
          gccounts = as.numeric(tapply(inGC, trace, sum)))
 @ %def
+
+
+\section{Operations on Profiles}
 
 \section{Implementation File}
 <<prof.R>>=
