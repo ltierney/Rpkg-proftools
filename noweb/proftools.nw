@@ -1223,7 +1223,7 @@ prunePD <- function(pd, what, merge = FALSE) {
             if (n < slen) {
                 drop <- (slen - n + 1) : slen
                 stack <- stack[-drop]
-                refs <- refs[-drop]
+                refs <- refs[-(drop + 1)]
             }
             else {
                 stack <- "<Other>"
