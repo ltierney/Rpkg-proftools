@@ -679,6 +679,84 @@ siteCounts <- function(pd)
 
 
 ###
+### Hot path summaries
+###
+
+pathLabels <- function(s, t) {
+    n <- length(s)
+    if (n == 0)
+        funLabels(inknownfun, t[1], files)
+    else if (is.na(t[n + 1]))
+        funLabels(s, t[1:n], files)
+    else
+        funLabels(c(s, unknownfun), t, files)
+}
+
+pathAbbrev <- function(paths) {
+    pad <- function(n) paste(rep("-> ", n), collapse = "")
+    sapply(strsplit(paths, " -> "),
+           function(path) {
+               n <- length(path)
+               label <- if (n > 1) paste0(pad(n - 1), path[n]) else path
+           })
+}
+
+stripRefs <- function(pd) {
+    pd$refs <- lapply(pd$refs, function(r) rep(NA_character_, length(r)))
+    pd <- compactPD(pd)
+    pd$haveRefs <- FALSE
+    pd
+}
+
+hotPaths <- function(pd, self = FALSE, srclines = TRUE, gc = TRUE) {
+    files <- pd$files
+    unknownfun <- "??"
+
+    if (! srclines && pd$haveRefs) pd <- stripRefs(pd)
+
+    pl <- mapply(pathLabels, pd$stacks, pd$refs)
+    ord <- hotPathOrd(pl, pd$counts)
+    stacks <- pl[ord]
+    counts <- pd$counts[ord]
+    gccounts <- pd$gccounts[ord]
+
+    pathData <- function(k) {
+        s <- stacks[[k]]
+        keys <- sapply(1 : length(s),
+                       function(i) paste(s[1 : i], collapse = " -> "))
+        data.frame(key = keys,
+                   count = counts[k],
+                   gccount = gccounts[k])
+    }
+    tbl <- do.call(rbind, lapply(1:length(stacks), pathData))
+
+    ## **** turn off stringsAsFactore in aggregate?
+    data <- aggregate(list(count = tbl$count, gccount = tbl$gccount),
+                      list(key = tbl$key),
+                      sum)
+    data$key <- as.character(data$key)
+
+    selfidx <- match(data$key, sapply(stacks, paste, collapse = " -> "))
+    data$self <- ifelse(is.na(selfidx), 0, counts[selfidx])
+    data$gcself <- ifelse(is.na(selfidx), 0, gccounts[selfidx])
+
+    pa <- pathAbbrev(data$key)
+    val <- data.frame(path = sprintf(sprintf("%%-%ds", max(nchar(pa))), pa),
+                      total.hits = data$count,
+                      stringsAsFactors = FALSE)
+    if (gc && pd$haveGC) val$gc.hits = data$gccount
+    if (self) {
+        val$self.hits = data$self
+        if (gc && pd$haveGC) val$gcself.hits = data$gcself
+    }
+    val
+}
+
+## **** produce count, time, pct version
+## **** optional depth limit, or just rely in pruning to a level?
+
+
+###
 ### Experimental stuff
 ###
 
@@ -1115,6 +1193,7 @@ prunePD <- function(pd, what, merge = FALSE) {
 
     transformPD(pd, prune)
 }
+
 @ %def
 \end{document}
 
