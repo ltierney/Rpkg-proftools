@@ -709,7 +709,7 @@ stripRefs <- function(pd) {
 }
 
 hotPathData <- function(pd) {
-    pl <- mapply(pathLabels, pd$stacks, pd$refs)
+    pl <- mapply(pathLabels, pd$stacks, pd$refs, SIMPLIFY = FALSE)
     ord <- hotPathOrd(pl, pd$counts)
     stacks <- pl[ord]
     counts <- pd$counts[ord]
@@ -737,7 +737,49 @@ hotPathData <- function(pd) {
     data
 }
 
-hotPaths <- function(pd, self = FALSE, srclines = TRUE, gc = TRUE) {
+hotPathsPct <- function(data, self, gc, grandTotal) {
+    pa <- pathAbbrev(data$key)
+    val <- data.frame(path = sprintf(sprintf("%%-%ds", max(nchar(pa))), pa),
+                      total.pct = round( 100 * data$count / grandTotal, 1),
+                      stringsAsFactors = FALSE)
+    if (gc) val$gc.pct = round(100 * data$gccount / grandTotal, 1)
+    if (self) {
+        val$self.pct = round(100 * data$self / grandTotal, 1)
+        if (gc) val$gcself.pct = round(100 * data$gcself / grandTotal, 1)
+    }
+    val
+}
+
+hotPathsHits <- function(data, self, gc) {
+    pa <- pathAbbrev(data$key)
+    val <- data.frame(path = sprintf(sprintf("%%-%ds", max(nchar(pa))), pa),
+                      total.hits = data$count,
+                      stringsAsFactors = FALSE)
+    if (gc) val$gc.hits = data$gccount
+    if (self) {
+        val$self.hits = data$self
+        if (gc) val$gcself.hits = data$gcself
+    }
+    val
+}
+
+hotPathsTime <- function(data, self, gc, delta) {
+    pa <- pathAbbrev(data$key)
+    val <- data.frame(path = sprintf(sprintf("%%-%ds", max(nchar(pa))), pa),
+                      total.time = data$count * delta,
+                      stringsAsFactors = FALSE)
+    if (gc) val$gc.time = data$gccount * delta
+    if (self) {
+        val$self.time = data$self * delta
+        if (gc) val$gcself.time = data$gcself * delta
+    }
+    val
+}
+
+hotPaths <- function(pd, value = c("pct", "time", "hits"),
+                     self = FALSE, srclines = TRUE, gc = TRUE) {
+    value <- match.arg(value)
+
     files <- pd$files
     unknownfun <- "??"
 
@@ -745,19 +787,14 @@ hotPaths <- function(pd, self = FALSE, srclines = TRUE, gc = TRUE) {
 
     data <- hotPathData(pd)
     
-    pa <- pathAbbrev(data$key)
-    val <- data.frame(path = sprintf(sprintf("%%-%ds", max(nchar(pa))), pa),
-                      total.hits = data$count,
-                      stringsAsFactors = FALSE)
-    if (gc && pd$haveGC) val$gc.hits = data$gccount
-    if (self) {
-        val$self.hits = data$self
-        if (gc && pd$haveGC) val$gcself.hits = data$gcself
-    }
-    val
+    if (value == "pct")
+        hotPathsPct(data, self, gc && pd$haveGC, sum(pd$counts))
+    else if (value == "time")
+        hotPathsPct(data, self, gc && pd$haveGC, pd$interval / 1.0e6)
+    else
+        hotPathsHits(data, self, gc && pd$haveGC)
 }
 
-## **** produce count, time, pct version
 ## **** optional depth limit, or just rely in pruning to a level?
 
 
