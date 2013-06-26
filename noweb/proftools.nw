@@ -708,12 +708,7 @@ stripRefs <- function(pd) {
     pd
 }
 
-hotPaths <- function(pd, self = FALSE, srclines = TRUE, gc = TRUE) {
-    files <- pd$files
-    unknownfun <- "??"
-
-    if (! srclines && pd$haveRefs) pd <- stripRefs(pd)
-
+hotPathData <- function(pd) {
     pl <- mapply(pathLabels, pd$stacks, pd$refs)
     ord <- hotPathOrd(pl, pd$counts)
     stacks <- pl[ord]
@@ -739,7 +734,17 @@ hotPaths <- function(pd, self = FALSE, srclines = TRUE, gc = TRUE) {
     selfidx <- match(data$key, sapply(stacks, paste, collapse = " -> "))
     data$self <- ifelse(is.na(selfidx), 0, counts[selfidx])
     data$gcself <- ifelse(is.na(selfidx), 0, gccounts[selfidx])
+    data
+}
 
+hotPaths <- function(pd, self = FALSE, srclines = TRUE, gc = TRUE) {
+    files <- pd$files
+    unknownfun <- "??"
+
+    if (! srclines && pd$haveRefs) pd <- stripRefs(pd)
+
+    data <- hotPathData(pd)
+    
     pa <- pathAbbrev(data$key)
     val <- data.frame(path = sprintf(sprintf("%%-%ds", max(nchar(pa))), pa),
                       total.hits = data$count,
