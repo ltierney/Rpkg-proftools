@@ -1095,6 +1095,10 @@ focusPD  <- function(pd, which) {
     compactPD(pd)
 }
 
+## This seems to make more sense:
+focusPD <- function(pd, which)
+    skipPD(subsetPD(pd, which), which)
+
 compactPD <- function(pd) {
     ## **** need simplify here since mapply creates a matrix if all
     ## **** elements of the result happen to be the same length. Might
