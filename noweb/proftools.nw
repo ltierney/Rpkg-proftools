@@ -682,16 +682,6 @@ siteCounts <- function(pd)
 ### Hot path summaries
 ###
 
-pathLabels <- function(s, t) {
-    n <- length(s)
-    if (n == 0)
-        funLabels(inknownfun, t[1], files)
-    else if (is.na(t[n + 1]))
-        funLabels(s, t[1:n], files)
-    else
-        funLabels(c(s, unknownfun), t, files)
-}
-
 pathAbbrev <- function(paths) {
     pad <- function(n) paste(rep("-> ", n), collapse = "")
     sapply(strsplit(paths, " -> "),
@@ -709,6 +699,18 @@ stripRefs <- function(pd) {
 }
 
 hotPathData <- function(pd) {
+    files <- pd$files
+    unknownfun <- "??"
+    pathLabels <- function(s, t) {
+        n <- length(s)
+        if (n == 0)
+            funLabels(inknownfun, t[1], files)
+        else if (is.na(t[n + 1]))
+            funLabels(s, t[1:n], files)
+        else
+            funLabels(c(s, unknownfun), t, files)
+    }
+
     pl <- mapply(pathLabels, pd$stacks, pd$refs, SIMPLIFY = FALSE)
     ord <- hotPathOrd(pl, pd$counts)
     stacks <- pl[ord]
@@ -779,9 +781,6 @@ hotPathsTime <- function(data, self, gc, delta) {
 hotPaths <- function(pd, value = c("pct", "time", "hits"),
                      self = FALSE, srclines = TRUE, gc = TRUE) {
     value <- match.arg(value)
-
-    files <- pd$files
-    unknownfun <- "??"
 
     if (! srclines && pd$haveRefs) pd <- stripRefs(pd)
 
