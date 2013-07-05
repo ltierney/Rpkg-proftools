@@ -765,6 +765,7 @@ hotPathsPct <- function(data, self, gc, grandTotal) {
         val$self.pct = round(100 * data$self / grandTotal, 1)
         if (gc) val$gcself.pct = round(100 * data$gcself / grandTotal, 1)
     }
+    class(val) <- c("proftools_hotPaths", "data.frame")
     val
 }
 
@@ -778,6 +779,7 @@ hotPathsHits <- function(data, self, gc) {
         val$self.hits = data$self
         if (gc) val$gcself.hits = data$gcself
     }
+    class(val) <- c("proftools_hotPaths", "data.frame")
     val
 }
 
@@ -791,6 +793,7 @@ hotPathsTime <- function(data, self, gc, delta) {
         val$self.time = data$self * delta
         if (gc) val$gcself.time = data$gcself * delta
     }
+    class(val) <- c("proftools_hotPaths", "data.frame")
     val
 }
 
@@ -809,6 +812,9 @@ hotPaths <- function(pd, value = c("pct", "time", "hits"),
     else
         hotPathsHits(data, self, gc && pd$haveGC)
 }
+
+print.proftools_hotPaths <- function(x, ..., right = FALSE, row.names = FALSE)
+    print.data.frame(x, ..., right = right, row.names = row.names)
 
 ## **** optional depth limit, or just rely in pruning to a level?
 
