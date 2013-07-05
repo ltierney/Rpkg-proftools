@@ -164,6 +164,24 @@ these can be filtered using standard data frame operations such as
 [[head]] and [[subset]].  This section presents filtering functions
 that operate on the profile data itself.
 
+\subsection{[[focusPD]]}
+A useful high level function is [[focusPD]]. This function takes a
+profile data object and a character vector of function names and
+returns a profile data object of stack frames containing only at least
+one of the specified functions and with all functions leading up to
+the specified ones removed. As an option, if [[drop]] is not true then
+the stack frames not containing any of the specified functions are
+replaced by placeholder frames.
+<<[[focusPD]] function>>=
+focusPD <- function(pd, which, drop = TRUE) {
+    ## **** check that 'which' is character?
+    if (drop)
+        skipPD(subsetPD(pd, which), which)
+    else
+        skipPD(d, which, TRUE)
+}
+@ %def focusPD
+
 \subsection{[[subsetPD]]}
 The [[subsetPD]] function takes a profile data object and a
 specification for the stack traces to keep and returns a new profile
@@ -262,30 +280,9 @@ subsetPD <- function(pd, which) {
 
 <<[[subsetPD]] function>>
 
+<<[[focusPD]] function>>
+
 OtherFunsToken <- "<Other>"
-
-focusPD0  <- function(pd, which) {
-    keep <- subsetIDX(which, pd)
-    nkeep <- setdiff(seq_along(pd$stacks), keep)
-    
-    pd$stacks[nkeep] <- list(OtherFunsToken)
-    pd$refs[nkeep] <- list(c(NA_character_, NA_character_))
-
-    compactPD(pd)
-}
-
-## This seems to make more sense:
-focusPD <- function(pd, which)
-    skipPD(subsetPD(pd, which), which)
-
-## Or maybe this:
-focusPD <- function(pd, which, drop = TRUE) {
-    ## **** check that 'which' is character?
-    if (drop)
-        skipPD(subsetPD(pd, which), which)
-    else
-        skipPD(d, which, TRUE)
-}
 
 compactPD <- function(pd) {
     ## **** need simplify here since mapply creates a matrix if all
