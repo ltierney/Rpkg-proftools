@@ -698,9 +698,10 @@ stripRefs <- function(pd) {
     pd
 }
 
+UnknownFunToken <- "??"
+
 hotPathData <- function(pd) {
     files <- pd$files
-    unknownfun <- "??"
     pathLabels <- function(s, t) {
         n <- length(s)
         if (n == 0)
@@ -708,7 +709,7 @@ hotPathData <- function(pd) {
         else if (is.na(t[n + 1]))
             funLabels(s, t[1:n], files)
         else
-            funLabels(c(s, unknownfun), t, files)
+            funLabels(c(s, UnknownFunToken), t, files)
     }
 
     pl <- mapply(pathLabels, pd$stacks, pd$refs, SIMPLIFY = FALSE)
