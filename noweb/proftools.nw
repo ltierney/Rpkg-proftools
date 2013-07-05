@@ -164,7 +164,7 @@ these can be filtered using standard data frame operations such as
 [[head]] and [[subset]].  This section presents filtering functions
 that operate on the profile data itself.
 
-\subsection{[[focusPD]]}
+\subsection{\texttt{focusPD}}
 A useful high level function is [[focusPD]]. This function takes a
 profile data object and a character vector of function names and
 returns a profile data object of stack frames containing only at least
@@ -182,7 +182,7 @@ focusPD <- function(pd, which, drop = TRUE) {
 }
 @ %def focusPD
 
-\subsection{[[subsetPD]]}
+\subsection{\texttt{subsetPD}}
 The [[subsetPD]] function takes a profile data object and a
 specification for the stack traces to keep and returns a new profile
 data object containing only the specified stack frames. The frames to
