@@ -154,7 +154,86 @@ print.proftools_profData <- function(x, n = 6, ...) {
 @ %def
 
 
-\section{Operations on Profiles}
+\section{Operations on Profile Data}
+Raw profile date may contain references to function calls that take
+little time or for other reasons are not of primary
+interest. Filtering these out can make it easier to detect true points
+of concern. Filtering can be done at the data level or the summary
+level. Most summary functions produce data frames as their results;
+these can be filtered using standard data frame operations such as
+[[head]] and [[subset]].  This section presents filtering functions
+that operate on the profile data itself.
+
+\subsection{[[subsetPD]]}
+The [[subsetPD]] function takes a profile data object and a
+specification for the stack traces to keep and returns a new profile
+data object containing only the specified stack frames. The frames to
+keep can be specified as a vector of indices, as a logical vector, or
+as a character vector. A character vector is taken to contain names of
+functions, and only stack frames containing calls to at least on of
+the specified functions are retained.
+
+The first step is to convert logical or character specifications into
+indices of frames to keep. This is done by [[subsetIDX]]:
+<<[[subsetIDX]] function>>=
+subsetIDX <- function(idx, pd) {
+    if (is.character(idx))
+        which(sapply(pd$stacks, function(s) any(idx %in% s)))
+    else if (is.logical(idx))
+        which(idx)
+    else 
+         idx
+}
+@ %def subsetIDX
+
+The first step in [[subsetPD]] is to call [[subsetIDX]] to convert the
+subset specification into indices, and to create a vector of indices
+into the original stacks to be used in remapping the reduces trace
+into the new stacks.
+<<Convert specification to indices and save index vector>>=
+keep <- subsetIDX(which, pd)
+stackIDX <- seq_along(pd$stacks)
+@ %def
+
+Next, the stacks, references, and counts are reduced to the ones
+specifies in [[keep]].
+<<reduce stacks and counts>>=
+pd$stacks <- pd$stacks[keep]
+pd$refs <- pd$refs[keep]
+pd$counts <- pd$counts[keep]
+pd$gccounts <- pd$gccounts[keep]
+@ %def
+
+Then omitted stack traces are dropped from [[trace]] and the [[inGC]]
+indicators.
+<<drop omittes stacks from [[trace]] and [[inGC]]>>=
+traceKeep <- which(pd$trace %in% keep)
+pd$inGC <- pd$inGC[traceKeep]
+pd$trace <- pd$trace[traceKeep]
+@ %def
+
+At this point the indices in [[trace]] refer to the original set of
+stack traces; these need to be remapped to the new set.
+<<remap [[trace]] to new stack traces>>=
+map <- match(stackIDX, keep)
+pd$trace <- map[pd$trace]
+@ %def
+
+The complete definition of [[subsetPD]] is then
+<<[[subsetPD]] function>>=
+subsetPD <- function(pd, which) {
+    <<Convert specification to indices and save index vector>>
+    
+    <<reduce stacks and counts>>
+
+    <<drop omittes stacks from [[trace]] and [[inGC]]>>
+
+    <<remap [[trace]] to new stack traces>>
+
+    pd
+}
+@ %def subsetPD
+
 
 \section{Implementation File}
 <<prof.R>>=
@@ -173,6 +252,183 @@ print.proftools_profData <- function(x, n = 6, ...) {
 <<[[readPD]] function>>
 
 <<[[print.proftools_profData]] method>>
+
+
+###
+### Operations on profile data
+###
+
+<<[[subsetIDX]] function>>
+
+<<[[subsetPD]] function>>
+
+OtherFunsToken <- "<Other>"
+
+focusPD0  <- function(pd, which) {
+    keep <- subsetIDX(which, pd)
+    nkeep <- setdiff(seq_along(pd$stacks), keep)
+    
+    pd$stacks[nkeep] <- list(OtherFunsToken)
+    pd$refs[nkeep] <- list(c(NA_character_, NA_character_))
+
+    compactPD(pd)
+}
+
+## This seems to make more sense:
+focusPD <- function(pd, which)
+    skipPD(subsetPD(pd, which), which)
+
+## Or maybe this:
+focusPD <- function(pd, which, drop = TRUE) {
+    ## **** check that 'which' is character?
+    if (drop)
+        skipPD(subsetPD(pd, which), which)
+    else
+        skipPD(d, which, TRUE)
+}
+
+compactPD <- function(pd) {
+    ## **** need simplify here since mapply creates a matrix if all
+    ## **** elements of the result happen to be the same length. Might
+    ## **** be more robust to use paste() rather than c() (probably
+    ## **** what I intended originally).
+    key <- mapply(c, pd$stacks, pd$refs, SIMPLIFY = FALSE)
+    map <- match(key, unique(key))
+    ct <- aggregateCounts(data.frame(key = map),
+                          cbind(counts = pd$counts, gccounts = pd$gccounts))
+    ct <- ct[order(ct$key),] ## may not be needed
+    invmap <- match(unique(key), key)
+    pd$stacks <- pd$stacks[invmap]
+    pd$refs <- pd$refs[invmap]
+    pd$counts <- ct$counts
+    pd$gccounts <- ct$gccounts
+    pd$trace <- map[pd$trace]
+    pd
+}
+
+checkStackRefs <- function(val, nf) {
+    s <- val$stack
+    r <- val$refs
+    if (length(s) == 0)
+        stop("stacks must have at least one entry")
+    if (length(r) != length(s) + 1)
+        stop("stack and source references do not match")
+    fn <- refFN(r)
+    fn <- fn[! is.na(fn)]
+    if (length(fn) > 0 && (min(fn) < 1 || max(fn) > nf))
+        stop("invalid source references produced.")
+    val
+}
+
+transformPD <- function(pd, fun) {
+    stacks <- pd$stacks
+    refs <- pd$refs
+    nf <- length(pd$files)
+    for (i in seq_along(pd$stacks)) {
+        val <- checkStackRefs(fun(stacks[[i]], refs[[i]], i), nf)
+        stacks[[i]] <- val$stack
+        refs[[i]] <- val$refs
+    }
+    pd$stacks <- stacks
+    pd$refs <- refs
+
+    compactPD(pd)
+}
+
+skipIDX <- function(pd, what) {
+    if (is.character(what)) {
+        findFirst <- function(s) {
+            idx <- match(what, s)
+            if (any(! is.na(idx)))
+                min(idx, na.rm = TRUE) - 1
+            else
+                0
+        }
+        idx <- sapply(pd$stacks, findFirst)
+    }
+    else
+        idx <- ifelse(is.na(what), 0, what)
+    if (length(idx) != length(pd$stacks))
+        idx <- rep(idx, length = length(pd$stacks))
+    idx
+}
+    
+skipPD <- function(pd, what, merge = FALSE) {
+    idx <- skipIDX(pd, what)
+
+    skip <- function(stack, refs, i) {
+        n <- idx[i]
+        if (n > 0) {
+            if (n < length(stack)) {
+                skip <- 1 : n
+                stack <- stack[-skip]
+                refs <- refs[-skip]
+            }
+            else {
+                stack <- OtherFunsToken
+                refs <- c(NA_character_, NA_character_)
+            }
+        }
+        else if (merge) {
+            stack <- OtherFunsToken
+            refs <- c(NA_character_, NA_character_)
+        }
+        list(stack = stack, refs = refs)
+    }
+
+    transformPD(pd, skip)
+}
+
+pruneIDX <- function(pd, what) {
+    if (is.character(what)) {
+        findPrune <- function(s) {
+            idx <- match(what, s)
+            if (any(! is.na(idx)))
+                length(s) - min(idx, na.rm = TRUE)
+            else
+                0
+        }
+        idx <- sapply(pd$stacks, findPrune)
+    }
+    else
+        idx <- ifelse(is.na(what), 0, what)
+    if (length(idx) != length(pd$stacks))
+        idx <- rep(idx, length = length(pd$stacks))
+    idx
+}
+
+prunePD <- function(pd, to, by, merge = FALSE) {
+    if (missing(by))
+        idx <- pruneIDX(pd, if (is.character(to)) to else -to)
+    else
+        idx <- pruneIDX(pd, by)
+
+    prune <- function(stack, refs, i) {
+        n <- idx[i]
+        slen <- length(stack)
+
+        if (n < 0)
+            if (-n < slen)
+                n <- slen + n
+            else
+                n <- 0
+
+        if (n > 0) {
+            if (n < slen) {
+                drop <- (slen - n + 1) : slen
+                stack <- stack[-drop]
+                refs <- refs[-(drop + 1)]
+            }
+            else {
+                stack <- OtherFunsToken
+                refs <- c(NA_character_, NA_character_)
+            }
+        }
+        list(stack = stack, refs = refs)
+    }
+
+    transformPD(pd, prune)
+}
 
 
 ###
@@ -1079,202 +1335,6 @@ srcSummary <- function(pd, byTotal = TRUE,
     }
 
 }
-
-subsetIDX <- function(idx, pd) {
-    if (is.character(idx))
-        which(sapply(pd$stacks, function(s) any(idx %in% s)))
-    else if (is.logical(idx))
-        which(idx)
-    else 
-         idx
-}
-
-subsetPD <- function(pd, which) {
-    keep <- subsetIDX(which, pd)
-
-    pd$stacks <- pd$stacks[keep]
-    pd$refs <- pd$refs[keep]
-    pd$counts <- pd$counts[keep]
-    pd$gccounts <- pd$gccounts[keep]
-
-    tkeep <- which(pd$trace %in% keep)
-    pd$inGC <- pd$inGC[tkeep]
-    pd$trace <- pd$trace[tkeep]
-
-    map <- match(seq_along(keep), keep)
-    pd$trace <- map[pd$trace]
-
-    pd
-}
-
-OtherFunsToken <- "<Other>"
-
-focusPD0  <- function(pd, which) {
-    keep <- subsetIDX(which, pd)
-    nkeep <- setdiff(seq_along(pd$stacks), keep)
-    
-    pd$stacks[nkeep] <- list(OtherFunsToken)
-    pd$refs[nkeep] <- list(c(NA_character_, NA_character_))
-
-    compactPD(pd)
-}
-
-## This seems to make more sense:
-focusPD <- function(pd, which)
-    skipPD(subsetPD(pd, which), which)
-
-## Or maybe this:
-focusPD <- function(pd, which, drop = TRUE) {
-    ## **** check that 'which' is character?
-    if (drop)
-        skipPD(subsetPD(pd, which), which)
-    else
-        skipPD(d, which, TRUE)
-}
-
-compactPD <- function(pd) {
-    ## **** need simplify here since mapply creates a matrix if all
-    ## **** elements of the result happen to be the same length. Might
-    ## **** be more robust to use paste() rather than c() (probably
-    ## **** what I intended originally).
-    key <- mapply(c, pd$stacks, pd$refs, SIMPLIFY = FALSE)
-    map <- match(key, unique(key))
-    ct <- aggregateCounts(data.frame(key = map),
-                          cbind(counts = pd$counts, gccounts = pd$gccounts))
-    ct <- ct[order(ct$key),] ## may not be needed
-    invmap <- match(unique(key), key)
-    pd$stacks <- pd$stacks[invmap]
-    pd$refs <- pd$refs[invmap]
-    pd$counts <- ct$counts
-    pd$gccounts <- ct$gccounts
-    pd$trace <- map[pd$trace]
-    pd
-}
-
-checkStackRefs <- function(val, nf) {
-    s <- val$stack
-    r <- val$refs
-    if (length(s) == 0)
-        stop("stacks must have at least one entry")
-    if (length(r) != length(s) + 1)
-        stop("stack and source references do not match")
-    fn <- refFN(r)
-    fn <- fn[! is.na(fn)]
-    if (length(fn) > 0 && (min(fn) < 1 || max(fn) > nf))
-        stop("invalid source references produced.")
-    val
-}
-
-transformPD <- function(pd, fun) {
-    stacks <- pd$stacks
-    refs <- pd$refs
-    nf <- length(pd$files)
-    for (i in seq_along(pd$stacks)) {
-        val <- checkStackRefs(fun(stacks[[i]], refs[[i]], i), nf)
-        stacks[[i]] <- val$stack
-        refs[[i]] <- val$refs
-    }
-    pd$stacks <- stacks
-    pd$refs <- refs
-
-    compactPD(pd)
-}
-
-skipIDX <- function(pd, what) {
-    if (is.character(what)) {
-        findFirst <- function(s) {
-            idx <- match(what, s)
-            if (any(! is.na(idx)))
-                min(idx, na.rm = TRUE) - 1
-            else
-                0
-        }
-        idx <- sapply(pd$stacks, findFirst)
-    }
-    else
-        idx <- ifelse(is.na(what), 0, what)
-    if (length(idx) != length(pd$stacks))
-        idx <- rep(idx, length = length(pd$stacks))
-    idx
-}
-    
-skipPD <- function(pd, what, merge = FALSE) {
-    idx <- skipIDX(pd, what)
-
-    skip <- function(stack, refs, i) {
-        n <- idx[i]
-        if (n > 0) {
-            if (n < length(stack)) {
-                skip <- 1 : n
-                stack <- stack[-skip]
-                refs <- refs[-skip]
-            }
-            else {
-                stack <- OtherFunsToken
-                refs <- c(NA_character_, NA_character_)
-            }
-        }
-        else if (merge) {
-            stack <- OtherFunsToken
-            refs <- c(NA_character_, NA_character_)
-        }
-        list(stack = stack, refs = refs)
-    }
-
-    transformPD(pd, skip)
-}
-
-pruneIDX <- function(pd, what) {
-    if (is.character(what)) {
-        findPrune <- function(s) {
-            idx <- match(what, s)
-            if (any(! is.na(idx)))
-                length(s) - min(idx, na.rm = TRUE)
-            else
-                0
-        }
-        idx <- sapply(pd$stacks, findPrune)
-    }
-    else
-        idx <- ifelse(is.na(what), 0, what)
-    if (length(idx) != length(pd$stacks))
-        idx <- rep(idx, length = length(pd$stacks))
-    idx
-}
-
-prunePD <- function(pd, to, by, merge = FALSE) {
-    if (missing(by))
-        idx <- pruneIDX(pd, if (is.character(to)) to else -to)
-    else
-        idx <- pruneIDX(pd, by)
-
-    prune <- function(stack, refs, i) {
-        n <- idx[i]
-        slen <- length(stack)
-
-        if (n < 0)
-            if (-n < slen)
-                n <- slen + n
-            else
-                n <- 0
-
-        if (n > 0) {
-            if (n < slen) {
-                drop <- (slen - n + 1) : slen
-                stack <- stack[-drop]
-                refs <- refs[-(drop + 1)]
-            }
-            else {
-                stack <- OtherFunsToken
-                refs <- c(NA_character_, NA_character_)
-            }
-        }
-        list(stack = stack, refs = refs)
-    }
-
-    transformPD(pd, prune)
-}
-
 @ %def
 \end{document}
 
