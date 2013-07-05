@@ -1221,8 +1221,11 @@ pruneIDX <- function(pd, what) {
     idx
 }
 
-prunePD <- function(pd, what, merge = FALSE) {
-    idx <- pruneIDX(pd, what)
+prunePD <- function(pd, to, by, merge = FALSE) {
+    if (missing(by))
+        idx <- pruneIDX(pd, if (is.character(to)) to else -to)
+    else
+        idx <- pruneIDX(pd, by)
 
     prune <- function(stack, refs, i) {
         n <- idx[i]
