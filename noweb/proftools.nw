@@ -30,9 +30,12 @@ readPD <- function(file) {
     data <- readPDlines(con, hdr)
     sdata <- splitStacks(data)
     counts <- countStacks(sdata$trace, sdata$inGC)
-    c(hdr, sdata, counts)
+    structure(c(hdr, sdata, counts), class =  "proftools_profData")
 }
 @ %def
+The result is given a class to allow it to be distinguished from the
+data structure returned in earlier versions of the package and to
+allow a custom print method.
 
 The data file consists of a header line followed by stack trace
 lines. The header is read fro an open connection by [[readPDheader]].
@@ -67,7 +70,7 @@ possible to read the data in chunks, but this doesn't seem worth while
 given memory typically available.  The returned result contains the
 files referenced in the source references, a vector of the unique
 stack traces, an index vector of length equal to the number of lines
-specifuing which trace each line corresponds to, and a logical vector
+specifying which trace each line corresponds to, and a logical vector
 of length equal to the number of lines indicating whether that line
 was written during a GC. Lines containing only a GC entry are very
 unlikely (if they are possible at all) and are deleted.
@@ -140,6 +143,16 @@ countStacks <- function(trace, inGC)
          gccounts = as.numeric(tapply(inGC, trace, sum)))
 @ %def
 
+The custom print method prints the head of the function summary,
+followed by an ellipsis if rows have been dropped.
+<<[[print.proftools_profData]] method>>=
+print.proftools_profData <- function(x, n = 6, ...) {
+    fs <- funSummary(x)
+    print(head(fs, n), ...)
+    if (n < nrow(fs)) cat("...\n")
+}
+@ %def
+
 
 \section{Operations on Profiles}
 
@@ -158,6 +171,8 @@ countStacks <- function(trace, inGC)
 <<[[countStacks]] function>>
 
 <<[[readPD]] function>>
+
+<<[[print.proftools_profData]] method>>
 
 
 ###
