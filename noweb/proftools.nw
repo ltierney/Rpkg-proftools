@@ -1087,7 +1087,7 @@ subsetPD <- function(pd, which) {
 
 OtherFunsToken <- "<Other>"
 
-focusPD  <- function(pd, which) {
+focusPD0  <- function(pd, which) {
     keep <- subsetIDX(which, pd)
     nkeep <- setdiff(seq_along(pd$stacks), keep)
     
@@ -1100,6 +1100,15 @@ focusPD  <- function(pd, which) {
 ## This seems to make more sense:
 focusPD <- function(pd, which)
     skipPD(subsetPD(pd, which), which)
+
+## Or maybe this:
+focusPD <- function(pd, which, drop = TRUE) {
+    ## **** check that 'which' is character?
+    if (drop)
+        skipPD(subsetPD(pd, which), which)
+    else
+        skipPD(d, which, TRUE)
+}
 
 compactPD <- function(pd) {
     ## **** need simplify here since mapply creates a matrix if all
