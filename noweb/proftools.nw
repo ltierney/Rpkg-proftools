@@ -1085,11 +1085,13 @@ subsetPD <- function(pd, which) {
     pd
 }
 
+OtherFunsToken <- "<Other>"
+
 focusPD  <- function(pd, which) {
     keep <- subsetIDX(which, pd)
     nkeep <- setdiff(seq_along(pd$stacks), keep)
     
-    pd$stacks[nkeep] <- list("<Other>")
+    pd$stacks[nkeep] <- list(OtherFunsToken)
     pd$refs[nkeep] <- list(c(NA_character_, NA_character_))
 
     compactPD(pd)
@@ -1177,12 +1179,12 @@ skipPD <- function(pd, what, merge = FALSE) {
                 refs <- refs[-skip]
             }
             else {
-                stack <- "<Other>"
+                stack <- OtherFunsToken
                 refs <- c(NA_character_, NA_character_)
             }
         }
         else if (merge) {
-            stack <- "<Other>"
+            stack <- OtherFunsToken
             refs <- c(NA_character_, NA_character_)
         }
         list(stack = stack, refs = refs)
@@ -1229,7 +1231,7 @@ prunePD <- function(pd, what, merge = FALSE) {
                 refs <- refs[-(drop + 1)]
             }
             else {
-                stack <- "<Other>"
+                stack <- OtherFunsToken
                 refs <- c(NA_character_, NA_character_)
             }
         }
