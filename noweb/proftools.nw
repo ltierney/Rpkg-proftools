@@ -252,6 +252,75 @@ subsetPD <- function(pd, which) {
 }
 @ %def subsetPD
 
+\subsection{Transformation Utilities}
+The remaining transformation functions are all based on rewriting the
+stacks and references and possibly recomputing the counts after
+eliminating duplicate stacks introduced by the rewriting. The common
+pattern is abstracted into the function [[transformPD]]. This function
+takes a profile data object and a transformation function as
+arguments. The transformation function in tern is called wit each
+stack and reference pair, along with the index of the pair in the
+stack sequence.
+\FIXME{Why is the index needed?}
+<<[[transformPD]] function>>=
+transformPD <- function(pd, fun) {
+    stacks <- pd$stacks
+    refs <- pd$refs
+    nf <- length(pd$files)
+    for (i in seq_along(pd$stacks)) {
+        val <- checkStackRefs(fun(stacks[[i]], refs[[i]], i), nf)
+        stacks[[i]] <- val$stack
+        refs[[i]] <- val$refs
+    }
+    pd$stacks <- stacks
+    pd$refs <- refs
+
+    compactPD(pd)
+}
+@ %def transformPD
+
+The results returned by the stack transformation function are checked
+for some inconsistencies; in particular they must contain at least one
+entry.
+<<[[checkStackRefs]] function>>=
+checkStackRefs <- function(val, nf) {
+    s <- val$stack
+    r <- val$refs
+    if (length(s) == 0)
+        stop("stacks must have at least one entry")
+    if (length(r) != length(s) + 1)
+        stop("stack and source references do not match")
+    fn <- refFN(r)
+    fn <- fn[! is.na(fn)]
+    if (length(fn) > 0 && (min(fn) < 1 || max(fn) > nf))
+        stop("invalid source references produced.")
+    val
+}
+@ %def checkStackRefs
+
+Since the transformation might introduce duplicate stacks the result
+needs to be processed to identify unique stacks and recompute counts.
+\FIXME{Make a [[mapply0]] function that doesn't simplify?}
+<<[[compactPD]] function>>=
+compactPD <- function(pd) {
+    ## **** need simplify here since mapply creates a matrix if all
+    ## **** elements of the result happen to be the same length. Might
+    ## **** be more robust to use paste() rather than c() (probably
+    ## **** what I intended originally).
+    key <- mapply(c, pd$stacks, pd$refs, SIMPLIFY = FALSE)
+    map <- match(key, unique(key))
+    ct <- aggregateCounts(data.frame(key = map),
+                          cbind(counts = pd$counts, gccounts = pd$gccounts))
+    ct <- ct[order(ct$key),] ## may not be needed
+    invmap <- match(unique(key), key)
+    pd$stacks <- pd$stacks[invmap]
+    pd$refs <- pd$refs[invmap]
+    pd$counts <- ct$counts
+    pd$gccounts <- ct$gccounts
+    pd$trace <- map[pd$trace]
+    pd
+}
+@ %def compactPD
 
 \section{Implementation File}
 <<prof.R>>=
@@ -282,53 +351,11 @@ subsetPD <- function(pd, which) {
 
 <<[[focusPD]] function>>
 
-compactPD <- function(pd) {
-    ## **** need simplify here since mapply creates a matrix if all
-    ## **** elements of the result happen to be the same length. Might
-    ## **** be more robust to use paste() rather than c() (probably
-    ## **** what I intended originally).
-    key <- mapply(c, pd$stacks, pd$refs, SIMPLIFY = FALSE)
-    map <- match(key, unique(key))
-    ct <- aggregateCounts(data.frame(key = map),
-                          cbind(counts = pd$counts, gccounts = pd$gccounts))
-    ct <- ct[order(ct$key),] ## may not be needed
-    invmap <- match(unique(key), key)
-    pd$stacks <- pd$stacks[invmap]
-    pd$refs <- pd$refs[invmap]
-    pd$counts <- ct$counts
-    pd$gccounts <- ct$gccounts
-    pd$trace <- map[pd$trace]
-    pd
-}
+<<[[compactPD]] function>>
 
-checkStackRefs <- function(val, nf) {
-    s <- val$stack
-    r <- val$refs
-    if (length(s) == 0)
-        stop("stacks must have at least one entry")
-    if (length(r) != length(s) + 1)
-        stop("stack and source references do not match")
-    fn <- refFN(r)
-    fn <- fn[! is.na(fn)]
-    if (length(fn) > 0 && (min(fn) < 1 || max(fn) > nf))
-        stop("invalid source references produced.")
-    val
-}
+<<[[checkStackRefs]] function>>
 
-transformPD <- function(pd, fun) {
-    stacks <- pd$stacks
-    refs <- pd$refs
-    nf <- length(pd$files)
-    for (i in seq_along(pd$stacks)) {
-        val <- checkStackRefs(fun(stacks[[i]], refs[[i]], i), nf)
-        stacks[[i]] <- val$stack
-        refs[[i]] <- val$refs
-    }
-    pd$stacks <- stacks
-    pd$refs <- refs
-
-    compactPD(pd)
-}
+<<[[transformPD]] function>>
 
 skipIDX <- function(pd, what) {
     if (is.character(what)) {
