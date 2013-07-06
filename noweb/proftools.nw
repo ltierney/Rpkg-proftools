@@ -282,8 +282,6 @@ subsetPD <- function(pd, which) {
 
 <<[[focusPD]] function>>
 
-OtherFunsToken <- "<Other>"
-
 compactPD <- function(pd) {
     ## **** need simplify here since mapply creates a matrix if all
     ## **** elements of the result happen to be the same length. Might
@@ -349,7 +347,9 @@ skipIDX <- function(pd, what) {
         idx <- rep(idx, length = length(pd$stacks))
     idx
 }
-    
+
+OtherFunsToken <- "<Other>"
+
 skipPD <- function(pd, what, merge = FALSE) {
     idx <- skipIDX(pd, what)
 
