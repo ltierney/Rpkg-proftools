@@ -97,6 +97,10 @@ print.proftools_profData <- function(x, n = 6, ...) {
 
 
 ###
+### Operations on profile data
+###
+
+###
 ### Flame graph and time graph
 ###
 
@@ -875,7 +879,7 @@ srcSummary <- function(pd, byTotal = TRUE,
 
 }
 
-keepIDX <- function(idx, pd) {
+subsetIDX <- function(idx, pd) {
     if (is.character(idx))
         which(sapply(pd$stacks, function(s) any(idx %in% s)))
     else if (is.logical(idx))
@@ -885,7 +889,7 @@ keepIDX <- function(idx, pd) {
 }
 
 subsetPD <- function(pd, which) {
-    keep <- keepIDX(which, pd)
+    keep <- subsetIDX(which, pd)
 
     pd$stacks <- pd$stacks[keep]
     pd$refs <- pd$refs[keep]
@@ -903,7 +907,7 @@ subsetPD <- function(pd, which) {
 }
 
 focusPD  <- function(pd, which) {
-    keep <- keepIDX(which, pd)
+    keep <- subsetIDX(which, pd)
     nkeep <- setdiff(seq_along(pd$stacks), keep)
     
     pd$stacks[nkeep] <- list("<Other>")
