@@ -86,7 +86,13 @@ readPD <- function(file) {
     data <- readPDlines(con, hdr)
     sdata <- splitStacks(data)
     counts <- countStacks(sdata$trace, sdata$inGC)
-    c(hdr, sdata, counts)
+    structure(c(hdr, sdata, counts), class =  "proftools_profData")
+}
+
+print.proftools_profData <- function(x, n = 6, ...) {
+    fs <- funSummary(x)
+    print(head(fs, n), ...)
+    if (n < nrow(fs)) cat("...\n")
 }
 
 
