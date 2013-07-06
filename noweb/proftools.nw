@@ -510,6 +510,20 @@ pruneIDX <- function(pd, what) {
 ###
 
 pathAbbrev <- function(paths) {
+    maxdepth <- 5
+    trim <- ! is.na(maxdepth)
+    pad <- function(n) paste(rep("-> ", n), collapse = "")
+    sapply(strsplit(paths, " -> "),
+           function(path) {
+               np <- length(path)
+               n <- if (trim) min(np, maxdepth) else np
+               label <- if (n > 1) paste0(pad(n - 1), path[n]) else path
+               if (trim && n < np) label <- paste(label, "...")
+               label
+           })
+}
+
+pathAbbrev <- function(paths) {
     pad <- function(n) paste(rep("-> ", n), collapse = "")
     sapply(strsplit(paths, " -> "),
            function(path) {
@@ -624,8 +638,11 @@ hotPathsTime <- function(data, self, gc, delta) {
 }
 
 hotPaths <- function(pd, value = c("pct", "time", "hits"),
-                     self = FALSE, srclines = TRUE, gc = TRUE) {
+                     self = FALSE, srclines = TRUE, gc = TRUE,
+                     maxdepth = 10) {
     value <- match.arg(value)
+    if (! is.na(maxdepth))
+        pd <- prunePD(pd, maxdepth)
 
     if (! srclines && pd$haveRefs) pd <- stripRefs(pd)
 
