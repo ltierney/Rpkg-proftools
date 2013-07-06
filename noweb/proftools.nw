@@ -458,6 +458,36 @@ pruneIDX <- function(pd, what) {
     idx
 }
 @ %def pruneIDX
+%% $ -- make emacs happy
+
+\section{Summary Functions}
+\subsection{Hot Paths}
+The hot path summary is based loosely on an idea described in an
+\href{http://msdn.microsoft.com/en-us/magazine/cc337887.aspx}{MSDN
+  Article}. The stack traces, or call paths, are sorted
+lexicographically based on the number of hits in the first function on
+the stack, then the first two functions, and so on.  The display
+abbreviates the paths in an obvious way to make the display more
+compact and readable. A sample based on profiling an [[lm]] fit looks
+like this:
+\begin{verbatim}
+> head(hotPaths(focusPD(d, "lm")), 10)
+ path                                    total.pct gc.pct
+ lm                                      100.0     75.3  
+ -> model.response                        51.1     41.4  
+ -> -> as.character                       50.9     41.4  
+ -> -> attr                                0.0      0.0  
+ -> lm.fit                                34.1     30.6  
+ -> -> .Call                              11.6      9.9  
+ -> -> c                                   9.0      8.3  
+ -> -> list                                4.6      4.2  
+ -> -> structure                           4.5      4.1  
+ -> -> rep.int                             2.4      2.3  
+\end{verbatim}
+The maximal stack depth is set to 10 by default, again for
+readability.
+
+The order is computed by [[hotPathOrd]].
 
 \section{Implementation File}
 <<prof.R>>=
