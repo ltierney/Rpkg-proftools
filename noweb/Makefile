@@ -6,7 +6,7 @@
 .tex.pdf:
 	pdflatex $<
 	# -bibtex $*
-	# pdflatex $<
+	pdflatex $<
 	# pdflatex $<
 .nw.html:
 	noweave -filter l2h -index -html $< > $@
