@@ -1147,8 +1147,6 @@ siteCounts <- function(pd)
     entryCounts(pd, lineSites, leafSite, TRUE)
 
 
-
-
 ###
 ### Experimental stuff
 ###
