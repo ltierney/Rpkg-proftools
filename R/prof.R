@@ -100,6 +100,326 @@ print.proftools_profData <- function(x, n = 6, ...) {
 ### Operations on profile data
 ###
 
+subsetIDX <- function(idx, pd) {
+    if (is.character(idx))
+        which(sapply(pd$stacks, function(s) any(idx %in% s)))
+    else if (is.logical(idx))
+        which(idx)
+    else 
+         idx
+}
+
+subsetPD <- function(pd, which) {
+    keep <- subsetIDX(which, pd)
+    stackIDX <- seq_along(pd$stacks)
+    
+    pd$stacks <- pd$stacks[keep]
+    pd$refs <- pd$refs[keep]
+    pd$counts <- pd$counts[keep]
+    pd$gccounts <- pd$gccounts[keep]
+
+    traceKeep <- which(pd$trace %in% keep)
+    pd$inGC <- pd$inGC[traceKeep]
+    pd$trace <- pd$trace[traceKeep]
+
+    map <- match(stackIDX, keep)
+    pd$trace <- map[pd$trace]
+
+    pd
+}
+
+focusPD <- function(pd, which, drop = TRUE) {
+    ## **** check that 'which' is character?
+    if (drop)
+        skipPD(subsetPD(pd, which), which)
+    else
+        skipPD(d, which, TRUE)
+}
+
+compactPD <- function(pd) {
+    ## **** need simplify here since mapply creates a matrix if all
+    ## **** elements of the result happen to be the same length. Might
+    ## **** be more robust to use paste() rather than c() (probably
+    ## **** what I intended originally).
+    key <- mapply(c, pd$stacks, pd$refs, SIMPLIFY = FALSE)
+    map <- match(key, unique(key))
+    ct <- aggregateCounts(data.frame(key = map),
+                          cbind(counts = pd$counts, gccounts = pd$gccounts))
+    ct <- ct[order(ct$key),] ## may not be needed
+    invmap <- match(unique(key), key)
+    pd$stacks <- pd$stacks[invmap]
+    pd$refs <- pd$refs[invmap]
+    pd$counts <- ct$counts
+    pd$gccounts <- ct$gccounts
+    pd$trace <- map[pd$trace]
+    pd
+}
+
+checkStackRefs <- function(val, nf) {
+    s <- val$stack
+    r <- val$refs
+    if (length(s) == 0)
+        stop("stacks must have at least one entry")
+    if (length(r) != length(s) + 1)
+        stop("stack and source references do not match")
+    fn <- refFN(r)
+    fn <- fn[! is.na(fn)]
+    if (length(fn) > 0 && (min(fn) < 1 || max(fn) > nf))
+        stop("invalid source references produced.")
+    val
+}
+
+transformPD <- function(pd, fun) {
+    stacks <- pd$stacks
+    refs <- pd$refs
+    nf <- length(pd$files)
+    for (i in seq_along(pd$stacks)) {
+        val <- checkStackRefs(fun(stacks[[i]], refs[[i]], i), nf)
+        stacks[[i]] <- val$stack
+        refs[[i]] <- val$refs
+    }
+    pd$stacks <- stacks
+    pd$refs <- refs
+
+    compactPD(pd)
+}
+
+skipIDX <- function(pd, what) {
+    if (is.character(what)) {
+        findFirst <- function(s) {
+            idx <- match(what, s)
+            if (any(! is.na(idx)))
+                min(idx, na.rm = TRUE) - 1
+            else
+                0
+        }
+        idx <- sapply(pd$stacks, findFirst)
+    }
+    else
+        idx <- ifelse(is.na(what), 0, what)
+    if (length(idx) != length(pd$stacks))
+        idx <- rep(idx, length = length(pd$stacks))
+    idx
+}
+
+OtherFunsToken <- "<Other>"
+
+skipPD <- function(pd, what, merge = FALSE) {
+    idx <- skipIDX(pd, what)
+
+    skip <- function(stack, refs, i) {
+        n <- idx[i]
+        if (n > 0) {
+            if (n < length(stack)) {
+                skip <- 1 : n
+                stack <- stack[-skip]
+                refs <- refs[-skip]
+            }
+            else {
+                stack <- OtherFunsToken
+                refs <- c(NA_character_, NA_character_)
+            }
+        }
+        else if (merge) {
+            stack <- OtherFunsToken
+            refs <- c(NA_character_, NA_character_)
+        }
+        list(stack = stack, refs = refs)
+    }
+
+    transformPD(pd, skip)
+}
+
+pruneIDX <- function(pd, what) {
+    if (is.character(what)) {
+        findPrune <- function(s) {
+            idx <- match(what, s)
+            if (any(! is.na(idx)))
+                length(s) - min(idx, na.rm = TRUE)
+            else
+                0
+        }
+        idx <- sapply(pd$stacks, findPrune)
+    }
+    else
+        idx <- ifelse(is.na(what), 0, what)
+    if (length(idx) != length(pd$stacks))
+        idx <- rep(idx, length = length(pd$stacks))
+    idx
+}
+
+prunePD <- function(pd, to, by, merge = FALSE) {
+    if (missing(by))
+        idx <- pruneIDX(pd, if (is.character(to)) to else -to)
+    else
+        idx <- pruneIDX(pd, by)
+
+    prune <- function(stack, refs, i) {
+        n <- idx[i]
+        slen <- length(stack)
+
+        if (n < 0)
+            if (-n < slen)
+                n <- slen + n
+            else
+                n <- 0
+
+        if (n > 0) {
+            if (n < slen) {
+                drop <- (slen - n + 1) : slen
+                stack <- stack[-drop]
+                refs <- refs[-(drop + 1)]
+            }
+            else {
+                stack <- OtherFunsToken
+                refs <- c(NA_character_, NA_character_)
+            }
+        }
+        list(stack = stack, refs = refs)
+    }
+
+    transformPD(pd, prune)
+}
+
+
+###
+### Hot path summaries
+###
+
+pathAbbrev <- function(paths) {
+    pad <- function(n) paste(rep("-> ", n), collapse = "")
+    sapply(strsplit(paths, " -> "),
+           function(path) {
+               n <- length(path)
+               label <- if (n > 1) paste0(pad(n - 1), path[n]) else path
+           })
+}
+
+stripRefs <- function(pd) {
+    pd$refs <- lapply(pd$refs, function(r) rep(NA_character_, length(r)))
+    pd <- compactPD(pd)
+    pd$haveRefs <- FALSE
+    pd
+}
+
+## The Hot Path order orders each level according to the number of
+## hits within the call chain upt to that point.
+hotPathOrd <- function(stacks, counts) {
+    mx <- max(sapply(stacks, length))
+    ord <- seq_along(stacks)
+    for (i in (mx : 1)) {
+        key <- sapply(stacks[ord], `[`, i)
+        tbl <- aggregate(list(val = -counts[ord]), list(key = key), sum)
+        val <- tbl$val[match(key, tbl$key)]
+        ord <- ord[order(val, na.last = TRUE)]
+    }
+    ord
+}
+
+UnknownFunToken <- "??"
+
+hotPathData <- function(pd) {
+    files <- pd$files
+    pathLabels <- function(s, t) {
+        n <- length(s)
+        if (n == 0)
+            funLabels(inknownfun, t[1], files)
+        else if (is.na(t[n + 1]))
+            funLabels(s, t[1:n], files)
+        else
+            funLabels(c(s, UnknownFunToken), t, files)
+    }
+
+    pl <- mapply(pathLabels, pd$stacks, pd$refs, SIMPLIFY = FALSE)
+    ord <- hotPathOrd(pl, pd$counts)
+    stacks <- pl[ord]
+    counts <- pd$counts[ord]
+    gccounts <- pd$gccounts[ord]
+
+    pathData <- function(k) {
+        s <- stacks[[k]]
+        keys <- sapply(1 : length(s),
+                       function(i) paste(s[1 : i], collapse = " -> "))
+        data.frame(key = keys,
+                   count = counts[k],
+                   gccount = gccounts[k])
+    }
+    tbl <- do.call(rbind, lapply(1:length(stacks), pathData))
+
+    ## **** turn off stringsAsFactore in aggregate?
+    data <- aggregate(list(count = tbl$count, gccount = tbl$gccount),
+                      list(key = tbl$key),
+                      sum)
+    data$key <- as.character(data$key)
+
+    selfidx <- match(data$key, sapply(stacks, paste, collapse = " -> "))
+    data$self <- ifelse(is.na(selfidx), 0, counts[selfidx])
+    data$gcself <- ifelse(is.na(selfidx), 0, gccounts[selfidx])
+    data
+}
+
+hotPathsPct <- function(data, self, gc, grandTotal) {
+    pa <- pathAbbrev(data$key)
+    val <- data.frame(path = sprintf(sprintf("%%-%ds", max(nchar(pa))), pa),
+                      total.pct = round( 100 * data$count / grandTotal, 1),
+                      stringsAsFactors = FALSE)
+    if (gc) val$gc.pct = round(100 * data$gccount / grandTotal, 1)
+    if (self) {
+        val$self.pct = round(100 * data$self / grandTotal, 1)
+        if (gc) val$gcself.pct = round(100 * data$gcself / grandTotal, 1)
+    }
+    class(val) <- c("proftools_hotPaths", "data.frame")
+    val
+}
+
+hotPathsHits <- function(data, self, gc) {
+    pa <- pathAbbrev(data$key)
+    val <- data.frame(path = sprintf(sprintf("%%-%ds", max(nchar(pa))), pa),
+                      total.hits = data$count,
+                      stringsAsFactors = FALSE)
+    if (gc) val$gc.hits = data$gccount
+    if (self) {
+        val$self.hits = data$self
+        if (gc) val$gcself.hits = data$gcself
+    }
+    class(val) <- c("proftools_hotPaths", "data.frame")
+    val
+}
+
+hotPathsTime <- function(data, self, gc, delta) {
+    pa <- pathAbbrev(data$key)
+    val <- data.frame(path = sprintf(sprintf("%%-%ds", max(nchar(pa))), pa),
+                      total.time = data$count * delta,
+                      stringsAsFactors = FALSE)
+    if (gc) val$gc.time = data$gccount * delta
+    if (self) {
+        val$self.time = data$self * delta
+        if (gc) val$gcself.time = data$gcself * delta
+    }
+    class(val) <- c("proftools_hotPaths", "data.frame")
+    val
+}
+
+hotPaths <- function(pd, value = c("pct", "time", "hits"),
+                     self = FALSE, srclines = TRUE, gc = TRUE) {
+    value <- match.arg(value)
+
+    if (! srclines && pd$haveRefs) pd <- stripRefs(pd)
+
+    data <- hotPathData(pd)
+    
+    if (value == "pct")
+        hotPathsPct(data, self, gc && pd$haveGC, sum(pd$counts))
+    else if (value == "time")
+        hotPathsPct(data, self, gc && pd$haveGC, pd$interval / 1.0e6)
+    else
+        hotPathsHits(data, self, gc && pd$haveGC)
+}
+
+print.proftools_hotPaths <- function(x, ..., right = FALSE, row.names = FALSE)
+    print.data.frame(x, ..., right = right, row.names = row.names)
+
+
 ###
 ### Flame graph and time graph
 ###
@@ -114,20 +434,6 @@ alphaPathOrd <- function(stacks, counts) {
     ord <- seq_along(stacks)
     for (i in (mx : 1))
         ord <- ord[order(sapply(stacks[ord], `[`, i), na.last = FALSE)]
-    ord
-}
-
-## The Hot Path order orders each level according to the number of
-## hits within the call chain upt to that point.
-hotPathOrd <- function(stacks, counts) {
-    mx <- max(sapply(stacks, length))
-    ord <- seq_along(stacks)
-    for (i in (mx : 1)) {
-        key <- sapply(stacks[ord], `[`, i)
-        tbl <- aggregate(list(val = -counts[ord]), list(key = key), sum)
-        val <- tbl$val[match(key, tbl$key)]
-        ord <- ord[order(val, na.last = TRUE)]
-    }
     ord
 }
 
@@ -465,7 +771,7 @@ commonFile <- function(refs) {
 ## If they do, then assume this is the file in which the caller is
 ## defined.  Otherwise treat the caller's home file as unkown. The
 ## result returned by this function is a named vector with one element
-## per funciton for which the home file is assumed know.  The names
+## per function for which the home file is assumed know.  The names
 ## are the names of the callers, and the values are the indices of the
 ## files in whicn the callers are defined.  For leaf calls NA sites
 ## are ignored. Possibly a disagreement of the leaf call site with
@@ -877,181 +1183,4 @@ srcSummary <- function(pd, byTotal = TRUE,
         as.data.frame(val)
     }
 
-}
-
-subsetIDX <- function(idx, pd) {
-    if (is.character(idx))
-        which(sapply(pd$stacks, function(s) any(idx %in% s)))
-    else if (is.logical(idx))
-        which(idx)
-    else 
-         idx
-}
-
-subsetPD <- function(pd, which) {
-    keep <- subsetIDX(which, pd)
-
-    pd$stacks <- pd$stacks[keep]
-    pd$refs <- pd$refs[keep]
-    pd$counts <- pd$counts[keep]
-    pd$gccounts <- pd$gccounts[keep]
-
-    tkeep <- which(pd$trace %in% keep)
-    pd$inGC <- pd$inGC[tkeep]
-    pd$trace <- pd$trace[tkeep]
-
-    map <- match(seq_along(keep), keep)
-    pd$trace <- map[pd$trace]
-
-    pd
-}
-
-focusPD  <- function(pd, which) {
-    keep <- subsetIDX(which, pd)
-    nkeep <- setdiff(seq_along(pd$stacks), keep)
-    
-    pd$stacks[nkeep] <- list("<Other>")
-    pd$refs[nkeep] <- list(c(NA_character_, NA_character_))
-
-    compactPD(pd)
-}
-
-compactPD <- function(pd) {
-    ## **** need simplify here since mapply creates a matrix if all
-    ## **** elements of the result happen to be the same length. Might
-    ## **** be more robust to use paste() rather than c() (probably
-    ## **** what I intended originally).
-    key <- mapply(c, pd$stacks, pd$refs, SIMPLIFY = FALSE)
-    map <- match(key, unique(key))
-    ct <- aggregateCounts(data.frame(key = map),
-                          cbind(counts = pd$counts, gccounts = pd$gccounts))
-    ct <- ct[order(ct$key),] ## may not be needed
-    invmap <- match(unique(key), key)
-    pd$stacks <- pd$stacks[invmap]
-    pd$refs <- pd$refs[invmap]
-    pd$counts <- ct$counts
-    pd$gccounts <- ct$gccounts
-    pd$trace <- map[pd$trace]
-    pd
-}
-
-checkStackRefs <- function(val, nf) {
-    s <- val$stack
-    r <- val$refs
-    if (length(s) == 0)
-        stop("stacks must have at least one entry")
-    if (length(r) != length(s) + 1)
-        stop("stack and source references do not match")
-    fn <- refFN(r)
-    fn <- fn[! is.na(fn)]
-    if (length(fn) > 0 && (min(fn) < 1 || max(fn) > nf))
-        stop("invalid source references produced.")
-    val
-}
-
-transformPD <- function(pd, fun) {
-    stacks <- pd$stacks
-    refs <- pd$refs
-    nf <- length(pd$files)
-    for (i in seq_along(pd$stacks)) {
-        val <- checkStackRefs(fun(stacks[[i]], refs[[i]], i), nf)
-        stacks[[i]] <- val$stack
-        refs[[i]] <- val$refs
-    }
-    pd$stacks <- stacks
-    pd$refs <- refs
-
-    compactPD(pd)
-}
-
-skipIDX <- function(pd, what) {
-    if (is.character(what)) {
-        findFirst <- function(s) {
-            idx <- match(what, s)
-            if (any(! is.na(idx)))
-                min(idx, na.rm = TRUE) - 1
-            else
-                0
-        }
-        idx <- sapply(pd$stacks, findFirst)
-    }
-    else
-        idx <- ifelse(is.na(what), 0, what)
-    if (length(idx) != length(pd$stacks))
-        idx <- rep(idx, length = length(pd$stacks))
-    idx
-}
-    
-skipPD <- function(pd, what, merge = FALSE) {
-    idx <- skipIDX(pd, what)
-
-    skip <- function(stack, refs, i) {
-        n <- idx[i]
-        if (n > 0) {
-            if (n < length(stack)) {
-                skip <- 1 : n
-                stack <- stack[-skip]
-                refs <- refs[-skip]
-            }
-            else {
-                stack <- "<Other>"
-                refs <- c(NA_character_, NA_character_)
-            }
-        }
-        else if (merge) {
-            stack <- "<Other>"
-            refs <- c(NA_character_, NA_character_)
-        }
-        list(stack = stack, refs = refs)
-    }
-
-    transformPD(pd, skip)
-}
-
-pruneIDX <- function(pd, what) {
-    if (is.character(what)) {
-        findPrune <- function(s) {
-            idx <- match(what, s)
-            if (any(! is.na(idx)))
-                length(s) - min(idx, na.rm = TRUE)
-            else
-                0
-        }
-        idx <- sapply(pd$stacks, findPrune)
-    }
-    else
-        idx <- ifelse(is.na(what), 0, what)
-    if (length(idx) != length(pd$stacks))
-        idx <- rep(idx, length = length(pd$stacks))
-    idx
-}
-
-prunePD <- function(pd, what, merge = FALSE) {
-    idx <- pruneIDX(pd, what)
-
-    prune <- function(stack, refs, i) {
-        n <- idx[i]
-        slen <- length(stack)
-
-        if (n < 0)
-            if (-n < slen)
-                n <- slen + n
-            else
-                n <- 0
-
-        if (n > 0) {
-            if (n < slen) {
-                drop <- (slen - n + 1) : slen
-                stack <- stack[-drop]
-                refs <- refs[-drop]
-            }
-            else {
-                stack <- "<Other>"
-                refs <- c(NA_character_, NA_character_)
-            }
-        }
-        list(stack = stack, refs = refs)
-    }
-
-    transformPD(pd, prune)
 }
