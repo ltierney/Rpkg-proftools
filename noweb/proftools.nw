@@ -297,6 +297,7 @@ checkStackRefs <- function(val, nf) {
     val
 }
 @ %def checkStackRefs
+%% $ -- make emacs happy
 
 Since the transformation might introduce duplicate stacks the result
 needs to be processed to identify unique stacks and recompute counts.
@@ -322,12 +323,13 @@ compactPD <- function(pd) {
 }
 @ %def compactPD
 
-\subsection{\texttt{skipPD}} [[skipPD]] removes a specified number of
-initial calls from each stack frame, or all calls preceding the first
-of a specified set of functions to occur in the frame. If a stack
-frams is shorter or does not contains any of the specified functions,
-then it is left unchanged if [[merge]] is false; otherwise, it is
-replaced by a shortened place-holder stack.
+\subsection{\texttt{skipPD}}
+[[skipPD]] removes a specified number of initial calls from each stack
+frame, or all calls preceding the first of a specified set of
+functions to occur in the frame. If a stack frams is shorter or does
+not contains any of the specified functions, then it is left unchanged
+if [[merge]] is false; otherwise, it is replaced by a shortened
+place-holder stack.
 <<[[skipPD]] function>>=
 skipPD <- function(pd, what, merge = FALSE) {
     idx <- skipIDX(pd, what)
@@ -360,7 +362,7 @@ The place-holder token is
 OtherFunsToken <- "<Other>"
 @ %def OtherFunsToken
 
-The funciton [[skipIDX]] converts a function name specification to the
+The function [[skipIDX]] converts a function name specification to the
 corresponding indices to skip.
 <<[[skipIDX]] function>>=
 skipIDX <- function(pd, what) {
@@ -381,6 +383,81 @@ skipIDX <- function(pd, what) {
     idx
 }
 @ %def skipIDX
+%% $ -- make emacs happy
+
+\subsection{\texttt{prunePD}}
+[[prunePD]] Trims entries off the top of the stacks. The [[to]]
+argument can be an integer or integer vector specifying the height to
+prune to, or a character vector specifying functions whose callees
+should be pruned.  Alternatively, the [[by]] argument can be used to
+specify that a specified number of calls should be removed from the
+top. Again stack frames that do not match the criteria or have to few
+elements are either left unchanged or replaced by a place-holder,
+depending on the [[merge]] argument.
+\FIXME{[[merge]] is actually ignored at the moment -- fix that?}
+<<[[prunePD]] function>>=
+prunePD <- function(pd, to, by, merge = FALSE) {
+    if (missing(by))
+        idx <- pruneIDX(pd, if (is.character(to)) to else -to)
+    else
+        idx <- pruneIDX(pd, by)
+
+    <<[[prune]] function>>
+
+    transformPD(pd, prune)
+}
+@ %def prunePD
+The [[prune]] transformation function interprets negative prune
+amounts as a height to prune to. Any negative indices are first
+converted to amounts to remove.
+<<[[prune]] function>>=
+prune <- function(stack, refs, i) {
+    n <- idx[i]
+    slen <- length(stack)
+
+    if (n < 0)
+        if (-n < slen)
+            n <- slen + n
+        else
+            n <- 0
+
+    if (n > 0) {
+        if (n < slen) {
+            drop <- (slen - n + 1) : slen
+            stack <- stack[-drop]
+            refs <- refs[-(drop + 1)]
+        }
+        else {
+            stack <- OtherFunsToken
+            refs <- c(NA_character_, NA_character_)
+        }
+    }
+    list(stack = stack, refs = refs)
+}
+@ %def prune
+
+[[pruneIDX]] converts a character specification to the corresponding
+[[by]] argument. [[NA]] values are converted to zero, and the index
+vector is recycled if necessary
+<<[[pruneIDX]] function>>=
+pruneIDX <- function(pd, what) {
+    if (is.character(what)) {
+        findPrune <- function(s) {
+            idx <- match(what, s)
+            if (any(! is.na(idx)))
+                length(s) - min(idx, na.rm = TRUE)
+            else
+                0
+        }
+        idx <- sapply(pd$stacks, findPrune)
+    }
+    else
+        idx <- ifelse(is.na(what), 0, what)
+    if (length(idx) != length(pd$stacks))
+        idx <- rep(idx, length = length(pd$stacks))
+    idx
+}
+@ %def pruneIDX
 
 \section{Implementation File}
 <<prof.R>>=
@@ -423,56 +500,147 @@ skipIDX <- function(pd, what) {
 
 <<[[skipPD]] function>>
 
-pruneIDX <- function(pd, what) {
-    if (is.character(what)) {
-        findPrune <- function(s) {
-            idx <- match(what, s)
-            if (any(! is.na(idx)))
-                length(s) - min(idx, na.rm = TRUE)
-            else
-                0
-        }
-        idx <- sapply(pd$stacks, findPrune)
-    }
-    else
-        idx <- ifelse(is.na(what), 0, what)
-    if (length(idx) != length(pd$stacks))
-        idx <- rep(idx, length = length(pd$stacks))
-    idx
+<<[[pruneIDX]] function>>
+
+<<[[prunePD]] function>>
+
+
+###
+### Hot path summaries
+###
+
+pathAbbrev <- function(paths) {
+    pad <- function(n) paste(rep("-> ", n), collapse = "")
+    sapply(strsplit(paths, " -> "),
+           function(path) {
+               n <- length(path)
+               label <- if (n > 1) paste0(pad(n - 1), path[n]) else path
+           })
 }
 
-prunePD <- function(pd, to, by, merge = FALSE) {
-    if (missing(by))
-        idx <- pruneIDX(pd, if (is.character(to)) to else -to)
-    else
-        idx <- pruneIDX(pd, by)
+stripRefs <- function(pd) {
+    pd$refs <- lapply(pd$refs, function(r) rep(NA_character_, length(r)))
+    pd <- compactPD(pd)
+    pd$haveRefs <- FALSE
+    pd
+}
 
-    prune <- function(stack, refs, i) {
-        n <- idx[i]
-        slen <- length(stack)
+## The Hot Path order orders each level according to the number of
+## hits within the call chain upt to that point.
+hotPathOrd <- function(stacks, counts) {
+    mx <- max(sapply(stacks, length))
+    ord <- seq_along(stacks)
+    for (i in (mx : 1)) {
+        key <- sapply(stacks[ord], `[`, i)
+        tbl <- aggregate(list(val = -counts[ord]), list(key = key), sum)
+        val <- tbl$val[match(key, tbl$key)]
+        ord <- ord[order(val, na.last = TRUE)]
+    }
+    ord
+}
 
-        if (n < 0)
-            if (-n < slen)
-                n <- slen + n
-            else
-                n <- 0
+UnknownFunToken <- "??"
 
-        if (n > 0) {
-            if (n < slen) {
-                drop <- (slen - n + 1) : slen
-                stack <- stack[-drop]
-                refs <- refs[-(drop + 1)]
-            }
-            else {
-                stack <- OtherFunsToken
-                refs <- c(NA_character_, NA_character_)
-            }
-        }
-        list(stack = stack, refs = refs)
+hotPathData <- function(pd) {
+    files <- pd$files
+    pathLabels <- function(s, t) {
+        n <- length(s)
+        if (n == 0)
+            funLabels(inknownfun, t[1], files)
+        else if (is.na(t[n + 1]))
+            funLabels(s, t[1:n], files)
+        else
+            funLabels(c(s, UnknownFunToken), t, files)
     }
 
-    transformPD(pd, prune)
+    pl <- mapply(pathLabels, pd$stacks, pd$refs, SIMPLIFY = FALSE)
+    ord <- hotPathOrd(pl, pd$counts)
+    stacks <- pl[ord]
+    counts <- pd$counts[ord]
+    gccounts <- pd$gccounts[ord]
+
+    pathData <- function(k) {
+        s <- stacks[[k]]
+        keys <- sapply(1 : length(s),
+                       function(i) paste(s[1 : i], collapse = " -> "))
+        data.frame(key = keys,
+                   count = counts[k],
+                   gccount = gccounts[k])
+    }
+    tbl <- do.call(rbind, lapply(1:length(stacks), pathData))
+
+    ## **** turn off stringsAsFactore in aggregate?
+    data <- aggregate(list(count = tbl$count, gccount = tbl$gccount),
+                      list(key = tbl$key),
+                      sum)
+    data$key <- as.character(data$key)
+
+    selfidx <- match(data$key, sapply(stacks, paste, collapse = " -> "))
+    data$self <- ifelse(is.na(selfidx), 0, counts[selfidx])
+    data$gcself <- ifelse(is.na(selfidx), 0, gccounts[selfidx])
+    data
 }
+
+hotPathsPct <- function(data, self, gc, grandTotal) {
+    pa <- pathAbbrev(data$key)
+    val <- data.frame(path = sprintf(sprintf("%%-%ds", max(nchar(pa))), pa),
+                      total.pct = round( 100 * data$count / grandTotal, 1),
+                      stringsAsFactors = FALSE)
+    if (gc) val$gc.pct = round(100 * data$gccount / grandTotal, 1)
+    if (self) {
+        val$self.pct = round(100 * data$self / grandTotal, 1)
+        if (gc) val$gcself.pct = round(100 * data$gcself / grandTotal, 1)
+    }
+    class(val) <- c("proftools_hotPaths", "data.frame")
+    val
+}
+
+hotPathsHits <- function(data, self, gc) {
+    pa <- pathAbbrev(data$key)
+    val <- data.frame(path = sprintf(sprintf("%%-%ds", max(nchar(pa))), pa),
+                      total.hits = data$count,
+                      stringsAsFactors = FALSE)
+    if (gc) val$gc.hits = data$gccount
+    if (self) {
+        val$self.hits = data$self
+        if (gc) val$gcself.hits = data$gcself
+    }
+    class(val) <- c("proftools_hotPaths", "data.frame")
+    val
+}
+
+hotPathsTime <- function(data, self, gc, delta) {
+    pa <- pathAbbrev(data$key)
+    val <- data.frame(path = sprintf(sprintf("%%-%ds", max(nchar(pa))), pa),
+                      total.time = data$count * delta,
+                      stringsAsFactors = FALSE)
+    if (gc) val$gc.time = data$gccount * delta
+    if (self) {
+        val$self.time = data$self * delta
+        if (gc) val$gcself.time = data$gcself * delta
+    }
+    class(val) <- c("proftools_hotPaths", "data.frame")
+    val
+}
+
+hotPaths <- function(pd, value = c("pct", "time", "hits"),
+                     self = FALSE, srclines = TRUE, gc = TRUE) {
+    value <- match.arg(value)
+
+    if (! srclines && pd$haveRefs) pd <- stripRefs(pd)
+
+    data <- hotPathData(pd)
+    
+    if (value == "pct")
+        hotPathsPct(data, self, gc && pd$haveGC, sum(pd$counts))
+    else if (value == "time")
+        hotPathsPct(data, self, gc && pd$haveGC, pd$interval / 1.0e6)
+    else
+        hotPathsHits(data, self, gc && pd$haveGC)
+}
+
+print.proftools_hotPaths <- function(x, ..., right = FALSE, row.names = FALSE)
+    print.data.frame(x, ..., right = right, row.names = row.names)
 
 
 ###
@@ -489,20 +657,6 @@ alphaPathOrd <- function(stacks, counts) {
     ord <- seq_along(stacks)
     for (i in (mx : 1))
         ord <- ord[order(sapply(stacks[ord], `[`, i), na.last = FALSE)]
-    ord
-}
-
-## The Hot Path order orders each level according to the number of
-## hits within the call chain upt to that point.
-hotPathOrd <- function(stacks, counts) {
-    mx <- max(sapply(stacks, length))
-    ord <- seq_along(stacks)
-    for (i in (mx : 1)) {
-        key <- sapply(stacks[ord], `[`, i)
-        tbl <- aggregate(list(val = -counts[ord]), list(key = key), sum)
-        val <- tbl$val[match(key, tbl$key)]
-        ord <- ord[order(val, na.last = TRUE)]
-    }
     ord
 }
 
@@ -840,7 +994,7 @@ commonFile <- function(refs) {
 ## If they do, then assume this is the file in which the caller is
 ## defined.  Otherwise treat the caller's home file as unkown. The
 ## result returned by this function is a named vector with one element
-## per funciton for which the home file is assumed know.  The names
+## per function for which the home file is assumed know.  The names
 ## are the names of the callers, and the values are the indices of the
 ## files in whicn the callers are defined.  For leaf calls NA sites
 ## are ignored. Possibly a disagreement of the leaf call site with
@@ -993,130 +1147,6 @@ siteCounts <- function(pd)
     entryCounts(pd, lineSites, leafSite, TRUE)
 
 
-###
-### Hot path summaries
-###
-
-pathAbbrev <- function(paths) {
-    pad <- function(n) paste(rep("-> ", n), collapse = "")
-    sapply(strsplit(paths, " -> "),
-           function(path) {
-               n <- length(path)
-               label <- if (n > 1) paste0(pad(n - 1), path[n]) else path
-           })
-}
-
-stripRefs <- function(pd) {
-    pd$refs <- lapply(pd$refs, function(r) rep(NA_character_, length(r)))
-    pd <- compactPD(pd)
-    pd$haveRefs <- FALSE
-    pd
-}
-
-UnknownFunToken <- "??"
-
-hotPathData <- function(pd) {
-    files <- pd$files
-    pathLabels <- function(s, t) {
-        n <- length(s)
-        if (n == 0)
-            funLabels(inknownfun, t[1], files)
-        else if (is.na(t[n + 1]))
-            funLabels(s, t[1:n], files)
-        else
-            funLabels(c(s, UnknownFunToken), t, files)
-    }
-
-    pl <- mapply(pathLabels, pd$stacks, pd$refs, SIMPLIFY = FALSE)
-    ord <- hotPathOrd(pl, pd$counts)
-    stacks <- pl[ord]
-    counts <- pd$counts[ord]
-    gccounts <- pd$gccounts[ord]
-
-    pathData <- function(k) {
-        s <- stacks[[k]]
-        keys <- sapply(1 : length(s),
-                       function(i) paste(s[1 : i], collapse = " -> "))
-        data.frame(key = keys,
-                   count = counts[k],
-                   gccount = gccounts[k])
-    }
-    tbl <- do.call(rbind, lapply(1:length(stacks), pathData))
-
-    ## **** turn off stringsAsFactore in aggregate?
-    data <- aggregate(list(count = tbl$count, gccount = tbl$gccount),
-                      list(key = tbl$key),
-                      sum)
-    data$key <- as.character(data$key)
-
-    selfidx <- match(data$key, sapply(stacks, paste, collapse = " -> "))
-    data$self <- ifelse(is.na(selfidx), 0, counts[selfidx])
-    data$gcself <- ifelse(is.na(selfidx), 0, gccounts[selfidx])
-    data
-}
-
-hotPathsPct <- function(data, self, gc, grandTotal) {
-    pa <- pathAbbrev(data$key)
-    val <- data.frame(path = sprintf(sprintf("%%-%ds", max(nchar(pa))), pa),
-                      total.pct = round( 100 * data$count / grandTotal, 1),
-                      stringsAsFactors = FALSE)
-    if (gc) val$gc.pct = round(100 * data$gccount / grandTotal, 1)
-    if (self) {
-        val$self.pct = round(100 * data$self / grandTotal, 1)
-        if (gc) val$gcself.pct = round(100 * data$gcself / grandTotal, 1)
-    }
-    class(val) <- c("proftools_hotPaths", "data.frame")
-    val
-}
-
-hotPathsHits <- function(data, self, gc) {
-    pa <- pathAbbrev(data$key)
-    val <- data.frame(path = sprintf(sprintf("%%-%ds", max(nchar(pa))), pa),
-                      total.hits = data$count,
-                      stringsAsFactors = FALSE)
-    if (gc) val$gc.hits = data$gccount
-    if (self) {
-        val$self.hits = data$self
-        if (gc) val$gcself.hits = data$gcself
-    }
-    class(val) <- c("proftools_hotPaths", "data.frame")
-    val
-}
-
-hotPathsTime <- function(data, self, gc, delta) {
-    pa <- pathAbbrev(data$key)
-    val <- data.frame(path = sprintf(sprintf("%%-%ds", max(nchar(pa))), pa),
-                      total.time = data$count * delta,
-                      stringsAsFactors = FALSE)
-    if (gc) val$gc.time = data$gccount * delta
-    if (self) {
-        val$self.time = data$self * delta
-        if (gc) val$gcself.time = data$gcself * delta
-    }
-    class(val) <- c("proftools_hotPaths", "data.frame")
-    val
-}
-
-hotPaths <- function(pd, value = c("pct", "time", "hits"),
-                     self = FALSE, srclines = TRUE, gc = TRUE) {
-    value <- match.arg(value)
-
-    if (! srclines && pd$haveRefs) pd <- stripRefs(pd)
-
-    data <- hotPathData(pd)
-    
-    if (value == "pct")
-        hotPathsPct(data, self, gc && pd$haveGC, sum(pd$counts))
-    else if (value == "time")
-        hotPathsPct(data, self, gc && pd$haveGC, pd$interval / 1.0e6)
-    else
-        hotPathsHits(data, self, gc && pd$haveGC)
-}
-
-print.proftools_hotPaths <- function(x, ..., right = FALSE, row.names = FALSE)
-    print.data.frame(x, ..., right = right, row.names = row.names)
-
-## **** optional depth limit, or just rely in pruning to a level?
 
 
 ###
