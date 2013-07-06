@@ -322,6 +322,66 @@ compactPD <- function(pd) {
 }
 @ %def compactPD
 
+\subsection{\texttt{skipPD}} [[skipPD]] removes a specified number of
+initial calls from each stack frame, or all calls preceding the first
+of a specified set of functions to occur in the frame. If a stack
+frams is shorter or does not contains any of the specified functions,
+then it is left unchanged if [[merge]] is false; otherwise, it is
+replaced by a shortened place-holder stack.
+<<[[skipPD]] function>>=
+skipPD <- function(pd, what, merge = FALSE) {
+    idx <- skipIDX(pd, what)
+
+    skip <- function(stack, refs, i) {
+        n <- idx[i]
+        if (n > 0) {
+            if (n < length(stack)) {
+                skip <- 1 : n
+                stack <- stack[-skip]
+                refs <- refs[-skip]
+            }
+            else {
+                stack <- OtherFunsToken
+                refs <- c(NA_character_, NA_character_)
+            }
+        }
+        else if (merge) {
+            stack <- OtherFunsToken
+            refs <- c(NA_character_, NA_character_)
+        }
+        list(stack = stack, refs = refs)
+    }
+
+    transformPD(pd, skip)
+}
+@ %def skipPD
+The place-holder token is
+<<[[OtherFunsToken]] constant>>=
+OtherFunsToken <- "<Other>"
+@ %def OtherFunsToken
+
+The funciton [[skipIDX]] converts a function name specification to the
+corresponding indices to skip.
+<<[[skipIDX]] function>>=
+skipIDX <- function(pd, what) {
+    if (is.character(what)) {
+        findFirst <- function(s) {
+            idx <- match(what, s)
+            if (any(! is.na(idx)))
+                min(idx, na.rm = TRUE) - 1
+            else
+                0
+        }
+        idx <- sapply(pd$stacks, findFirst)
+    }
+    else
+        idx <- ifelse(is.na(what), 0, what)
+    if (length(idx) != length(pd$stacks))
+        idx <- rep(idx, length = length(pd$stacks))
+    idx
+}
+@ %def skipIDX
+
 \section{Implementation File}
 <<prof.R>>=
 ###
@@ -357,51 +417,11 @@ compactPD <- function(pd) {
 
 <<[[transformPD]] function>>
 
-skipIDX <- function(pd, what) {
-    if (is.character(what)) {
-        findFirst <- function(s) {
-            idx <- match(what, s)
-            if (any(! is.na(idx)))
-                min(idx, na.rm = TRUE) - 1
-            else
-                0
-        }
-        idx <- sapply(pd$stacks, findFirst)
-    }
-    else
-        idx <- ifelse(is.na(what), 0, what)
-    if (length(idx) != length(pd$stacks))
-        idx <- rep(idx, length = length(pd$stacks))
-    idx
-}
+<<[[skipIDX]] function>>
 
-OtherFunsToken <- "<Other>"
+<<[[OtherFunsToken]] constant>>
 
-skipPD <- function(pd, what, merge = FALSE) {
-    idx <- skipIDX(pd, what)
-
-    skip <- function(stack, refs, i) {
-        n <- idx[i]
-        if (n > 0) {
-            if (n < length(stack)) {
-                skip <- 1 : n
-                stack <- stack[-skip]
-                refs <- refs[-skip]
-            }
-            else {
-                stack <- OtherFunsToken
-                refs <- c(NA_character_, NA_character_)
-            }
-        }
-        else if (merge) {
-            stack <- OtherFunsToken
-            refs <- c(NA_character_, NA_character_)
-        }
-        list(stack = stack, refs = refs)
-    }
-
-    transformPD(pd, skip)
-}
+<<[[skipPD]] function>>
 
 pruneIDX <- function(pd, what) {
     if (is.character(what)) {
