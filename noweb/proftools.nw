@@ -74,6 +74,7 @@ specifying which trace each line corresponds to, and a logical vector
 of length equal to the number of lines indicating whether that line
 was written during a GC. Lines containing only a GC entry are very
 unlikely (if they are possible at all) and are deleted.
+%% ' -- make emacs happy
 <<[[readPDlines]] function>>=
 readPDlines <- function(con, hdr) {
     stacks <-  readLines(con)
@@ -229,6 +230,7 @@ traceKeep <- which(pd$trace %in% keep)
 pd$inGC <- pd$inGC[traceKeep]
 pd$trace <- pd$trace[traceKeep]
 @ %def
+%% $ -- make amacs happy
 
 At this point the indices in [[trace]] refer to the original set of
 stack traces; these need to be remapped to the new set.
@@ -236,6 +238,7 @@ stack traces; these need to be remapped to the new set.
 map <- match(stackIDX, keep)
 pd$trace <- map[pd$trace]
 @ %def
+%% $ make emacs happy
 
 The complete definition of [[subsetPD]] is then
 <<[[subsetPD]] function>>=
@@ -301,7 +304,7 @@ checkStackRefs <- function(val, nf) {
 
 Since the transformation might introduce duplicate stacks the result
 needs to be processed to identify unique stacks and recompute counts.
-\FIXME{Make a [[mapply0]] function that doesn't simplify?}
+\FIXME{Make a [[mapply0]] function that does not simplify?}
 <<[[compactPD]] function>>=
 compactPD <- function(pd) {
     ## **** need simplify here since mapply creates a matrix if all
@@ -322,6 +325,7 @@ compactPD <- function(pd) {
     pd
 }
 @ %def compactPD
+%% $ -- make emacs happy
 
 \subsection{\texttt{skipPD}}
 [[skipPD]] removes a specified number of initial calls from each stack
@@ -591,6 +595,30 @@ The token used for an unknown function is
 UnknownFunToken <- "??"
 @ %def UnknownFunToken
 
+Call labels are created by merging the function name and the source
+reference, if source references are used.
+<<[[funLabels]] function>>=
+funLabels <- function(fun, site, files) {
+    if (all(is.na(site)))
+        fun
+    else {
+        file <- basename(files[refFN(site)])
+        line <- refLN(site)
+        funsite <- sprintf("%s (%s:%d)", fun, file, line)
+        ifelse(is.na(site), fun, funsite)
+    }
+}
+@ %def funLabels
+The functions [[refFN]] and [[refLN]] extract the file indices and
+line numbers from source references of the form \verb|FN#LN|.
+<<[[refFN]] and [[refLN]] functions>>=
+refFN <- function(refs)
+    as.integer(sub("([[:digit:]]+)#[[:digit:]]+", "\\1", refs))
+
+refLN <- function(refs)
+    as.integer(sub("[[:digit:]]+#([[:digit:]]+)", "\\1", refs))
+@ %def refFN refLN
+
 Path abbreviations are constructed using [[pathAbbrev]]. The padding
 used could be made a configuration option. The strings are padded to
 be the same length so hey appear reasonably when printed with either
@@ -660,6 +688,110 @@ adjust ment to make the path label appear in a more natural place.
 print.proftools_hotPaths <- function(x, ..., right = FALSE, row.names = FALSE)
     print.data.frame(x, ..., right = right, row.names = row.names)
 @ %def print.proftools_hotPaths
+
+\subsection{Function and Call Summaries}
+The functions [[funSummary]] and [[callSummary]] compute percent,
+time, or hit summaries for individual functions and calls. If source
+references are enabled, then the function summaries are broken down by
+source location where the call occurs.  For calls, summaries are
+broken down according to where the caller and callee are called.
+The function [[funSummary]] is defined as
+<<[[funSummary]] function>>=
+funSummary <- function(pd, byTotal = TRUE,
+                       value = c("pct", "time", "hits"),
+                       srclines = TRUE,
+                       gc = TRUE) {
+    value <- match.arg(value)
+
+    fc <- funCounts(pd, srclines)
+    if (byTotal)
+        fc <- fc[rev(order(fc$total)), ]
+    else
+        fc <- fc[rev(order(fc$self)), ]
+
+    label <- funLabels(fc$fun, fc$site, pd$files)
+
+    if (value == "pct")
+        funSummaryPct(fc, label, gc && pd$haveGC, sum(pd$counts))
+    else if (value == "time")
+        funSummaryTime(fc, label, gc && pd$haveGC, pd$interval / 1.0e6)
+    else
+        funSummaryHits(fc, label, gc && pd$haveGC)
+}
+@ %def funSummary
+%% $ -- make emacs happy
+
+The definition of [[callSummary]] is similar.
+<<[[callSummary]] function>>=
+callSummary <- function(pd, byTotal = TRUE,
+                        value = c("pct", "time", "hits"),
+                        srclines = TRUE,
+                        gc = TRUE) {
+    value <- match.arg(value)
+
+    cc <- callCounts(pd, srclines, srclines)
+    if (byTotal)
+        cc <- cc[rev(order(cc$total)), ]
+    else
+        cc <- cc[rev(order(cc$self)), ]
+
+    caller.label <- funLabels(cc$caller, cc$caller.site, pd$files)
+    callee.label <- funLabels(cc$callee, cc$callee.site, pd$files)
+    label <- paste(caller.label, callee.label, sep = " -> ")
+
+    if (value == "pct")
+        funSummaryPct(cc, label, gc && pd$haveGC, sum(pd$counts))
+    else if (value == "time")
+        funSummaryTime(cc, label, gc && pd$haveGC, pd$interval / 1.0e6)
+    else
+        funSummaryHits(cc, label, gc && pd$haveGC)
+}
+@ %def callSummary
+%% $ -- make emacs happy
+
+The summaries for percent, time, and hits are computed by
+[[funSummaryPct]], [[funSummaryTime]], and [[funSummaryHits]].
+\FIXME{Rename these since they are used by both [[funSummary]] and
+  [[callSummary]] (and maybe could be by hot paths)?}
+<<[[funSummaryPct]], [[funSummaryTime]], and [[funSummaryHits]] functions>>=
+funSummaryPct <- function(fc, label, gc, grandTotal) {
+    pct <- round(100 * fc$total / grandTotal, 1)
+    spct <- round(100 * fc$self / grandTotal, 1)
+    if (gc) {
+        gcpct <- round(100 * fc$gctotal / grandTotal, 1)
+        sgcpct <- round(100 * fc$gcself / grandTotal, 1)
+        data.frame(total.pct = pct, gc.pct = gcpct,
+                   self.pct = spct, gcself.pct = sgcpct,
+                   row.names = label)
+    }
+    else
+        data.frame(total.pct = pct, self.pct = spct, row.names = label)
+}
+
+funSummaryTime <- function(fc, label, gc, delta) {
+    tm <- fc$total * delta
+    stm <- fc$self * delta
+    if (gc) {
+        gctm <- fc$gctotal * delta
+        sgctm <- fc$gcself * delta
+        data.frame(total.time = tm, gc.time = gctm,
+                   self.time = stm, gcself.time = sgctm,
+                   row.names = label)
+    }
+    else
+        data.frame(total.time = tm, self.time = stm, row.names = label)
+}
+
+funSummaryHits <- function(fc, label, gc) {
+    if (gc)
+        data.frame(total.hits = fc$total, gc.hits = fc$gctotal,
+                   self.hits = fc$self, gcself.hits = fc$gcself,
+                       row.names = label)
+    else
+        data.frame(total.hits = fc$total, self.hits = fc$self,
+                   row.names = label)
+}
+@ %def funSummaryPct funSummaryTime funSummaryHits
 
 \section{Implementation File}
 <<prof.R>>=
@@ -865,108 +997,17 @@ refCounts <- function(pd) {
     val[! is.na(val$refs), ]
 }
 
-funSummaryPct <- function(fc, label, gc, grandTotal) {
-    pct <- round(100 * fc$total / grandTotal, 1)
-    spct <- round(100 * fc$self / grandTotal, 1)
-    if (gc) {
-        gcpct <- round(100 * fc$gctotal / grandTotal, 1)
-        sgcpct <- round(100 * fc$gcself / grandTotal, 1)
-        data.frame(total.pct = pct, gc.pct = gcpct,
-                   self.pct = spct, gcself.pct = sgcpct,
-                   row.names = label)
-    }
-    else
-        data.frame(total.pct = pct, self.pct = spct, row.names = label)
-}
-
-funSummaryTime <- function(fc, label, gc, delta) {
-    tm <- fc$total * delta
-    stm <- fc$self * delta
-    if (gc) {
-        gctm <- fc$gctotal * delta
-        sgctm <- fc$gcself * delta
-        data.frame(total.time = tm, gc.time = gctm,
-                   self.time = stm, gcself.time = sgctm,
-                   row.names = label)
-    }
-    else
-        data.frame(total.time = tm, self.time = stm, row.names = label)
-}
-
-funSummaryHits <- function(fc, label, gc) {
-    if (gc)
-        data.frame(total.hits = fc$total, gc.hits = fc$gctotal,
-                   self.hits = fc$self, gcself.hits = fc$gcself,
-                       row.names = label)
-    else
-        data.frame(total.hits = fc$total, self.hits = fc$self,
-                   row.names = label)
-}
+<<[[funSummaryPct]], [[funSummaryTime]], and [[funSummaryHits]] functions>>
 
 ## Extract the file indices and line numbers from source references of
 ## the form FN#LN.
-refFN <- function(refs)
-    as.integer(sub("([[:digit:]]+)#[[:digit:]]+", "\\1", refs))
+<<[[refFN]] and [[refLN]] functions>>
 
-refLN <- function(refs)
-    as.integer(sub("[[:digit:]]+#([[:digit:]]+)", "\\1", refs))
+<<[[funLabels]] function>>
 
-funLabels <- function(fun, site, files) {
-    if (all(is.na(site)))
-        fun
-    else {
-        file <- basename(files[refFN(site)])
-        line <- refLN(site)
-        funsite <- sprintf("%s (%s:%d)", fun, file, line)
-        ifelse(is.na(site), fun, funsite)
-    }
-}
+<<[[funSummary]] function>>
 
-funSummary <- function(pd, byTotal = TRUE,
-                       value = c("pct", "time", "hits"),
-                       srclines = TRUE,
-                       gc = TRUE) {
-    value <- match.arg(value)
-
-    fc <- funCounts(pd, srclines)
-    if (byTotal)
-        fc <- fc[rev(order(fc$total)), ]
-    else
-        fc <- fc[rev(order(fc$self)), ]
-
-    label <- funLabels(fc$fun, fc$site, pd$files)
-
-    if (value == "pct")
-        funSummaryPct(fc, label, gc && pd$haveGC, sum(pd$counts))
-    else if (value == "time")
-        funSummaryTime(fc, label, gc && pd$haveGC, pd$interval / 1.0e6)
-    else
-        funSummaryHits(fc, label, gc && pd$haveGC)
-}
-
-callSummary <- function(pd, byTotal = TRUE,
-                        value = c("pct", "time", "hits"),
-                        srclines = TRUE,
-                        gc = TRUE) {
-    value <- match.arg(value)
-
-    cc <- callCounts(pd, srclines, srclines)
-    if (byTotal)
-        cc <- cc[rev(order(cc$total)), ]
-    else
-        cc <- cc[rev(order(cc$self)), ]
-
-    caller.label <- funLabels(cc$caller, cc$caller.site, pd$files)
-    callee.label <- funLabels(cc$callee, cc$callee.site, pd$files)
-    label <- paste(caller.label, callee.label, sep = " -> ")
-
-    if (value == "pct")
-        funSummaryPct(cc, label, gc && pd$haveGC, sum(pd$counts))
-    else if (value == "time")
-        funSummaryTime(cc, label, gc && pd$haveGC, pd$interval / 1.0e6)
-    else
-        funSummaryHits(cc, label, gc && pd$haveGC)
-}
+<<[[callSummary]] function>>
 
 
 ###
