@@ -596,6 +596,14 @@ funSummaryHits <- function(fc, label, gc) {
                    row.names = label)
 }
 
+## Extract the file indices and line numbers from source references of
+## the form FN#LN.
+refFN <- function(refs)
+    as.integer(sub("([[:digit:]]+)#[[:digit:]]+", "\\1", refs))
+
+refLN <- function(refs)
+    as.integer(sub("[[:digit:]]+#([[:digit:]]+)", "\\1", refs))
+
 funLabels <- function(fun, site, files) {
     if (all(is.na(site)))
         fun
@@ -891,15 +899,6 @@ leafCallRefs <- function(pd) {
     goodrefs <- ! is.na(lrefs)
     list(fun = lfuns[goodrefs], site = lrefs[goodrefs])
 }
-
-
-## Extract the file indices and line numbers from source references of
-## the form FN#LN.
-refFN <- function(refs)
-    as.integer(sub("([[:digit:]]+)#[[:digit:]]+", "\\1", refs))
-
-refLN <- function(refs)
-    as.integer(sub("[[:digit:]]+#([[:digit:]]+)", "\\1", refs))
 
 ## Collect the data for the callgrind output. The basic data is
 ##
