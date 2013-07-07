@@ -468,8 +468,9 @@ The hot path summary is based loosely on an idea described in an
 lexicographically based on the number of hits in the first function on
 the stack, then the first two functions, and so on.  The display
 abbreviates the paths in an obvious way to make the display more
-compact and readable. A sample based on profiling an [[lm]] fit looks
-like this:
+compact and readable. The cumulative cost for each level is shown;
+self costs can also be shown as an option. A sample based on profiling
+an [[lm]] fit looks like this:
 \begin{verbatim}
 > head(hotPaths(focusPD(d, "lm")), 10)
  path                                    total.pct gc.pct
@@ -487,7 +488,178 @@ like this:
 The maximal stack depth is set to 10 by default, again for
 readability.
 
-The order is computed by [[hotPathOrd]].
+The [[hotPaths]] function uses [[prunePD]] to limit the stack depth to
+the level [[maxdepth]] before ordering the data and computing summary
+counts. The counts are then processed into a data frame showing either
+percent, time, or hits.
+<<[[hotPaths]] function>>=
+hotPaths <- function(pd, value = c("pct", "time", "hits"),
+                     self = FALSE, srclines = TRUE, gc = TRUE,
+                     maxdepth = 10) {
+    value <- match.arg(value)
+    if (! is.na(maxdepth))
+        pd <- prunePD(pd, maxdepth)
+
+    if (! srclines && pd$haveRefs) pd <- stripRefs(pd)
+
+    data <- hotPathData(pd)
+    
+    if (value == "pct")
+        hotPathsPct(data, self, gc && pd$haveGC, sum(pd$counts))
+    else if (value == "time")
+        hotPathsPct(data, self, gc && pd$haveGC, pd$interval / 1.0e6)
+    else
+        hotPathsHits(data, self, gc && pd$haveGC)
+}
+@ %def hotPaths
+If source references are not needed they are first removed using
+[[stripRefs]].
+<<[[stripRefs]] function>>=
+stripRefs <- function(pd) {
+    pd$refs <- lapply(pd$refs, function(r) rep(NA_character_, length(r)))
+    pd <- compactPD(pd)
+    pd$haveRefs <- FALSE
+    pd
+}
+@ %def stripRefs
+%% $ -- make emacs happy
+
+The order is computed by [[hotPathOrd]].  This function orders each
+call level according to the number of hits within the call chain up
+to that point.
+<<[[hotPathOrd]] function>>=
+hotPathOrd <- function(stacks, counts) {
+    mx <- max(sapply(stacks, length))
+    ord <- seq_along(stacks)
+    for (i in (mx : 1)) {
+        key <- sapply(stacks[ord], `[`, i)
+        tbl <- aggregate(list(val = -counts[ord]), list(key = key), sum)
+        val <- tbl$val[match(key, tbl$key)]
+        ord <- ord[order(val, na.last = TRUE)]
+    }
+    ord
+}
+@ %def hotPathOrd
+
+The [[hotPathData]] function computes the stack order, the successive
+call paths, and the cumulative counts and returns these in a data
+frame.
+<<[[hotPathData]] function>>=
+hotPathData <- function(pd) {
+    files <- pd$files
+    pathLabels <- function(s, t) {
+        n <- length(s)
+        if (n == 0)
+            funLabels(inknownfun, t[1], files)
+        else if (is.na(t[n + 1]))
+            funLabels(s, t[1:n], files)
+        else
+            funLabels(c(s, UnknownFunToken), t, files)
+    }
+
+    pl <- mapply(pathLabels, pd$stacks, pd$refs, SIMPLIFY = FALSE)
+    ord <- hotPathOrd(pl, pd$counts)
+    stacks <- pl[ord]
+    counts <- pd$counts[ord]
+    gccounts <- pd$gccounts[ord]
+
+    pathData <- function(k) {
+        s <- stacks[[k]]
+        keys <- sapply(1 : length(s),
+                       function(i) paste(s[1 : i], collapse = " -> "))
+        data.frame(key = keys,
+                   count = counts[k],
+                   gccount = gccounts[k])
+    }
+    tbl <- do.call(rbind, lapply(1:length(stacks), pathData))
+
+    ## **** turn off stringsAsFactore in aggregate?
+    data <- aggregate(list(count = tbl$count, gccount = tbl$gccount),
+                      list(key = tbl$key),
+                      sum)
+    data$key <- as.character(data$key)
+
+    selfidx <- match(data$key, sapply(stacks, paste, collapse = " -> "))
+    data$self <- ifelse(is.na(selfidx), 0, counts[selfidx])
+    data$gcself <- ifelse(is.na(selfidx), 0, gccounts[selfidx])
+    data
+}
+@ %def hotPathsData
+%% $ -- make emacs happy
+The token used for an unknown function is
+<<[[UnknownFunToken]] constant>>=
+UnknownFunToken <- "??"
+@ %def UnknownFunToken
+
+Path abbreviations are constructed using [[pathAbbrev]]. The padding
+used could be made a configuration option. The strings are padded to
+be the same length so hey appear reasonably when printed with either
+left or right adjustment.
+<<[[pathAbbrev]] function>>=
+pathAbbrev <- function(paths) {
+    pad <- function(n) paste(rep("-> ", n), collapse = "")
+    sapply(strsplit(paths, " -> "),
+           function(path) {
+               n <- length(path)
+               label <- if (n > 1) paste0(pad(n - 1), path[n]) else path
+           })
+}
+@ %def pathAbbrev
+
+Final results are constructed by [[hotPathsPct]], [[hotPathsHits]], or
+[[hotPathsTime]]. The result is a data frame, but with a subclass to
+allow a custom print method to be used.
+<<[[hotPathsPct]], [[hotPathsHits]], and [[hotPathsTime]] functions>>=
+hotPathsPct <- function(data, self, gc, grandTotal) {
+    pa <- pathAbbrev(data$key)
+    val <- data.frame(path = sprintf(sprintf("%%-%ds", max(nchar(pa))), pa),
+                      total.pct = round( 100 * data$count / grandTotal, 1),
+                      stringsAsFactors = FALSE)
+    if (gc) val$gc.pct = round(100 * data$gccount / grandTotal, 1)
+    if (self) {
+        val$self.pct = round(100 * data$self / grandTotal, 1)
+        if (gc) val$gcself.pct = round(100 * data$gcself / grandTotal, 1)
+    }
+    class(val) <- c("proftools_hotPaths", "data.frame")
+    val
+}
+
+hotPathsHits <- function(data, self, gc) {
+    pa <- pathAbbrev(data$key)
+    val <- data.frame(path = sprintf(sprintf("%%-%ds", max(nchar(pa))), pa),
+                      total.hits = data$count,
+                      stringsAsFactors = FALSE)
+    if (gc) val$gc.hits = data$gccount
+    if (self) {
+        val$self.hits = data$self
+        if (gc) val$gcself.hits = data$gcself
+    }
+    class(val) <- c("proftools_hotPaths", "data.frame")
+    val
+}
+
+hotPathsTime <- function(data, self, gc, delta) {
+    pa <- pathAbbrev(data$key)
+    val <- data.frame(path = sprintf(sprintf("%%-%ds", max(nchar(pa))), pa),
+                      total.time = data$count * delta,
+                      stringsAsFactors = FALSE)
+    if (gc) val$gc.time = data$gccount * delta
+    if (self) {
+        val$self.time = data$self * delta
+        if (gc) val$gcself.time = data$gcself * delta
+    }
+    class(val) <- c("proftools_hotPaths", "data.frame")
+    val
+}
+@ %def hotPathsPct hotPathsHits hotPathsTime
+%% $ -- make emacs happy
+
+The custom print method suppresses the row labels and specifies left
+adjust ment to make the path label appear in a more natural place.
+<<[[print.proftools_hotPaths]] method>>=
+print.proftools_hotPaths <- function(x, ..., right = FALSE, row.names = FALSE)
+    print.data.frame(x, ..., right = right, row.names = row.names)
+@ %def print.proftools_hotPaths
 
 \section{Implementation File}
 <<prof.R>>=
@@ -539,141 +711,23 @@ The order is computed by [[hotPathOrd]].
 ### Hot path summaries
 ###
 
-pathAbbrev <- function(paths) {
-    pad <- function(n) paste(rep("-> ", n), collapse = "")
-    sapply(strsplit(paths, " -> "),
-           function(path) {
-               n <- length(path)
-               label <- if (n > 1) paste0(pad(n - 1), path[n]) else path
-           })
-}
+<<[[pathAbbrev]] function>>
 
-stripRefs <- function(pd) {
-    pd$refs <- lapply(pd$refs, function(r) rep(NA_character_, length(r)))
-    pd <- compactPD(pd)
-    pd$haveRefs <- FALSE
-    pd
-}
+<<[[stripRefs]] function>>
 
 ## The Hot Path order orders each level according to the number of
 ## hits within the call chain upt to that point.
-hotPathOrd <- function(stacks, counts) {
-    mx <- max(sapply(stacks, length))
-    ord <- seq_along(stacks)
-    for (i in (mx : 1)) {
-        key <- sapply(stacks[ord], `[`, i)
-        tbl <- aggregate(list(val = -counts[ord]), list(key = key), sum)
-        val <- tbl$val[match(key, tbl$key)]
-        ord <- ord[order(val, na.last = TRUE)]
-    }
-    ord
-}
+<<[[hotPathOrd]] function>>
 
-UnknownFunToken <- "??"
+<<[[UnknownFunToken]] constant>>
 
-hotPathData <- function(pd) {
-    files <- pd$files
-    pathLabels <- function(s, t) {
-        n <- length(s)
-        if (n == 0)
-            funLabels(inknownfun, t[1], files)
-        else if (is.na(t[n + 1]))
-            funLabels(s, t[1:n], files)
-        else
-            funLabels(c(s, UnknownFunToken), t, files)
-    }
+<<[[hotPathData]] function>>
 
-    pl <- mapply(pathLabels, pd$stacks, pd$refs, SIMPLIFY = FALSE)
-    ord <- hotPathOrd(pl, pd$counts)
-    stacks <- pl[ord]
-    counts <- pd$counts[ord]
-    gccounts <- pd$gccounts[ord]
+<<[[hotPathsPct]], [[hotPathsHits]], and [[hotPathsTime]] functions>>
 
-    pathData <- function(k) {
-        s <- stacks[[k]]
-        keys <- sapply(1 : length(s),
-                       function(i) paste(s[1 : i], collapse = " -> "))
-        data.frame(key = keys,
-                   count = counts[k],
-                   gccount = gccounts[k])
-    }
-    tbl <- do.call(rbind, lapply(1:length(stacks), pathData))
+<<[[hotPaths]] function>>
 
-    ## **** turn off stringsAsFactore in aggregate?
-    data <- aggregate(list(count = tbl$count, gccount = tbl$gccount),
-                      list(key = tbl$key),
-                      sum)
-    data$key <- as.character(data$key)
-
-    selfidx <- match(data$key, sapply(stacks, paste, collapse = " -> "))
-    data$self <- ifelse(is.na(selfidx), 0, counts[selfidx])
-    data$gcself <- ifelse(is.na(selfidx), 0, gccounts[selfidx])
-    data
-}
-
-hotPathsPct <- function(data, self, gc, grandTotal) {
-    pa <- pathAbbrev(data$key)
-    val <- data.frame(path = sprintf(sprintf("%%-%ds", max(nchar(pa))), pa),
-                      total.pct = round( 100 * data$count / grandTotal, 1),
-                      stringsAsFactors = FALSE)
-    if (gc) val$gc.pct = round(100 * data$gccount / grandTotal, 1)
-    if (self) {
-        val$self.pct = round(100 * data$self / grandTotal, 1)
-        if (gc) val$gcself.pct = round(100 * data$gcself / grandTotal, 1)
-    }
-    class(val) <- c("proftools_hotPaths", "data.frame")
-    val
-}
-
-hotPathsHits <- function(data, self, gc) {
-    pa <- pathAbbrev(data$key)
-    val <- data.frame(path = sprintf(sprintf("%%-%ds", max(nchar(pa))), pa),
-                      total.hits = data$count,
-                      stringsAsFactors = FALSE)
-    if (gc) val$gc.hits = data$gccount
-    if (self) {
-        val$self.hits = data$self
-        if (gc) val$gcself.hits = data$gcself
-    }
-    class(val) <- c("proftools_hotPaths", "data.frame")
-    val
-}
-
-hotPathsTime <- function(data, self, gc, delta) {
-    pa <- pathAbbrev(data$key)
-    val <- data.frame(path = sprintf(sprintf("%%-%ds", max(nchar(pa))), pa),
-                      total.time = data$count * delta,
-                      stringsAsFactors = FALSE)
-    if (gc) val$gc.time = data$gccount * delta
-    if (self) {
-        val$self.time = data$self * delta
-        if (gc) val$gcself.time = data$gcself * delta
-    }
-    class(val) <- c("proftools_hotPaths", "data.frame")
-    val
-}
-
-hotPaths <- function(pd, value = c("pct", "time", "hits"),
-                     self = FALSE, srclines = TRUE, gc = TRUE,
-                     maxdepth = 10) {
-    value <- match.arg(value)
-    if (! is.na(maxdepth))
-        pd <- prunePD(pd, maxdepth)
-
-    if (! srclines && pd$haveRefs) pd <- stripRefs(pd)
-
-    data <- hotPathData(pd)
-    
-    if (value == "pct")
-        hotPathsPct(data, self, gc && pd$haveGC, sum(pd$counts))
-    else if (value == "time")
-        hotPathsPct(data, self, gc && pd$haveGC, pd$interval / 1.0e6)
-    else
-        hotPathsHits(data, self, gc && pd$haveGC)
-}
-
-print.proftools_hotPaths <- function(x, ..., right = FALSE, row.names = FALSE)
-    print.data.frame(x, ..., right = right, row.names = row.names)
+<<[[print.proftools_hotPaths]] method>>
 
 
 ###
