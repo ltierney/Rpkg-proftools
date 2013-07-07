@@ -323,7 +323,7 @@ hotPathData <- function(pd) {
     pathLabels <- function(s, t) {
         n <- length(s)
         if (n == 0)
-            funLabels(inknownfun, t[1], files)
+            funLabels(Unknownfun, t[1], files)
         else if (is.na(t[n + 1]))
             funLabels(s, t[1:n], files)
         else
