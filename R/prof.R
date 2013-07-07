@@ -401,8 +401,11 @@ hotPathsTime <- function(data, self, gc, delta) {
 }
 
 hotPaths <- function(pd, value = c("pct", "time", "hits"),
-                     self = FALSE, srclines = TRUE, gc = TRUE) {
+                     self = FALSE, srclines = TRUE, gc = TRUE,
+                     maxdepth = 10) {
     value <- match.arg(value)
+    if (! is.na(maxdepth))
+        pd <- prunePD(pd, maxdepth)
 
     if (! srclines && pd$haveRefs) pd <- stripRefs(pd)
 
