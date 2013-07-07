@@ -424,6 +424,237 @@ print.proftools_hotPaths <- function(x, ..., right = FALSE, row.names = FALSE)
 
 
 ###
+### Function and call summaries
+###
+
+fact2char <- function(d) {
+    for (i in seq_along(d))
+        if (is.factor(d[[i]]))
+            d[[i]] <- as.character(d[[i]])
+    d
+}
+
+aggregateCounts <- function(entries, counts) {
+    dcounts <- as.data.frame(counts)
+    clean <- function(x)
+        if (any(is.na(x)))
+            factor(as.character(x), exclude = "")
+        else
+            x
+    fact2char(aggregate(dcounts, lapply(entries, clean), sum))
+}
+
+rbindEntries <- function(entries)
+    as.data.frame(do.call(rbind, entries), stringsAsFactors = FALSE)
+    
+mergeCounts <- function(data, leafdata) {
+    val <- merge(data, leafdata, all = TRUE)
+    val$self[is.na(val$self)] <- 0
+    val$gcself[is.na(val$gcself)] <- 0
+    val
+}
+
+entryCounts0 <- function(pd, fun, control, names) {
+    stacks <- pd$stacks
+    refs <- pd$refs
+    counts <- pd$counts
+    gccounts <- pd$gccounts
+
+    which <- seq_along(stacks)
+    
+    doLine <- function(i) fun(stacks[[i]], refs[[i]], control)
+    entries <- lapply(which, doLine)
+    edf <- rbindEntries(entries)
+
+    reps <- unlist(lapply(entries, nrow))
+    tot <- rep(counts, reps)
+    gctot <- rep(gccounts, reps)
+    ct <- cbind(tot, gctot, deparse.level = 0)
+    colnames(ct) <- names
+    aggregateCounts(edf, ct)
+}
+    
+entryCounts <- function(pd, lineFun, leafFun, control) {
+    aedf <- entryCounts0(pd, lineFun, control, c("total", "gctotal"))
+    aledf <- entryCounts0(pd, leafFun, control, c("self", "gcself"))
+    mergeCounts(aedf, aledf)
+}
+
+lineFuns <- function(line, refs, useSite) {
+    if (useSite) {
+        n <- length(line)
+        site <- refs[-(n + 1)]
+    }
+    else site <- NA_character_
+    unique(cbind(fun = line, site))
+}
+
+leafFun <- function(line, refs, useSite) {
+    n <- length(line)
+    fun <- line[n]
+    site <- if (useSite) refs[n] else NA_character_
+    cbind(fun, site)
+}
+
+funCounts <- function(pd, useSite = TRUE)
+    entryCounts(pd, lineFuns, leafFun, useSite)
+    
+lineCalls <- function(line, refs, cntrl) {
+    n <- length(line)
+    if (n > 1) {
+        caller <- line[-n]
+        callee <- line[-1]
+        if (cntrl$useCalleeSite)
+            callee.site <- refs[-c(1, n + 1)]
+        else
+            callee.site <- NA_character_
+        if (cntrl$useCallerSite)
+            caller.site <- refs[-c(n, n + 1)]
+        else
+            caller.site <- NA_character_
+    }
+    else
+        caller <- callee <- callee.site <- caller.site <- character()
+    unique(cbind(caller, callee, caller.site, callee.site))
+}
+
+leafCall <- function(line, refs, cntrl) {
+    n <- length(line)
+    if (n > 1) {
+        caller <- line[n - 1]
+        callee <- line[n]
+        if (cntrl$useCalleeSite)
+            callee.site <- refs[n]
+        else
+            callee.site <- NA_character_
+        if (cntrl$useCallerSite)
+            caller.site <- refs[n - 1]
+        else
+            caller.site <- NA_character_
+    }
+    else
+        caller <- callee <- callee.site <- caller.site <- character()
+    cbind(caller, callee, caller.site, callee.site)
+}
+
+callCounts <- function(pd, useCalleeSite = TRUE, useCallerSite = FALSE) {
+    cntrl <- list(useCalleeSite = useCalleeSite, useCallerSite = useCallerSite)
+    entryCounts(pd, lineCalls, leafCall, cntrl)
+}
+
+lineRefs <- function(line, refs, useSite)
+    unique(cbind(fun = "", refs = refs))
+
+## leafRef <- function(line, refs, useSite) {
+##     n <- length(line)
+##     cbind(fun = "", refs = refs[n + 1])
+## }
+leafRef <- function(line, refs, useSite)
+    cbind(fun = "", refs = NA_character_)
+
+refCounts <- function(pd) {
+    val <- entryCounts(pd, lineRefs, leafRef, TRUE)
+    val$fun <- val$self <- val$gcself <- NULL
+    val[! is.na(val$refs), ]
+}
+
+funSummaryPct <- function(fc, label, gc, grandTotal) {
+    pct <- round(100 * fc$total / grandTotal, 1)
+    spct <- round(100 * fc$self / grandTotal, 1)
+    if (gc) {
+        gcpct <- round(100 * fc$gctotal / grandTotal, 1)
+        sgcpct <- round(100 * fc$gcself / grandTotal, 1)
+        data.frame(total.pct = pct, gc.pct = gcpct,
+                   self.pct = spct, gcself.pct = sgcpct,
+                   row.names = label)
+    }
+    else
+        data.frame(total.pct = pct, self.pct = spct, row.names = label)
+}
+
+funSummaryTime <- function(fc, label, gc, delta) {
+    tm <- fc$total * delta
+    stm <- fc$self * delta
+    if (gc) {
+        gctm <- fc$gctotal * delta
+        sgctm <- fc$gcself * delta
+        data.frame(total.time = tm, gc.time = gctm,
+                   self.time = stm, gcself.time = sgctm,
+                   row.names = label)
+    }
+    else
+        data.frame(total.time = tm, self.time = stm, row.names = label)
+}
+
+funSummaryHits <- function(fc, label, gc) {
+    if (gc)
+        data.frame(total.hits = fc$total, gc.hits = fc$gctotal,
+                   self.hits = fc$self, gcself.hits = fc$gcself,
+                       row.names = label)
+    else
+        data.frame(total.hits = fc$total, self.hits = fc$self,
+                   row.names = label)
+}
+
+funLabels <- function(fun, site, files) {
+    if (all(is.na(site)))
+        fun
+    else {
+        file <- basename(files[refFN(site)])
+        line <- refLN(site)
+        funsite <- sprintf("%s (%s:%d)", fun, file, line)
+        ifelse(is.na(site), fun, funsite)
+    }
+}
+
+funSummary <- function(pd, byTotal = TRUE,
+                       value = c("pct", "time", "hits"),
+                       srclines = TRUE,
+                       gc = TRUE) {
+    value <- match.arg(value)
+
+    fc <- funCounts(pd, srclines)
+    if (byTotal)
+        fc <- fc[rev(order(fc$total)), ]
+    else
+        fc <- fc[rev(order(fc$self)), ]
+
+    label <- funLabels(fc$fun, fc$site, pd$files)
+
+    if (value == "pct")
+        funSummaryPct(fc, label, gc && pd$haveGC, sum(pd$counts))
+    else if (value == "time")
+        funSummaryTime(fc, label, gc && pd$haveGC, pd$interval / 1.0e6)
+    else
+        funSummaryHits(fc, label, gc && pd$haveGC)
+}
+
+callSummary <- function(pd, byTotal = TRUE,
+                        value = c("pct", "time", "hits"),
+                        srclines = TRUE,
+                        gc = TRUE) {
+    value <- match.arg(value)
+
+    cc <- callCounts(pd, srclines, srclines)
+    if (byTotal)
+        cc <- cc[rev(order(cc$total)), ]
+    else
+        cc <- cc[rev(order(cc$self)), ]
+
+    caller.label <- funLabels(cc$caller, cc$caller.site, pd$files)
+    callee.label <- funLabels(cc$callee, cc$callee.site, pd$files)
+    label <- paste(caller.label, callee.label, sep = " -> ")
+
+    if (value == "pct")
+        funSummaryPct(cc, label, gc && pd$haveGC, sum(pd$counts))
+    else if (value == "time")
+        funSummaryTime(cc, label, gc && pd$haveGC, pd$interval / 1.0e6)
+    else
+        funSummaryHits(cc, label, gc && pd$haveGC)
+}
+
+
+###
 ### Flame graph and time graph
 ###
 
@@ -616,142 +847,6 @@ tg <- function(file, svgfile, colormap = NULL, srclines = FALSE) {
         svgFlameGraph(svgfile, tstacks, counts, "no", colormap)
     else
         flameGraph(tstacks, counts, "no", colormap)
-}
-
-
-###
-### Function and call summaries
-###
-
-fact2char <- function(d) {
-    for (i in seq_along(d))
-        if (is.factor(d[[i]]))
-            d[[i]] <- as.character(d[[i]])
-    d
-}
-
-aggregateCounts <- function(entries, counts) {
-    dcounts <- as.data.frame(counts)
-    clean <- function(x)
-        if (any(is.na(x)))
-            factor(as.character(x), exclude = "")
-        else
-            x
-    fact2char(aggregate(dcounts, lapply(entries, clean), sum))
-}
-
-rbindEntries <- function(entries)
-    as.data.frame(do.call(rbind, entries), stringsAsFactors = FALSE)
-    
-mergeCounts <- function(data, leafdata) {
-    val <- merge(data, leafdata, all = TRUE)
-    val$self[is.na(val$self)] <- 0
-    val$gcself[is.na(val$gcself)] <- 0
-    val
-}
-
-entryCounts0 <- function(pd, fun, control, names) {
-    stacks <- pd$stacks
-    refs <- pd$refs
-    counts <- pd$counts
-    gccounts <- pd$gccounts
-
-    which <- seq_along(stacks)
-    
-    doLine <- function(i) fun(stacks[[i]], refs[[i]], control)
-    entries <- lapply(which, doLine)
-    edf <- rbindEntries(entries)
-
-    reps <- unlist(lapply(entries, nrow))
-    tot <- rep(counts, reps)
-    gctot <- rep(gccounts, reps)
-    ct <- cbind(tot, gctot, deparse.level = 0)
-    colnames(ct) <- names
-    aggregateCounts(edf, ct)
-}
-    
-entryCounts <- function(pd, lineFun, leafFun, control) {
-    aedf <- entryCounts0(pd, lineFun, control, c("total", "gctotal"))
-    aledf <- entryCounts0(pd, leafFun, control, c("self", "gcself"))
-    mergeCounts(aedf, aledf)
-}
-
-lineFuns <- function(line, refs, useSite) {
-    if (useSite) {
-        n <- length(line)
-        site <- refs[-(n + 1)]
-    }
-    else site <- NA_character_
-    unique(cbind(fun = line, site))
-}
-
-leafFun <- function(line, refs, useSite) {
-    n <- length(line)
-    fun <- line[n]
-    site <- if (useSite) refs[n] else NA_character_
-    cbind(fun, site)
-}
-
-funCounts <- function(pd, useSite = TRUE)
-    entryCounts(pd, lineFuns, leafFun, useSite)
-    
-lineCalls <- function(line, refs, cntrl) {
-    n <- length(line)
-    if (n > 1) {
-        caller <- line[-n]
-        callee <- line[-1]
-        if (cntrl$useCalleeSite)
-            callee.site <- refs[-c(1, n + 1)]
-        else
-            callee.site <- NA_character_
-        if (cntrl$useCallerSite)
-            caller.site <- refs[-c(n, n + 1)]
-        else
-            caller.site <- NA_character_
-    }
-    else
-        caller <- callee <- callee.site <- caller.site <- character()
-    unique(cbind(caller, callee, caller.site, callee.site))
-}
-
-leafCall <- function(line, refs, cntrl) {
-    n <- length(line)
-    if (n > 1) {
-        caller <- line[n - 1]
-        callee <- line[n]
-        if (cntrl$useCalleeSite)
-            callee.site <- refs[n]
-        else
-            callee.site <- NA_character_
-        if (cntrl$useCallerSite)
-            caller.site <- refs[n - 1]
-        else
-            caller.site <- NA_character_
-    }
-    else
-        caller <- callee <- callee.site <- caller.site <- character()
-    cbind(caller, callee, caller.site, callee.site)
-}
-
-callCounts <- function(pd, useCalleeSite = TRUE, useCallerSite = FALSE) {
-    cntrl <- list(useCalleeSite = useCalleeSite, useCallerSite = useCallerSite)
-    entryCounts(pd, lineCalls, leafCall, cntrl)
-}
-
-lineRefs <- function(line, refs, useSite)
-    unique(cbind(fun = "", refs = refs))
-
-## leafRef <- function(line, refs, useSite) {
-##     n <- length(line)
-##     cbind(fun = "", refs = refs[n + 1])
-## }
-leafRef <- function(line, refs, useSite)
-    cbind(fun = "", refs = NA_character_)
-
-refCounts <- function(pd) {
-    val <- entryCounts(pd, lineRefs, leafRef, TRUE)
-    val$fun <- val$self <- val$gcself <- NULL
-    val[! is.na(val$refs), ]
 }
 
 
@@ -1057,101 +1152,6 @@ pathSummary <- function(pd, value = c("pct", "time", "hits"),
         pathSummaryTime(apd, gc && pd$haveGC, pd$interval / 1.0e6)
     else
         pathSummaryHits(apd, gc && pd$haveGC)
-}
-
-funSummaryPct <- function(fc, label, gc, grandTotal) {
-    pct <- round(100 * fc$total / grandTotal, 1)
-    spct <- round(100 * fc$self / grandTotal, 1)
-    if (gc) {
-        gcpct <- round(100 * fc$gctotal / grandTotal, 1)
-        sgcpct <- round(100 * fc$gcself / grandTotal, 1)
-        data.frame(total.pct = pct, gc.pct = gcpct,
-                   self.pct = spct, gcself.pct = sgcpct,
-                   row.names = label)
-    }
-    else
-        data.frame(total.pct = pct, self.pct = spct, row.names = label)
-}
-
-funSummaryTime <- function(fc, label, gc, delta) {
-    tm <- fc$total * delta
-    stm <- fc$self * delta
-    if (gc) {
-        gctm <- fc$gctotal * delta
-        sgctm <- fc$gcself * delta
-        data.frame(total.time = tm, gc.time = gctm,
-                   self.time = stm, gcself.time = sgctm,
-                   row.names = label)
-    }
-    else
-        data.frame(total.time = tm, self.time = stm, row.names = label)
-}
-
-funSummaryHits <- function(fc, label, gc) {
-    if (gc)
-        data.frame(total.hits = fc$total, gc.hits = fc$gctotal,
-                   self.hits = fc$self, gcself.hits = fc$gcself,
-                       row.names = label)
-    else
-        data.frame(total.hits = fc$total, self.hits = fc$self,
-                   row.names = label)
-}
-
-funLabels <- function(fun, site, files) {
-    if (all(is.na(site)))
-        fun
-    else {
-        file <- basename(files[refFN(site)])
-        line <- refLN(site)
-        funsite <- sprintf("%s (%s:%d)", fun, file, line)
-        ifelse(is.na(site), fun, funsite)
-    }
-}
-
-funSummary <- function(pd, byTotal = TRUE,
-                       value = c("pct", "time", "hits"),
-                       srclines = TRUE,
-                       gc = TRUE) {
-    value <- match.arg(value)
-
-    fc <- funCounts(pd, srclines)
-    if (byTotal)
-        fc <- fc[rev(order(fc$total)), ]
-    else
-        fc <- fc[rev(order(fc$self)), ]
-
-    label <- funLabels(fc$fun, fc$site, pd$files)
-
-    if (value == "pct")
-        funSummaryPct(fc, label, gc && pd$haveGC, sum(pd$counts))
-    else if (value == "time")
-        funSummaryTime(fc, label, gc && pd$haveGC, pd$interval / 1.0e6)
-    else
-        funSummaryHits(fc, label, gc && pd$haveGC)
-}
-
-callSummary <- function(pd, byTotal = TRUE,
-                        value = c("pct", "time", "hits"),
-                        srclines = TRUE,
-                        gc = TRUE) {
-    value <- match.arg(value)
-
-    cc <- callCounts(pd, srclines, srclines)
-    if (byTotal)
-        cc <- cc[rev(order(cc$total)), ]
-    else
-        cc <- cc[rev(order(cc$self)), ]
-
-    caller.label <- funLabels(cc$caller, cc$caller.site, pd$files)
-    callee.label <- funLabels(cc$callee, cc$callee.site, pd$files)
-    label <- paste(caller.label, callee.label, sep = " -> ")
-
-    if (value == "pct")
-        funSummaryPct(cc, label, gc && pd$haveGC, sum(pd$counts))
-    else if (value == "time")
-        funSummaryTime(cc, label, gc && pd$haveGC, pd$interval / 1.0e6)
-    else
-        funSummaryHits(cc, label, gc && pd$haveGC)
 }
 
 srcSummary <- function(pd, byTotal = TRUE,
