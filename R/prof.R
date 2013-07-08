@@ -322,6 +322,8 @@ stripRefs <- function(pd) {
     pd
 }
 
+percent <- function(x, y) round(100 * x / y, 2)
+
 ## The Hot Path order orders each level according to the number of
 ## hits within the call chain upt to that point.
 hotPathOrd <- function(stacks, counts) {
@@ -381,12 +383,12 @@ hotPathData <- function(pd) {
 hotPathsPct <- function(data, self, gc, grandTotal) {
     pa <- pathAbbrev(data$key)
     val <- data.frame(path = sprintf(sprintf("%%-%ds", max(nchar(pa))), pa),
-                      total.pct = round( 100 * data$count / grandTotal, 1),
+                      total.pct = percent(data$count, grandTotal),
                       stringsAsFactors = FALSE)
-    if (gc) val$gc.pct = round(100 * data$gccount / grandTotal, 1)
+    if (gc) val$gc.pct = percent(data$gccount, grandTotal)
     if (self) {
-        val$self.pct = round(100 * data$self / grandTotal, 1)
-        if (gc) val$gcself.pct = round(100 * data$gcself / grandTotal, 1)
+        val$self.pct = percent(data$self, grandTotal)
+        if (gc) val$gcself.pct = percent(data$gcself, grandTotal)
     }
     class(val) <- c("proftools_hotPaths", "data.frame")
     val
@@ -579,11 +581,11 @@ refCounts <- function(pd) {
 }
 
 funSummaryPct <- function(fc, label, gc, grandTotal) {
-    pct <- round(100 * fc$total / grandTotal, 1)
-    spct <- round(100 * fc$self / grandTotal, 1)
+    pct <- percent(fc$total, grandTotal)
+    spct <- percent(fc$self, grandTotal)
     if (gc) {
-        gcpct <- round(100 * fc$gctotal / grandTotal, 1)
-        sgcpct <- round(100 * fc$gcself / grandTotal, 1)
+        gcpct <- percent(fc$gctotal, grandTotal)
+        sgcpct <- percent(fc$gcself, grandTotal)
         data.frame(total.pct = pct, gc.pct = gcpct,
                    self.pct = spct, gcself.pct = sgcpct,
                    row.names = label)
@@ -1099,8 +1101,8 @@ printPaths <- function(pd, n, ...) {
     if (! missing(n) && length(ord) > n)
         ord <- ord[1 : n]
     tot <- sum(pd$counts)
-    pct <- round(100 * pd$counts[ord] / tot, 1)
-    gcpct <- round(100 * pd$gccounts[ord] / tot, 1)
+    pct <- percent(pd$counts[ord], tot)
+    gcpct <- percent(pd$gccounts[ord], tot)
     paths <- sapply(pd$stacks[ord], formatTrace, ...)
     mapply(function(x, y, z) cat(sprintf("%5.1f %5.1f   %s\n", x, y, z)),
            pct, gcpct, paths)
@@ -1113,9 +1115,9 @@ pathSummaryPct <- function(apd, gc) {
     paths <- apd$paths
 
     tot <- sum(counts)
-    pct <- round(100 * counts / tot, 1)
+    pct <- percent(counts, tot)
     if (gc) {
-        gcpct <- round(100 * gccounts / tot, 1)
+        gcpct <- percent(gccounts, tot)
         data.frame(total.pct = pct, gc.pct = gcpct, row.names = paths)
     }
     else
@@ -1193,7 +1195,7 @@ srcSummary <- function(pd, byTotal = TRUE,
     if (value == "pct") {
         tot <- sum(pd$counts)
         colnames(val) <- paste(colnames(val), "pct", sep = ".")
-        as.data.frame(round(100 * val / tot, 1))
+        as.data.frame(percent(val, tot))
     }
     else if (value == "time") {
         delta <- pd$interval / 1.0e6
