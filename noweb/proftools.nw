@@ -750,7 +750,7 @@ print.proftools_hotPaths <- function(x, ..., right = FALSE, row.names = FALSE)
 To ensure consistency rounded percentages are computes by a common
 function [[percent]]:
 <<[[percent]] function>>=
-percent <- function(x, y) round(100 * x / y, 1)
+percent <- function(x, y) round(100 * x / y, 2)
 @ %def percent
 
 \subsection{Function and Call Summaries}
