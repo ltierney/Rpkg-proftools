@@ -283,6 +283,24 @@ prunePD <- function(pd, to, by, merge = FALSE) {
     transformPD(pd, prune)
 }
 
+mergeGC <- function(pd) {
+    ostacks <- pd$stacks
+    hasGC <- which(pd$gccounts > 0)
+
+    pd$stacks <- c(pd$stacks, lapply(pd$stacks[hasGC], c, "<GC>"))
+    pd$refs <- c(pd$refs, lapply(pd$refs[hasGC], c, NA_character_))
+    pd$counts <- c(pd$counts - pd$gccounts, pd$gccounts[hasGC])
+    pd$gccounts <- rep(0, length(pd$counts))
+
+    map <- match(seq_along(ostacks), hasGC) + length(ostacks)
+    pd$trace[pd$inGC] <- map[pd$trace[pd$inGC]]
+
+    pd$inGC[] <- FALSE
+    pd$haveGC <- FALSE
+
+    pd
+}
+
 
 ###
 ### Hot path summaries
