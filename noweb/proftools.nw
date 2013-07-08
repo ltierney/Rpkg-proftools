@@ -471,25 +471,55 @@ pruneIDX <- function(pd, what) {
 %% $ -- make emacs happy
 
 \subsection{Merging GC information}
+At times it may be more convenient to have calls to GC treated like
+calls to other functions. [[mergeGC]] does the conversion.
 <<[[mergeGC]] function>>=
 mergeGC <- function(pd) {
-    ostacks <- pd$stacks
-    hasGC <- which(pd$gccounts > 0)
-
-    pd$stacks <- c(pd$stacks, lapply(pd$stacks[hasGC], c, "<GC>"))
-    pd$refs <- c(pd$refs, lapply(pd$refs[hasGC], c, NA_character_))
-    pd$counts <- c(pd$counts - pd$gccounts, pd$gccounts[hasGC])
-    pd$gccounts <- rep(0, length(pd$counts))
-
-    map <- match(seq_along(ostacks), hasGC) + length(ostacks)
-    pd$trace[pd$inGC] <- map[pd$trace[pd$inGC]]
-
-    pd$inGC[] <- FALSE
-    pd$haveGC <- FALSE
-
-    pd
+    <<[[mergeGC]] body>>
 }
 @ %def mergeGC
+
+The first step saves the old stacks and records the indices of the
+stacks that call GC.
+<<[[mergeGC]] body>>=
+ostacks <- pd$stacks
+hasGC <- which(pd$gccounts > 0)
+
+@ %def
+\FIXME{Handle the trailing space better in woven output.}
+
+Stacks with GC calls appended are added to the stack list;
+corresponding references are added as as well.
+<<[[mergeGC]] body>>=
+pd$stacks <- c(pd$stacks, lapply(pd$stacks[hasGC], c, "<GC>"))
+pd$refs <- c(pd$refs, lapply(pd$refs[hasGC], c, NA_character_))
+@ %def
+
+The [[counts]] for the original stacks are reduced by their
+[[gccounts]], and the [[gccounts]] for stacks with GC calls become the
+[[counts]] for the new stacks.
+<<[[mergeGC]] body>>=
+pd$counts <- c(pd$counts - pd$gccounts, pd$gccounts[hasGC])
+pd$gccounts <- rep(0, length(pd$counts))
+
+@ %def
+
+The [[trace]] indices for entries during GC calls are updated
+to point to the new stacks with GC calls appended.
+<<[[mergeGC]] body>>=
+map <- match(seq_along(ostacks), hasGC) + length(ostacks)
+pd$trace[pd$inGC] <- map[pd$trace[pd$inGC]]
+
+@ %def
+
+Finally, the [[inGC]] and [[haveGC]] fields are updated and the new
+[[pd]] is returned.
+<<[[mergeGC]] body>>=
+pd$inGC[] <- FALSE
+pd$haveGC <- FALSE
+
+pd
+@ %def
 
 
 \section{Summary Functions}
