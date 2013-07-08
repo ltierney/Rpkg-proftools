@@ -154,6 +154,12 @@ print.proftools_profData <- function(x, n = 6, ...) {
 }
 @ %def
 
+To integrate with the original \texttt{proftools} package
+[[readProfileData]] is available as an alias for [[readPD]]
+<<[[readProfileData]] function>>=
+readProfileData <- function(file) readPD(file)
+@ %def readProfileData
+
 
 \section{Operations on Profile Data}
 Raw profile date may contain references to function calls that take
@@ -800,6 +806,8 @@ funSummaryHits <- function(fc, label, gc) {
 ###
 
 <<[[readPDheader]] function>>
+
+<<[[readProfileData]] function>>
 
 <<[[readPDlines]] function>>
 

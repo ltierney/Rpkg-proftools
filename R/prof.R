@@ -21,6 +21,8 @@ readPDheader <- function(con) {
     list(interval = interval, haveGC = haveGC, haveRefs = haveRefs)
 }
 
+readProfileData <- function(file) readPD(file)
+
 readPDlines <- function(con, hdr) {
     stacks <-  readLines(con)
     if (hdr$haveRefs) {
