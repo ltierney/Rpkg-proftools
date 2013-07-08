@@ -264,6 +264,8 @@ addCycleInfo <- function(pd, data, cycles) {
 
 cvtProfileData <- function(pd) {
     if (inherits(pd, "proftools_profData")) {
+        if (pd$haveGC)
+            pd <- mergeGC(pd)
         data <- rawProfCallGraph(pd)
         cycles <- findCycles(data)
         if (! is.null(cycles))
