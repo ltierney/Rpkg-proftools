@@ -262,14 +262,17 @@ addCycleInfo <- function(pd, data, cycles) {
     mapply(fun, rvStacks, pd$counts)
 }
 
-readProfileData <- function(pd) {
-    data <- rawProfCallGraph(pd)
-    cycles <- findCycles(data)
-    if (! is.null(cycles))
-        addCycleInfo(pd, data, cycles)
-    ## **** add a class -- proftools_callgraph?
-    list(interval = pd$interval, count = sum(pd$count),
-         data = data, cycles = cycles)
+cvtProfileData <- function(pd) {
+    if (inherits(pd, "proftools_profData")) {
+        data <- rawProfCallGraph(pd)
+        cycles <- findCycles(data)
+        if (! is.null(cycles))
+            addCycleInfo(pd, data, cycles)
+        ## **** add a class -- proftools_callgraph?
+        list(interval = pd$interval, count = sum(pd$count),
+             data = data, cycles = cycles)
+    }
+    else pd
 }
 
 revProfCallGraphMap <- function(data) {
@@ -288,6 +291,7 @@ revProfCallGraphMap <- function(data) {
 }
 
 flatProfile <- function(pd, byTotal = TRUE) {
+    pd <- cvtProfileData(pd)
     nodes <- lsEnv(pd$data)
     if (! is.null(pd$cycles)) {
         map <- makeCycleMap(pd$cycles)
@@ -421,6 +425,7 @@ makeCycleMemberLine <- function(n, cycle, pg) {
 }
 
 printProfileCallGraph <- function(pd, file = stdout(), percent = TRUE) {
+    pd <- cvtProfileData(pd)
     if (is.character(file)) {
         if (file == "")
             stop("'file' must be non-empty string")
@@ -587,6 +592,7 @@ profileCallGraph2Dot <- function(pd, score = c("total", "self"),
                                  filename = "Rprof.dot", landscape = FALSE,
                                  mergeCycles = FALSE, edgesColored = TRUE,
                                  rankdir = "LR", center = FALSE, size) {
+    pd <- cvtProfileData(pd)
     if (missing(score))
         score = "none"
     else match.arg(score)
@@ -602,6 +608,8 @@ plotProfileCallGraph <- function(pd, layout = "dot",
                                  rankDir = "LR", ...) {
     if (! require(Rgraphviz))
         stop("package Rgraphviz is needed but not available")
+
+    pd <- cvtProfileData(pd)
 
     ## **** eventually do an import here, or use Rgraphviz::plot
     plot <- get("plot", envir = .GlobalEnv)
