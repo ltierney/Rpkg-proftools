@@ -61,7 +61,7 @@ g2g <- function(g) {
 getProfCallGraphNodeEntry <- function(name, env)
     get(name, envir = env)
 
-incProfCallGraphNodeEntry <- function(name, what, env, count) {
+incProfCallGraphNodeEntry <- function(name, what, env, count = 1) {
     if (exists(name, envir = env, inherits = FALSE))
         entry <- get(name, envir = env)
     else
@@ -75,7 +75,7 @@ getProfCallGraphEdgeEntry <- function(from, to, env) {
     get(to, envir = fromEntry$edges)
 }
 
-incProfCallGraphEdgeEntry <- function(from, to, what, env, count) {
+incProfCallGraphEdgeEntry <- function(from, to, what, env, count = 1) {
     fromEntry <- getProfCallGraphNodeEntry(from, env)
     if (exists(to, envir = fromEntry$edges, inherits = FALSE))
         entry <- get(to, envir = fromEntry$edges)
@@ -87,7 +87,7 @@ incProfCallGraphEdgeEntry <- function(from, to, what, env, count) {
 rawProfCallGraph <- function(pd) {
     data <- mkHash()
     rvStacks <- lapply(pd$stacks, rev)
-    fun <- function(line, count) {
+    fun <- function(line, count = 1) {
         incProfCallGraphNodeEntry(line[1], "self", data, count)
         for (n in unique(line))
             incProfCallGraphNodeEntry(n, "total", data, count)
@@ -238,7 +238,7 @@ addCycleInfo <- function(pd, data, cycles) {
         line
     }
     cnames <- unique(unlist(lapply(lsEnv(map), get, map)))
-    fun <- function(line, count) {
+    fun <- function(line, count = 1) {
         line <- compressLineRuns(renameCycles(line))
         if (isIn(line[1], cnames))
             incProfCallGraphNodeEntry(line[1], "self", data, count)
