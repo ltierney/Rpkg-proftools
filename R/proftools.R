@@ -103,7 +103,7 @@ rawProfCallGraph <- function(pd) {
             }
         }
     }
-    mapply(fun, rvStacks, pd$counts)
+    mapply(fun, rvStacks, pd$counts, SIMPLIFY = FALSE)
     data
 }
 
@@ -259,7 +259,7 @@ addCycleInfo <- function(pd, data, cycles) {
             }
         }
     }
-    mapply(fun, rvStacks, pd$counts)
+    mapply(fun, rvStacks, pd$counts, SIMPLIFY = FALSE)
 }
 
 cvtProfileData <- function(pd) {
