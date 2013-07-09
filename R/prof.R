@@ -139,7 +139,7 @@ focusPD <- function(pd, which, drop = TRUE) {
 }
 
 compactPD <- function(pd) {
-    ## **** need simplify here since mapply creates a matrix if all
+    ## **** need SIMPLIFY=FALSE here since mapply creates a matrix if all
     ## **** elements of the result happen to be the same length. Might
     ## **** be more robust to use paste() rather than c() (probably
     ## **** what I intended originally).
@@ -1105,7 +1105,7 @@ printPaths <- function(pd, n, ...) {
     gcpct <- percent(pd$gccounts[ord], tot)
     paths <- sapply(pd$stacks[ord], formatTrace, ...)
     mapply(function(x, y, z) cat(sprintf("%5.1f %5.1f   %s\n", x, y, z)),
-           pct, gcpct, paths)
+           pct, gcpct, paths, SIMPLIFY = FALSE)
     invisible(NULL)
 }
 
@@ -1155,7 +1155,8 @@ pathSummary <- function(pd, value = c("pct", "time", "hits"),
         files <- pd$files ## shorter: as.character(seq_along(pd$files)
         rstacks <- mapply(function(a, b) funLabels(a, b, files),
                           pd$stacks,
-                          sapply(pd$refs, function(x) x[-length(x)]))
+                          sapply(pd$refs, function(x) x[-length(x)]),
+                          SIMPLIFY = FALSE)
         paths <- sapply(rstacks, formatTrace, ...)
     }
     else
