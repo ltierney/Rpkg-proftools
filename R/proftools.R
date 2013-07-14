@@ -608,7 +608,7 @@ profileCallGraph2Dot <- function(pd, score = c("total", "self"),
                                  edgeColorMap = NULL, filename = "Rprof.dot",
                                  landscape = FALSE, mergeCycles = FALSE,
                                  edgesColored = FALSE,
-                                 rankdir = "LR", center = FALSE, size) {
+                                 rankDir = "LR", center = FALSE, size) {
     pd <- cvtProfileData(pd)
     if (missing(score))
         score = "none"
@@ -616,14 +616,15 @@ profileCallGraph2Dot <- function(pd, score = c("total", "self"),
     p <- np2x(pd, score, transfer, nodeColorMap, edgeColorMap, mergeCycles,
               edgesColored)
     g2d(p, filename, nodeColors = p$nodeColors, edgeColors = p$edgeColors,
-        landscape = landscape, rankdir = rankdir, size = size, center = center,
+        landscape = landscape, rankdir = rankDir, size = size, center = center,
         score = score)
 }
 
 plotProfileCallGraph <- function(pd, layout = "dot",
                                  score = c("total", "self"),
-                                 transfer = function(x) x, colorMap = NULL,
-                                 mergeCycles = FALSE, edgesColored = FALSE,
+                                 transfer = function(x) x, nodeColorMap = NULL,
+                                 edgeColorMap = NULL, mergeCycles = FALSE,
+                                 edgesColored = FALSE,
                                  rankDir = "LR", ...) {
     if (! require(Rgraphviz))
         stop("package Rgraphviz is needed but not available")
@@ -636,10 +637,14 @@ plotProfileCallGraph <- function(pd, layout = "dot",
     if (missing(score))
         score = "none"
     else match.arg(score)
-    if (score != "none" && is.null(colorMap))
-        colorMap <- heat.colors(100)
+    if (score != "none") {
+        if (is.null(nodeColorMap))
+            nodeColorMap <- heat.colors(100)
+        if (is.null(edgeColorMap))
+            edgeColorMap <- hsv(1,1,seq(1,0,length.out=50))
+    }
 
-    p <- np2x(pd, score, transfer, colorMap, colorMap, mergeCycles,
+    p <- np2x(pd, score, transfer, nodeColorMap, edgeColorMap, mergeCycles,
               edgesColored)
 
     if (! is.null(p$nodeColors)) {
