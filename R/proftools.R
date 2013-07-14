@@ -660,7 +660,7 @@ plotProfileCallGraph <- function(pd, layout = "dot",
         p$edgeColors <- unlist(p$edgeColors)
     }
 
-    attrs <- list(node = list(shape = "ellipse", fixedsize = FALSE))
+    attrs <- list(node = list(shape = "box", fixedsize = FALSE))
     if (layout == "dot")
         attrs$graph <- list(rankdir = rankDir)
     if (score == "none")
