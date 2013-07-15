@@ -519,9 +519,15 @@ extractProfileNodes <- function(pd, score = c("self", "total", "none"),
     nodes <- lsEnv(pd$data)
     omitted <- getOmittedNodes(pd, mergeCycles)
     nodes <- nodes[! nodes %in% omitted]
-    getScore <- function(n) get(n, envir = pd$data)[[score]]
-    sval <- unlist(lapply(nodes, getScore)) / pd$count
-    list(nodes = nodes, scores = sval)
+    getScore <- function(n, type) get(n, envir = pd$data)[[type]]
+    ## totalCost & selfCost needed for Google node Labels
+    totalCost <- unlist(lapply(nodes, getScore, "total"))
+    selfCost <- unlist(lapply(nodes, getScore, "self"))
+    if(score == "total")
+        sval <- totalCost / pd$count
+    else sval <- selfCost / pd$count
+    list(nodes = nodes, scores = sval,
+         totalCost = totalCost, selfCost = selfCost)
 }
 
 extractProfileEdges <- function(pd, score = c("self", "total", "none"),
@@ -539,14 +545,16 @@ extractProfileEdges <- function(pd, score = c("self", "total", "none"),
     edges <- lapply(nodes, getToNodes)
     ## getScores no longer divides by pd$count so can we avoid calling it 
     ## twice (if possible) to get callCounts below
-    getScores <- function(n) {
+    getScores <- function(n, type) {
         env <- get(n, envir = pd$data)$edges
         to <- lsEnv(env)
         to <- to[! to %in% omitted]
-        unlist(lapply(to, function(v) get(v, envir = env)[[score]]))
+        unlist(lapply(to, function(v) get(v, envir = env)[[type]]))
     }
-    sval <- lapply(nodes, getScores)
-    list(edges = edges, scores = sval)
+    sval <- lapply(nodes, getScores, score)
+    if(score == "total") callCounts <- sval
+    else callCounts <- lapply(nodes, getScores, "total")
+    list(edges = edges, scores = sval, callCounts = callCounts)
 }
 
 np2x <- function(pd, score = c("total", "self", "none"),
