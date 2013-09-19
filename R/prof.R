@@ -104,7 +104,7 @@ print.proftools_profData <- function(x, n = 6, ...) {
 
 subsetIDX <- function(idx, pd) {
     if (is.character(idx))
-        which(sapply(pd$stacks, function(s) any(idx %in% s)))
+        which(sapply(pd$stacks, function(s) any(grepl(idx, s))))
     else if (is.logical(idx))
         which(idx)
     else 

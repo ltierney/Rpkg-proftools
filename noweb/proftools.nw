@@ -194,16 +194,16 @@ The [[subsetPD]] function takes a profile data object and a
 specification for the stack traces to keep and returns a new profile
 data object containing only the specified stack frames. The frames to
 keep can be specified as a vector of indices, as a logical vector, or
-as a character vector. A character vector is taken to contain names of
-functions, and only stack frames containing calls to at least on of
-the specified functions are retained.
+as a character vector. A character vector is taken to contain regular
+expressions to match names of functions, and only stack frames
+containing calls to at least one matching function are retained.
 
 The first step is to convert logical or character specifications into
 indices of frames to keep. This is done by [[subsetIDX]]:
 <<[[subsetIDX]] function>>=
 subsetIDX <- function(idx, pd) {
     if (is.character(idx))
-        which(sapply(pd$stacks, function(s) any(idx %in% s)))
+        which(sapply(pd$stacks, function(s) any(grepl(idx, s))))
     else if (is.logical(idx))
         which(idx)
     else 
