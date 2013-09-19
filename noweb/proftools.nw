@@ -196,10 +196,11 @@ data object containing only the specified stack frames. The frames to
 keep can be specified as a vector of indices, as a logical vector, or
 as a character vector. A character vector is taken to contain regular
 expressions to match names of functions, and only stack frames
-containing calls to at least one matching function are retained.
+containing calls to at least one matching function are
+retained. Frames to omit can be specified analogously.
 
 The first step is to convert logical or character specifications into
-indices of frames to keep. This is done by [[subsetIDX]]:
+indices of frames to keep or omit. This is done by [[subsetIDX]]:
 <<[[subsetIDX]] function>>=
 subsetIDX <- function(idx, pd) {
     if (is.character(idx))
@@ -207,17 +208,22 @@ subsetIDX <- function(idx, pd) {
     else if (is.logical(idx))
         which(idx)
     else 
-         idx
+        idx
 }
 @ %def subsetIDX
+%% $ -- make emacs happy
 
-The first step in [[subsetPD]] is to call [[subsetIDX]] to convert the
-subset specification into indices, and to create a vector of indices
-into the original stacks to be used in remapping the reduces trace
-into the new stacks.
+The first step in [[subsetPD]] is to create a vector of indices into
+the original stacks to be used in remapping the reduces trace into the
+new stacks and to call [[subsetIDX]] to convert the subset
+specifications into indices.
 <<Convert specification to indices and save index vector>>=
-keep <- subsetIDX(which, pd)
 stackIDX <- seq_along(pd$stacks)
+if (missing(select))
+    select <- stackIDX
+keep <- subsetIDX(select, pd)
+if (! missing(omit))
+    keep <- setdiff(keep, subsetIDX(omit, pd))
 @ %def
 
 Next, the stacks, references, and counts are reduced to the ones
@@ -248,7 +254,7 @@ pd$trace <- map[pd$trace]
 
 The complete definition of [[subsetPD]] is then
 <<[[subsetPD]] function>>=
-subsetPD <- function(pd, which) {
+subsetPD <- function(pd, select, omit) {
     <<Convert specification to indices and save index vector>>
     
     <<reduce stacks and counts>>

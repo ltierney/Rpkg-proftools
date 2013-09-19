@@ -108,12 +108,16 @@ subsetIDX <- function(idx, pd) {
     else if (is.logical(idx))
         which(idx)
     else 
-         idx
+        idx
 }
 
-subsetPD <- function(pd, which) {
-    keep <- subsetIDX(which, pd)
+subsetPD <- function(pd, select, omit) {
     stackIDX <- seq_along(pd$stacks)
+    if (missing(select))
+        select <- stackIDX
+    keep <- subsetIDX(select, pd)
+    if (! missing(omit))
+        keep <- setdiff(keep, subsetIDX(omit, pd))
     
     pd$stacks <- pd$stacks[keep]
     pd$refs <- pd$refs[keep]
