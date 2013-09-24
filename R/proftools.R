@@ -26,12 +26,11 @@ e2d <- function(from, to, color = NULL, edgeLabel="", edgeWidth = 1) {
 
 # **** A plausible size is 10,7.5
 g2d <- function(g, filename = "g.dot", landscape = TRUE,
-                nodeColors = NULL, edgeColors = NULL, edgeLabels = TRUE,
+                nodeColors = NULL, nodeDetails = TRUE,
+                edgeColors = NULL, edgeDetails = TRUE,
                 size, center = FALSE, rankdir = c("TB","LR"),
                 score = NULL) {
-    if (missing(rankdir))
-        rankdir = "LR"
-    else match.arg(rankdir)
+    rankdir <- match.arg(rankdir)
 
     con <- file(filename, open = "w")
     on.exit(close(con))
@@ -44,14 +43,40 @@ g2d <- function(g, filename = "g.dot", landscape = TRUE,
     if (center)
         cat("center=1;\n", file = con)
     cat(paste("rankdir=", rankdir, ";\n", sep = ""), file = con)
-    for (i in seq(along = g$nodes)) {
-        from <- g$nodes[i]
-        cat(n2d(from, nodeColors[[i]]), file = con)
-        toList <- g$edges[[i]]
+
+    nodes <- g$nodes
+    mke <- function(e) list(edges = match(e, nodes))
+    eL <- lapply(g$edges, mke)
+    ## The quadruple backslashes needed for dot file
+    g$gNodes <- gsub("\n", '\\\\n', g$gNodes)
+    edgeCounts <- g$callCounts
+    if(edgeDetails) {
+        edgeWidths <- lapply(edgeCounts, function(x) round(log10(x+10)))
+        edgeCounts <- lapply(edgeCounts, function(x) paste(" ", x))
+    }
+    else {
+        edgeWidths <- lapply(edgeCounts, function(x) rep(1, length(x)))
+        edgeCounts <- lapply(edgeCounts, function(x) rep("", length(x)))
+    }
+    ## This assigns the sizes of fonts, which determines the sizes of nodes
+    if (nodeDetails) {
+        if(score=="total") fontSizes <- 7 + round(50*g$totalPercent/100)
+        else fontSizes <- 7 + round(50*g$selfPercent/100)
+    }
+    else fontSizes <- rep(14, length(nodes))
+
+    for (i in seq(along = g$gNodes)) {
+        from <- g$gNodes[i]
+        cat(n2d(from, nodeColors[[i]], fontSizes[i]), file = con)
+        ## Have to use eL to know toList because g$edges contains plain
+        ## node names
+        toList <- g$gNodes[eL[[i]]$edges]
         toColors <- edgeColors[[i]]
         for (j in seq(along = toList))
-            cat(e2d(from, toList[[j]], toColors[[j]]), file = con)
+            cat(e2d(from, toList[[j]], toColors[[j]], edgeCounts[[i]][j],
+                    edgeWidths[[i]][j]), file = con)
     }
+
     cat("}", file = con)
 }
 
@@ -520,7 +545,7 @@ extractProfileNodes <- function(pd, score = c("self", "total", "none"),
     omitted <- getOmittedNodes(pd, mergeCycles)
     nodes <- nodes[! nodes %in% omitted]
     getScore <- function(n, type) get(n, envir = pd$data)[[type]]
-    ## totalCost & selfCost needed for Google node Labels
+    ## totalCost & selfCost needed for Google-style node Labels
     totalCost <- unlist(lapply(nodes, getScore, "total"))
     selfCost <- unlist(lapply(nodes, getScore, "self"))
     if(score == "total")
@@ -564,7 +589,14 @@ np2x <- function(pd, score = c("total", "self", "none"),
     match.arg(score)
     nodes <- extractProfileNodes(pd, score, mergeCycles = mergeCycles)
     edges <- extractProfileEdges(pd, score, mergeCycles = mergeCycles)
-    p <- list(nodes = nodes$nodes, edges = edges$edges)
+    totalPercent <- round(nodes$totalCost*100/pd$count, 2)
+    selfPercent <- round(nodes$selfCost*100/pd$count, 2)
+    gNodes <- paste(nodes$nodes, "\n", nodes$selfCost, " (", selfPercent, 
+                    "%) \n of ", nodes$totalCost, " (", totalPercent, "%)", 
+                    sep="")
+    p <- list(nodes = nodes$nodes, edges = edges$edges, 
+              callCounts = edges$callCounts, gNodes = gNodes, 
+              totalPercent = totalPercent, selfPercent = selfPercent)
     if (score == "none") 
         color <- ecolor <- NULL
     else {
@@ -611,21 +643,26 @@ colorScore <- function(score, colorMap) {
     }
 }
 
-profileCallGraph2Dot <- function(pd, score = c("total", "self"),
+profileCallGraph2Dot <- function(pd, score = c("none", "total", "self"),
                                  transfer = function(x) x, nodeColorMap = NULL,
                                  edgeColorMap = NULL, filename = "Rprof.dot",
                                  landscape = FALSE, mergeCycles = FALSE,
                                  edgesColored = FALSE,
-                                 rankDir = "LR", center = FALSE, size) {
+                                 nodeDetails = FALSE, edgeDetails = FALSE,
+                                 rankDir = "TB", center = FALSE, size) {
     pd <- cvtProfileData(pd)
-    if (missing(score))
-        score = "none"
-    else match.arg(score)
+    score <- match.arg(score)
+    if (score != "none") {
+        if (is.null(nodeColorMap))
+            nodeColorMap <- heat.colors(100)
+        if (is.null(edgeColorMap))
+            edgeColorMap <- hsv(1,1,seq(1,0,length.out=50))
+    }
     p <- np2x(pd, score, transfer, nodeColorMap, edgeColorMap, mergeCycles,
               edgesColored)
     g2d(p, filename, nodeColors = p$nodeColors, edgeColors = p$edgeColors,
         landscape = landscape, rankdir = rankDir, size = size, center = center,
-        score = score)
+        score = score, nodeDetails = nodeDetails, edgeDetails = edgeDetails)
 }
 
 plotProfileCallGraph <- function(pd, layout = "dot",
