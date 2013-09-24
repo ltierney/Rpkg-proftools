@@ -384,9 +384,9 @@ corresponding indices to skip.
 skipIDX <- function(pd, what) {
     if (is.character(what)) {
         findFirst <- function(s) {
-            idx <- match(what, s)
-            if (any(! is.na(idx)))
-                min(idx, na.rm = TRUE) - 1
+            idx <- grepl(what, s)
+            if (any(idx))
+                min(which(idx)) - 1
             else
                 0
         }
