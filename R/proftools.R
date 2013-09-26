@@ -32,6 +32,8 @@ g2d <- function(g, filename = "g.dot", landscape = TRUE,
                 score = NULL) {
     rankdir <- match.arg(rankdir)
 
+    eL <- g$edgeL
+    
     con <- file(filename, open = "w")
     on.exit(close(con))
 
@@ -44,9 +46,6 @@ g2d <- function(g, filename = "g.dot", landscape = TRUE,
         cat("center=1;\n", file = con)
     cat(paste("rankdir=", rankdir, ";\n", sep = ""), file = con)
 
-    nodes <- g$nodes
-    mke <- function(e) list(edges = match(e, nodes))
-    eL <- lapply(g$edges, mke)
     ## The quadruple backslashes needed for dot file
     g$gNodes <- gsub("\n", '\\\\n', g$gNodes)
     edgeCounts <- g$callCounts
@@ -81,14 +80,12 @@ g2d <- function(g, filename = "g.dot", landscape = TRUE,
 }
 
 g2g <- function(g) {
-    if (! require("graph"))
-        stop("package graph is needed but not available")
-    # **** eventually maybe do new("graph::graphNEL") here
+    eL <- g$edgeL
+
     nodes <- g$nodes
-    mke <- function(e) list(edges = match(e, nodes))
-    eL <- lapply(g$edges, mke)
     names(eL) <- nodes
-    new("graphNEL", nodes = nodes, edgeL = eL, edgemode = "directed")
+
+    graph::graphNEL(nodes = nodes, edgeL = eL, edgemode = "directed")
 }
 
 getProfCallGraphNodeEntry <- function(name, env)
@@ -619,6 +616,10 @@ np2x <- function(pd, score = c("total", "self", "none"),
     }
     p$nodeColors <- color
     p$edgeColors <- ecolor
+
+    mke <- function(e) list(edges = match(e, p$nodes))
+    p$edgeL <- lapply(p$edges, mke)
+
     p
 }
 
