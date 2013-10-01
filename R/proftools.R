@@ -71,7 +71,7 @@ g2d <- function(g, filename = "g.dot", landscape = TRUE,
     if (nodeSizeScore != "none") {
         if (nodeSizeScore == "total") val <- g$totalPercent
         else val <- g$selfPercent
-        fontSizes <- pmax(7, sqrt(val) * 4)
+        fontSizes <- pmax(7, sqrt(val) * 4) * 2
     }
     else
         fontSizes <- rep(14, length(labels))
@@ -667,17 +667,17 @@ profileCallGraph2Dot <- function(pd, score = c("none", "total", "self"),
                                  edgeColorMap = NULL, filename = "Rprof.dot",
                                  landscape = FALSE, mergeCycles = FALSE,
                                  edgesColored = FALSE,
-                                 rankDir = c("LR", "TB"),
+                                 rankDir = c("TB", "LR"),
                                  nodeDetails = FALSE, edgeDetails = FALSE,
                                  nodeSizeScore = c("none", "total", "self"),
                                  edgeSizeScore = c("none", "total"),
                                  center = FALSE, size, shape = "ellipse",
-                                 style) {
+                                 layout = "dot", style) {
     pd <- cvtProfileData(pd)
     score <- match.arg(score)
 
     if (! missing(style)) {
-        #if (missing(layout)) layout <- style$layout
+        if (missing(layout)) layout <- style$layout
         if (missing(score)) score <- style$score
         if (missing(transfer)) transfer <- style$transfer
         if (missing(nodeColorMap)) nodeColorMap <- style$nodeColorMap
@@ -716,7 +716,7 @@ plotProfileCallGraph <- function(pd, layout = "dot",
                                  score = c("none", "total", "self"),
                                  transfer = function(x) x, nodeColorMap = NULL,
                                  edgeColorMap = NULL, mergeCycles = FALSE,
-                                 edgesColored = FALSE, rankDir = c("LR", "TB"),
+                                 edgesColored = FALSE, rankDir = c("TB", "LR"),
                                  nodeDetails = FALSE, edgeDetails = FALSE,
                                  nodeSizeScore = c("none", "total", "self"),
                                  edgeSizeScore = c("none", "total"),
@@ -777,12 +777,10 @@ plotProfileCallGraph <- function(pd, layout = "dot",
     }
 
     if (nodeSizeScore != "none") {
+        ## This uses the same font size calculation as the dot file
+        ## version
         if (nodeSizeScore == "total") val <- p$totalPercent
         else val <- p$selfPercent
-        ## This uses the same font size calculation as the dot file
-        ## version but with a multiple of 2. Not clear why that
-        ## multiplier is needed but it seems to be in oder to get good
-        ## looking results.
         fontSizes <- pmax(7, sqrt(val) * 4) * 2
         names(fontSizes) <- labels
         nodeRenderInfo(g) <- list(label = labels, fontsize = fontSizes)
@@ -818,7 +816,7 @@ plotProfileCallGraph <- function(pd, layout = "dot",
 plain.style <- list(layout = "dot", score = "none",
                     transfer = function(x) x, nodeColorMap = NULL,
                     edgeColorMap = NULL, mergeCycles = FALSE,
-                    edgesColored = FALSE, rankDir = "LR",
+                    edgesColored = FALSE, rankDir = "TB",
                     nodeDetails = FALSE, edgeDetails = FALSE,
                     nodeSizeScore = "none", edgeSizeScore = "none",
                     shape = "ellipse")
