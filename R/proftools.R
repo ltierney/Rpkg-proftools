@@ -666,19 +666,43 @@ profileCallGraph2Dot <- function(pd, score = c("none", "total", "self"),
                                  transfer = function(x) x, nodeColorMap = NULL,
                                  edgeColorMap = NULL, filename = "Rprof.dot",
                                  landscape = FALSE, mergeCycles = FALSE,
-                                 edgesColored = FALSE, rankDir = "LR",
+                                 edgesColored = FALSE,
+                                 rankDir = c("LR", "TB"),
                                  nodeDetails = FALSE, edgeDetails = FALSE,
                                  nodeSizeScore = c("none", "total", "self"),
                                  edgeSizeScore = c("none", "total"),
-                                 center = FALSE, size, shape = "ellipse") {
+                                 center = FALSE, size, shape = "ellipse",
+                                 style) {
     pd <- cvtProfileData(pd)
     score <- match.arg(score)
+
+    if (! missing(style)) {
+        #if (missing(layout)) layout <- style$layout
+        if (missing(score)) score <- style$score
+        if (missing(transfer)) transfer <- style$transfer
+        if (missing(nodeColorMap)) nodeColorMap <- style$nodeColorMap
+        if (missing(edgeColorMap)) edgeColrMap <- style$edgeColorMap
+        if (missing(mergeCycles)) mergeCycles <- style$mergeCycles
+        if (missing(edgesColored)) edgesColored <- style$edgesColored
+        if (missing(rankDir)) rankDir <- style$rankDir
+        if (missing(nodeDetails)) nodeDetails <- style$nodeDetails
+        if (missing(edgeDetails)) edgeDetails <- style$edgeDetails
+        if (missing(nodeSizeScore)) nodeSizeScore <- style$nodeSizeScore
+        if (missing(edgeSizeScore)) edgeSizeScore <- style$edgeSizeScore
+        if (missing(shape)) shape <- style$shape
+    }
+    match.arg(score)
+    match.arg(rankDir)
+    match.arg(nodeSizeScore)
+    match.arg(edgeSizeScore)
+
     if (score != "none") {
         if (is.null(nodeColorMap))
             nodeColorMap <- heat.colors(100)
         if (is.null(edgeColorMap))
             edgeColorMap <- hsv(1,1,seq(1,0,length.out=50))
     }
+
     p <- np2x(pd, score, transfer, nodeColorMap, edgeColorMap, mergeCycles,
               edgesColored)
     g2d(p, filename, nodeColors = p$nodeColors, edgeColors = p$edgeColors,
@@ -692,19 +716,34 @@ plotProfileCallGraph <- function(pd, layout = "dot",
                                  score = c("none", "total", "self"),
                                  transfer = function(x) x, nodeColorMap = NULL,
                                  edgeColorMap = NULL, mergeCycles = FALSE,
-                                 edgesColored = FALSE, rankDir = "LR",
+                                 edgesColored = FALSE, rankDir = c("LR", "TB"),
                                  nodeDetails = FALSE, edgeDetails = FALSE,
                                  nodeSizeScore = c("none", "total", "self"),
                                  edgeSizeScore = c("none", "total"),
-                                 shape = "ellipse", ...) {
+                                 shape = "ellipse", style, ...) {
     ## eventually do an import or use Rgraphvis::foo here
     if (! require(Rgraphviz))
         stop("package Rgraphviz is needed but not available")
-
-    pd <- cvtProfileData(pd)
-    score <- match.arg(score)
-    nodeSizeScore <- match.arg(nodeSizeScore)
-    edgeSizeScore <- match.arg(edgeSizeScore)
+    
+    if (! missing(style)) {
+        if (missing(layout)) layout <- style$layout
+        if (missing(score)) score <- style$score
+        if (missing(transfer)) transfer <- style$transfer
+        if (missing(nodeColorMap)) nodeColorMap <- style$nodeColorMap
+        if (missing(edgeColorMap)) edgeColrMap <- style$edgeColorMap
+        if (missing(mergeCycles)) mergeCycles <- style$mergeCycles
+        if (missing(edgesColored)) edgesColored <- style$edgesColored
+        if (missing(rankDir)) rankDir <- style$rankDir
+        if (missing(nodeDetails)) nodeDetails <- style$nodeDetails
+        if (missing(edgeDetails)) edgeDetails <- style$edgeDetails
+        if (missing(nodeSizeScore)) nodeSizeScore <- style$nodeSizeScore
+        if (missing(edgeSizeScore)) edgeSizeScore <- style$edgeSizeScore
+        if (missing(shape)) shape <- style$shape
+    }
+    match.arg(score)
+    match.arg(rankDir)
+    match.arg(nodeSizeScore)
+    match.arg(edgeSizeScore)
 
     if (score != "none") {
         if (is.null(nodeColorMap))
@@ -713,8 +752,10 @@ plotProfileCallGraph <- function(pd, layout = "dot",
             edgeColorMap <- hsv(1,1,seq(1,0,length.out=50))
     }
 
-    p <- np2x(pd, score, transfer, nodeColorMap, edgeColorMap, mergeCycles,
-              edgesColored)
+    pd <- cvtProfileData(pd)
+
+    p <- np2x(pd, score, transfer, nodeColorMap,
+              edgeColorMap, mergeCycles, edgesColored)
 
     g <- g2g(p, nodeDetails)
     names(labels) <- labels <- nodes(g)
@@ -770,7 +811,22 @@ plotProfileCallGraph <- function(pd, layout = "dot",
         attrs$graph <- list(rankdir = rankDir)
     g <- layoutGraph(g, layoutType = layout, attrs = attrs)
     edgeRenderInfo(g) <- list(col = p$edgeColors)
-    nodeRenderInfo(g) <- list(fill = p$nodeColors)        
+    nodeRenderInfo(g) <- list(fill = p$nodeColors)
     renderGraph(g, ...)
 }
 
+plain.style <- list(layout = "dot", score = "none",
+                    transfer = function(x) x, nodeColorMap = NULL,
+                    edgeColorMap = NULL, mergeCycles = FALSE,
+                    edgesColored = FALSE, rankDir = "LR",
+                    nodeDetails = FALSE, edgeDetails = FALSE,
+                    nodeSizeScore = "none", edgeSizeScore = "none",
+                    shape = "ellipse")
+
+google.style <- list(layout = "dot", score = "none",
+                     transfer = function(x) x, nodeColorMap = NULL,
+                     edgeColorMap = NULL, mergeCycles = FALSE,
+                     edgesColored = FALSE, rankDir = "TB",
+                     nodeDetails = TRUE, edgeDetails = TRUE,
+                     nodeSizeScore = "self", edgeSizeScore = "total",
+                     shape = "box")
