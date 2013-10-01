@@ -681,7 +681,7 @@ profileCallGraph2Dot <- function(pd, score = c("none", "total", "self"),
         if (missing(score)) score <- style$score
         if (missing(transfer)) transfer <- style$transfer
         if (missing(nodeColorMap)) nodeColorMap <- style$nodeColorMap
-        if (missing(edgeColorMap)) edgeColrMap <- style$edgeColorMap
+        if (missing(edgeColorMap)) edgeColorMap <- style$edgeColorMap
         if (missing(mergeCycles)) mergeCycles <- style$mergeCycles
         if (missing(edgesColored)) edgesColored <- style$edgesColored
         if (missing(rankDir)) rankDir <- style$rankDir
@@ -721,16 +721,12 @@ plotProfileCallGraph <- function(pd, layout = "dot",
                                  nodeSizeScore = c("none", "total", "self"),
                                  edgeSizeScore = c("none", "total"),
                                  shape = "ellipse", style, ...) {
-    ## eventually do an import or use Rgraphvis::foo here
-    if (! require(Rgraphviz))
-        stop("package Rgraphviz is needed but not available")
-    
     if (! missing(style)) {
         if (missing(layout)) layout <- style$layout
         if (missing(score)) score <- style$score
         if (missing(transfer)) transfer <- style$transfer
         if (missing(nodeColorMap)) nodeColorMap <- style$nodeColorMap
-        if (missing(edgeColorMap)) edgeColrMap <- style$edgeColorMap
+        if (missing(edgeColorMap)) edgeColorMap <- style$edgeColorMap
         if (missing(mergeCycles)) mergeCycles <- style$mergeCycles
         if (missing(edgesColored)) edgesColored <- style$edgesColored
         if (missing(rankDir)) rankDir <- style$rankDir
@@ -758,14 +754,14 @@ plotProfileCallGraph <- function(pd, layout = "dot",
               edgeColorMap, mergeCycles, edgesColored)
 
     g <- g2g(p, nodeDetails)
-    names(labels) <- labels <- nodes(g)
+    names(labels) <- labels <- graph::nodes(g)
     if (! is.null(p$nodeColors)) {
         p$nodeColors <- unlist(p$nodeColors)
         names(p$nodeColors) <- labels
     }
     ## Create the edgeNames list based on the edgeL(g) which only has
     ## numbers matching the from and to.
-    edges <- edgeL(g); edgeNames <- list()
+    edges <- graph::edgeL(g); edgeNames <- list()
     for (i in seq(along = edges))
         if(length(edges[[i]]$edges)>0)
             edgeNames[[i]] <- paste(labels[i], labels[edges[[i]]$edges],
@@ -783,21 +779,21 @@ plotProfileCallGraph <- function(pd, layout = "dot",
         else val <- p$selfPercent
         fontSizes <- pmax(7, sqrt(val) * 4) * 2
         names(fontSizes) <- labels
-        nodeRenderInfo(g) <- list(label = labels, fontsize = fontSizes)
+        graph::nodeRenderInfo(g) <- list(label = labels, fontsize = fontSizes)
     }
 
     edgeCounts <- unlist(p$callCounts)
     if (edgeSizeScore != "none") {
         edgeWeights <- log10(edgeCounts+10)
         names(edgeWeights) <- edgeNames
-        edgeRenderInfo(g) <- list(lwd = edgeWeights)
+        graph::edgeRenderInfo(g) <- list(lwd = edgeWeights)
     }
 
     if (edgeDetails) {
         spacing <- sapply(edgeCounts, function(x){rep("   ", length(x))})
         edgeCounts <- paste(spacing, edgeCounts, sep="")
         names(edgeCounts) <- edgeNames
-        edgeRenderInfo(g) <- list(label = edgeCounts, fontsize = 8)
+        graph::edgeRenderInfo(g) <- list(label = edgeCounts, fontsize = 8)
     }
 
     ## The order of layout and rendering info calls below
@@ -807,10 +803,10 @@ plotProfileCallGraph <- function(pd, layout = "dot",
     attrs <- list(node = list(shape = shape, fixedsize = FALSE))
     if (layout == "dot")
         attrs$graph <- list(rankdir = rankDir)
-    g <- layoutGraph(g, layoutType = layout, attrs = attrs)
-    edgeRenderInfo(g) <- list(col = p$edgeColors)
-    nodeRenderInfo(g) <- list(fill = p$nodeColors)
-    renderGraph(g, ...)
+    g <- Rgraphviz::layoutGraph(g, layoutType = layout, attrs = attrs)
+    graph::edgeRenderInfo(g) <- list(col = p$edgeColors)
+    graph::nodeRenderInfo(g) <- list(fill = p$nodeColors)
+    Rgraphviz::renderGraph(g, ...)
 }
 
 plain.style <- list(layout = "dot", score = "none",
