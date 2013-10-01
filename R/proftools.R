@@ -59,8 +59,9 @@ g2d <- function(g, filename = "g.dot", landscape = TRUE,
     }
     ## This assigns the sizes of fonts, which determines the sizes of nodes
     if (nodeDetails) {
-        if(score=="total") fontSizes <- 7 + round(50*g$totalPercent/100)
-        else fontSizes <- 7 + round(50*g$selfPercent/100)
+        if(score == "total") val <- g$totalPercent
+        else val <- g$selfPercent
+        fontSizes <- pmax(7, sqrt(val) * 4)
     }
     else fontSizes <- rep(14, length(nodes))
 
@@ -79,11 +80,17 @@ g2d <- function(g, filename = "g.dot", landscape = TRUE,
     cat("}", file = con)
 }
 
-g2g <- function(g) {
+g2g <- function(g, nodeDetails) {
     eL <- g$edgeL
 
-    nodes <- g$nodes
-    names(eL) <- nodes
+    if (nodeDetails) {
+        names(eL) <- g$gNodes
+        nodes <- g$gNodes
+    }
+    else {
+        nodes <- g$nodes
+        names(eL) <- nodes
+    }
 
     graph::graphNEL(nodes = nodes, edgeL = eL, edgemode = "directed")
 }
@@ -671,14 +678,13 @@ plotProfileCallGraph <- function(pd, layout = "dot",
                                  transfer = function(x) x, nodeColorMap = NULL,
                                  edgeColorMap = NULL, mergeCycles = FALSE,
                                  edgesColored = FALSE,
+                                 nodeDetails = FALSE, edgeDetails = FALSE,
                                  rankDir = "LR", ...) {
+    ## eventually do an import or use Rgraphvis::foo here
     if (! require(Rgraphviz))
         stop("package Rgraphviz is needed but not available")
 
     pd <- cvtProfileData(pd)
-
-    ## **** eventually do an import here, or use Rgraphviz::plot
-    plot <- get("plot", envir = .GlobalEnv)
 
     if (missing(score))
         score = "none"
@@ -693,85 +699,58 @@ plotProfileCallGraph <- function(pd, layout = "dot",
     p <- np2x(pd, score, transfer, nodeColorMap, edgeColorMap, mergeCycles,
               edgesColored)
 
-    if (! is.null(p$nodeColors)) {
-        p$nodeColors <- unlist(p$nodeColors)
-        names(p$nodeColors) <- p$nodes
-    }
-
-    if (! is.null(p$edgeColors)) {
-        for (i in seq(along = p$edgeColors))
-            if (length(p$edges[[i]]) > 0)
-                names(p$edgeColors[[i]]) <- paste(p$nodes[i], p$edges[[i]],
-                                                  sep="~")
-        p$edgeColors <- unlist(p$edgeColors)
-    }
-
-    attrs <- list(node = list(shape = "box", fixedsize = FALSE))
-    if (layout == "dot")
-        attrs$graph <- list(rankdir = rankDir)
-    if (score == "none")
-        nodeAttrs <- NULL
-    else nodeAttrs <- list(fillcolor = p$nodeColors)
-    if (score == "none" || ! edgesColored)
-        edgeAttrs <- NULL
-    else edgeAttrs <- list(color = p$edgeColors)
-
-    plot(g2g(p), layout, attrs = attrs,
-         nodeAttrs = nodeAttrs, edgeAttrs = edgeAttrs, ...)
-}
-
-plotProfileCallGraph2 <- function(pd, layout = "dot",
-                                 score = c("total", "self"),
-                                 transfer = function(x) x, nodeColorMap = NULL,
-                                 edgeColorMap = NULL, mergeCycles = FALSE,
-                                 edgesColored = FALSE,
-                                 rankDir = "LR", ...) {
-    if (! require(Rgraphviz))
-        stop("package Rgraphviz is needed but not available")
-
-    pd <- cvtProfileData(pd)
-
-    ## **** eventually do an import here, or use Rgraphviz::plot
-    plot <- get("plot", envir = .GlobalEnv)
-
-    if (missing(score))
-        score = "none"
-    else match.arg(score)
-    if (score != "none") {
-        if (is.null(nodeColorMap))
-            nodeColorMap <- heat.colors(100)
-        if (is.null(edgeColorMap))
-            edgeColorMap <- hsv(1,1,seq(1,0,length.out=50))
-    }
-
-    p <- np2x(pd, score, transfer, nodeColorMap, edgeColorMap, mergeCycles,
-              edgesColored)
-
-    g <- g2g(p)
+    g <- g2g(p, nodeDetails)
     names(labels) <- labels <- nodes(g)
     if (! is.null(p$nodeColors)) {
         p$nodeColors <- unlist(p$nodeColors)
         names(p$nodeColors) <- labels
     }
-
+    ## Create the edgeNames list based on the edgeL(g) which only has
+    ## numbers matching the from and to.
+    edges <- edgeL(g); edgeNames <- list()
+    for (i in seq(along = edges))
+        if(length(edges[[i]]$edges)>0)
+            edgeNames[[i]] <- paste(labels[i], labels[edges[[i]]$edges],
+                                    sep="~")
+    edgeNames <- unlist(edgeNames)
     if (! is.null(p$edgeColors)) {
-        for (i in seq(along = p$edgeColors))
-            if (length(p$edges[[i]]) > 0)
-                names(p$edgeColors[[i]]) <- paste(p$nodes[i], p$edges[[i]],
-                                                  sep="~")
         p$edgeColors <- unlist(p$edgeColors)
+        names(p$edgeColors) <- edgeNames
     }
 
-    attrs <- list(node = list(shape = "ellipse", fixedsize = FALSE))
+    if (nodeDetails) {
+        if(score == "total") val <- p$totalPercent
+        else val <- p$selfPercent
+        ## This uses the same font size calculation as the dot file
+        ## version but with a multiple of 2. Not clear why that
+        ## multiplier is needed but it seems to be in oder to get good
+        ## looking results.
+        fontSizes <- pmax(7, sqrt(val) * 4) * 2
+        names(fontSizes) <- labels
+        nodeRenderInfo(g) <- list(label = labels, fontsize = fontSizes)
+    }
+
+    if(edgeDetails){
+        edgeCounts <- unlist(p$callCounts)
+        edgeWeights <- log10(edgeCounts+10)
+        names(edgeWeights) <- edgeNames
+        spacing <- sapply(edgeCounts, function(x){rep("   ", length(x))})
+        edgeCounts <- paste(spacing, edgeCounts, sep="")
+        names(edgeCounts) <- edgeNames
+        edgeRenderInfo(g) <- list(label = edgeCounts, lwd = edgeWeights,
+                                  fontsize = 8, arrowhead = "open")
+    }
+
+    ## The order of layout and rendering info calls below
+    ## matters. Certain attributes don't work well if we change the
+    ## order.  See
+    ## https://stat.ethz.ch/pipermail/bioconductor/2012-November/049253.html
+    attrs <- list(node = list(shape = "box", fixedsize=FALSE))
     if (layout == "dot")
         attrs$graph <- list(rankdir = rankDir)
-    if (score == "none")
-        nodeAttrs <- NULL
-    else nodeAttrs <- list(fillcolor = p$nodeColors)
-    if (score == "none" || ! edgesColored)
-        edgeAttrs <- NULL
-    else edgeAttrs <- list(color = p$edgeColors)
-
-    plot(g2g(p), layout, attrs = attrs,
-         nodeAttrs = nodeAttrs, edgeAttrs = edgeAttrs, ...)
+    g <- layoutGraph(g, layoutType = "dot", attrs = attrs)
+    edgeRenderInfo(g) <- list(col = p$edgeColors)
+    nodeRenderInfo(g) <- list(fill = p$nodeColors)        
+    renderGraph(g)
 }
+
