@@ -21,7 +21,8 @@ readPDheader <- function(con) {
     list(interval = interval, haveGC = haveGC, haveRefs = haveRefs)
 }
 
-readProfileData <- function(file) readPD(file)
+readProfileData <- function(filename = "Rprof.out")
+    readPD(filename)
 
 readPDlines <- function(con, hdr) {
     stacks <-  readLines(con)
@@ -139,7 +140,7 @@ focusPD <- function(pd, which, drop = TRUE) {
     if (drop)
         skipPD(subsetPD(pd, which), which)
     else
-        skipPD(d, which, TRUE)
+        skipPD(pd, which, TRUE)
 }
 
 compactPD <- function(pd) {
@@ -349,7 +350,7 @@ hotPathData <- function(pd) {
     pathLabels <- function(s, t) {
         n <- length(s)
         if (n == 0)
-            funLabels(Unknownfun, t[1], files)
+            funLabels(UnknownFunToken, t[1], files)
         else if (is.na(t[n + 1]))
             funLabels(s, t[1:n], files)
         else

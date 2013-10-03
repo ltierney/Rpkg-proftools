@@ -157,7 +157,8 @@ print.proftools_profData <- function(x, n = 6, ...) {
 To integrate with the original \texttt{proftools} package
 [[readProfileData]] is available as an alias for [[readPD]]
 <<[[readProfileData]] function>>=
-readProfileData <- function(file) readPD(file)
+readProfileData <- function(filename = "Rprof.out")
+    readPD(filename)
 @ %def readProfileData
 
 
@@ -185,7 +186,7 @@ focusPD <- function(pd, which, drop = TRUE) {
     if (drop)
         skipPD(subsetPD(pd, which), which)
     else
-        skipPD(d, which, TRUE)
+        skipPD(pd, which, TRUE)
 }
 @ %def focusPD
 
@@ -618,7 +619,7 @@ hotPathData <- function(pd) {
     pathLabels <- function(s, t) {
         n <- length(s)
         if (n == 0)
-            funLabels(Unknownfun, t[1], files)
+            funLabels(UnknownFunToken, t[1], files)
         else if (is.na(t[n + 1]))
             funLabels(s, t[1:n], files)
         else
