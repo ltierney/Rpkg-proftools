@@ -612,7 +612,7 @@ np2x <- function(pd, score = c("total", "self", "none"),
     p <- list(nodes = nodes$nodes, edges = edges$edges, 
               callCounts = edges$callCounts, gNodes = gNodes, 
               totalPercent = totalPercent, selfPercent = selfPercent)
-    if (score == "none") 
+    if (score == "none")
         color <- ecolor <- NULL
     else {
         ## Scale by maxScore to always create a red node
@@ -674,7 +674,6 @@ profileCallGraph2Dot <- function(pd, score = c("none", "total", "self"),
                                  center = FALSE, size, shape = "ellipse",
                                  layout = "dot", style) {
     pd <- cvtProfileData(pd)
-    score <- match.arg(score)
 
     if (! missing(style)) {
         if (missing(layout)) layout <- style$layout
@@ -691,10 +690,10 @@ profileCallGraph2Dot <- function(pd, score = c("none", "total", "self"),
         if (missing(edgeSizeScore)) edgeSizeScore <- style$edgeSizeScore
         if (missing(shape)) shape <- style$shape
     }
-    match.arg(score)
-    match.arg(rankDir)
-    match.arg(nodeSizeScore)
-    match.arg(edgeSizeScore)
+    score <- match.arg(score)
+    rankDir <- match.arg(rankDir)
+    nodeSizeScore <- match.arg(nodeSizeScore)
+    edgeSizeScore <- match.arg(edgeSizeScore)
 
     if (score != "none") {
         if (is.null(nodeColorMap))
@@ -736,10 +735,10 @@ plotProfileCallGraph <- function(pd, layout = "dot",
         if (missing(edgeSizeScore)) edgeSizeScore <- style$edgeSizeScore
         if (missing(shape)) shape <- style$shape
     }
-    match.arg(score)
-    match.arg(rankDir)
-    match.arg(nodeSizeScore)
-    match.arg(edgeSizeScore)
+    score <- match.arg(score)
+    rankDir <- match.arg(rankDir)
+    nodeSizeScore <- match.arg(nodeSizeScore)
+    edgeSizeScore <- match.arg(edgeSizeScore)
 
     if (score != "none") {
         if (is.null(nodeColorMap))
