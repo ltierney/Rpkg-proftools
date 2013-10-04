@@ -105,11 +105,18 @@ print.proftools_profData <- function(x, n = 6, ...) {
 
 subsetIDX <- function(idx, pd) {
     if (is.character(idx))
-        which(sapply(pd$stacks, function(s) any(grepl(idx, s))))
+        which(sapply(pd$stacks, function(s) any(patMatchAny(idx, s))))
     else if (is.logical(idx))
         which(idx)
     else 
         idx
+}
+
+patMatchAny <- function(p, x) {
+    v <- grepl(p[1], x)
+    for (q in p[-1])
+        v <- v | grepl(q, x)
+    v
 }
 
 subsetPD <- function(pd, select, omit) {
@@ -194,7 +201,7 @@ transformPD <- function(pd, fun) {
 skipIDX <- function(pd, what) {
     if (is.character(what)) {
         findFirst <- function(s) {
-            idx <- grepl(what, s)
+            idx <- patMatchAny(what, s)
             if (any(idx))
                 min(which(idx)) - 1
             else
