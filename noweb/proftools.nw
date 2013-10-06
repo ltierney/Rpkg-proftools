@@ -203,9 +203,10 @@ retained. Frames to omit can be specified analogously.
 The first step is to convert logical or character specifications into
 indices of frames to keep or omit. This is done by [[subsetIDX]]:
 <<[[subsetIDX]] function>>=
-subsetIDX <- function(idx, pd) {
+subsetIDX <- function(idx, pd, regex) {
+    isIn <- if (regex) patMatchAny else function(x, s) x %in% s
     if (is.character(idx))
-        which(sapply(pd$stacks, function(s) any(patMatchAny(idx, s))))
+        which(sapply(pd$stacks, function(s) any(isIn(idx, s))))
     else if (is.logical(idx))
         which(idx)
     else 
@@ -231,9 +232,9 @@ specifications into indices.
 stackIDX <- seq_along(pd$stacks)
 if (missing(select))
     select <- stackIDX
-keep <- subsetIDX(select, pd)
+keep <- subsetIDX(select, pd, regex)
 if (! missing(omit))
-    keep <- setdiff(keep, subsetIDX(omit, pd))
+    keep <- setdiff(keep, subsetIDX(omit, pd, regex))
 @ %def
 
 Next, the stacks, references, and counts are reduced to the ones
@@ -264,7 +265,7 @@ pd$trace <- map[pd$trace]
 
 The complete definition of [[subsetPD]] is then
 <<[[subsetPD]] function>>=
-subsetPD <- function(pd, select, omit) {
+subsetPD <- function(pd, select, omit, regex = TRUE) {
     <<Convert specification to indices and save index vector>>
     
     <<reduce stacks and counts>>
@@ -357,8 +358,8 @@ not contains any of the specified functions, then it is left unchanged
 if [[merge]] is false; otherwise, it is replaced by a shortened
 place-holder stack.
 <<[[skipPD]] function>>=
-skipPD <- function(pd, what, merge = FALSE) {
-    idx <- skipIDX(pd, what)
+skipPD <- function(pd, what, merge = FALSE, regex = TRUE) {
+    idx <- skipIDX(pd, what, regex)
 
     skip <- function(stack, refs, i) {
         n <- idx[i]
@@ -391,7 +392,8 @@ OtherFunsToken <- "<Other>"
 The function [[skipIDX]] converts a function name specification to the
 corresponding indices to skip.
 <<[[skipIDX]] function>>=
-skipIDX <- function(pd, what) {
+skipIDX <- function(pd, what, regex) {
+    isIn <- if (regex) patMatchAny else function(x, s) x %in% s
     if (is.character(what)) {
         findFirst <- function(s) {
             idx <- patMatchAny(what, s)

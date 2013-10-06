@@ -103,9 +103,10 @@ print.proftools_profData <- function(x, n = 6, ...) {
 ### Operations on profile data
 ###
 
-subsetIDX <- function(idx, pd) {
+subsetIDX <- function(idx, pd, regex) {
+    isIn <- if (regex) patMatchAny else function(x, s) x %in% s
     if (is.character(idx))
-        which(sapply(pd$stacks, function(s) any(patMatchAny(idx, s))))
+        which(sapply(pd$stacks, function(s) any(isIn(idx, s))))
     else if (is.logical(idx))
         which(idx)
     else 
@@ -119,13 +120,13 @@ patMatchAny <- function(p, x) {
     v
 }
 
-subsetPD <- function(pd, select, omit) {
+subsetPD <- function(pd, select, omit, regex = TRUE) {
     stackIDX <- seq_along(pd$stacks)
     if (missing(select))
         select <- stackIDX
-    keep <- subsetIDX(select, pd)
+    keep <- subsetIDX(select, pd, regex)
     if (! missing(omit))
-        keep <- setdiff(keep, subsetIDX(omit, pd))
+        keep <- setdiff(keep, subsetIDX(omit, pd, regex))
     
     pd$stacks <- pd$stacks[keep]
     pd$refs <- pd$refs[keep]
@@ -198,7 +199,8 @@ transformPD <- function(pd, fun) {
     compactPD(pd)
 }
 
-skipIDX <- function(pd, what) {
+skipIDX <- function(pd, what, regex) {
+    isIn <- if (regex) patMatchAny else function(x, s) x %in% s
     if (is.character(what)) {
         findFirst <- function(s) {
             idx <- patMatchAny(what, s)
@@ -218,8 +220,8 @@ skipIDX <- function(pd, what) {
 
 OtherFunsToken <- "<Other>"
 
-skipPD <- function(pd, what, merge = FALSE) {
-    idx <- skipIDX(pd, what)
+skipPD <- function(pd, what, merge = FALSE, regex = TRUE) {
+    idx <- skipIDX(pd, what, regex)
 
     skip <- function(stack, refs, i) {
         n <- idx[i]
