@@ -1038,6 +1038,9 @@ writeCG <- function(con, pd, GC = TRUE) {
     writeGCEntry(con, data)
 }
 
+writeCallgrindFile <- function(pd, file = "Rprof.cg", GC = TRUE)
+    writeCG(file, pd, GC)
+
 
 ###
 ### Source reference summaries
