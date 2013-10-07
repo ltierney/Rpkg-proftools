@@ -181,12 +181,12 @@ the specified ones removed. As an option, if [[drop]] is not true then
 the stack frames not containing any of the specified functions are
 replaced by placeholder frames.
 <<[[focusPD]] function>>=
-focusPD <- function(pd, which, drop = TRUE) {
+focusPD <- function(pd, which, drop = TRUE, regex = TRUE) {
     ## **** check that 'which' is character?
     if (drop)
-        skipPD(subsetPD(pd, which), which)
+        skipPD(subsetPD(pd, which, regex = regex), which, regex = regex)
     else
-        skipPD(pd, which, TRUE)
+        skipPD(pd, which, TRUE, regex)
 }
 @ %def focusPD
 

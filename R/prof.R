@@ -143,12 +143,12 @@ subsetPD <- function(pd, select, omit, regex = TRUE) {
     pd
 }
 
-focusPD <- function(pd, which, drop = TRUE) {
+focusPD <- function(pd, which, drop = TRUE, regex = TRUE) {
     ## **** check that 'which' is character?
     if (drop)
-        skipPD(subsetPD(pd, which), which)
+        skipPD(subsetPD(pd, which, regex = regex), which, regex = regex)
     else
-        skipPD(pd, which, TRUE)
+        skipPD(pd, which, TRUE, regex)
 }
 
 compactPD <- function(pd) {
