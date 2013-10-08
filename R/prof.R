@@ -205,7 +205,7 @@ skipIDX <- function(pd, what, regex) {
     isIn <- if (regex) patMatchAny else function(x, s) x %in% s
     if (is.character(what)) {
         findFirst <- function(s) {
-            idx <- patMatchAny(what, s)
+            idx <- isIn(s, what)
             if (any(idx))
                 min(which(idx)) - 1
             else
