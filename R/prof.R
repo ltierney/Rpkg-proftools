@@ -77,9 +77,11 @@ splitStacks <- function(data) {
     data
 }
 
-countStacks <- function(trace, inGC)
-    list(counts = as.numeric(table(trace)),
-         gccounts = as.numeric(tapply(inGC, trace, sum)))
+countStacks <- function(trace, inGC) {
+    counts <- as.numeric(table(trace))
+    gccounts <- as.numeric(tapply(inGC, trace, sum))
+    list(counts = counts, gccounts = gccounts, total = sum(counts))
+}
 
 readPD <- function(file) {
     con <- file(file, "r")
@@ -448,7 +450,7 @@ hotPaths <- function(pd, value = c("pct", "time", "hits"),
     data <- hotPathData(pd)
     
     if (value == "pct")
-        hotPathsPct(data, self, gc && pd$haveGC, sum(pd$counts))
+        hotPathsPct(data, self, gc && pd$haveGC, pd$total)
     else if (value == "time")
         hotPathsPct(data, self, gc && pd$haveGC, pd$interval / 1.0e6)
     else
@@ -666,7 +668,7 @@ funSummary <- function(pd, byTotal = TRUE,
     label <- funLabels(fc$fun, fc$site, pd$files)
 
     if (value == "pct")
-        funSummaryPct(fc, label, gc && pd$haveGC, sum(pd$counts))
+        funSummaryPct(fc, label, gc && pd$haveGC, pd$total)
     else if (value == "time")
         funSummaryTime(fc, label, gc && pd$haveGC, pd$interval / 1.0e6)
     else
@@ -690,7 +692,7 @@ callSummary <- function(pd, byTotal = TRUE,
     label <- paste(caller.label, callee.label, sep = " -> ")
 
     if (value == "pct")
-        funSummaryPct(cc, label, gc && pd$haveGC, sum(pd$counts))
+        funSummaryPct(cc, label, gc && pd$haveGC, pd$total)
     else if (value == "time")
         funSummaryTime(cc, label, gc && pd$haveGC, pd$interval / 1.0e6)
     else
@@ -1117,7 +1119,7 @@ printPaths <- function(pd, n, ...) {
     ord = rev(order(pd$counts))
     if (! missing(n) && length(ord) > n)
         ord <- ord[1 : n]
-    tot <- sum(pd$counts)
+    tot <- pd$total
     pct <- percent(pd$counts[ord], tot)
     gcpct <- percent(pd$gccounts[ord], tot)
     paths <- sapply(pd$stacks[ord], formatTrace, ...)
@@ -1126,12 +1128,11 @@ printPaths <- function(pd, n, ...) {
     invisible(NULL)
 }
 
-pathSummaryPct <- function(apd, gc) {
+pathSummaryPct <- function(apd, gc, tot) {
     counts <- apd$counts
     gccounts <- apd$gccounts
     paths <- apd$paths
 
-    tot <- sum(counts)
     pct <- percent(counts, tot)
     if (gc) {
         gcpct <- percent(gccounts, tot)
@@ -1186,7 +1187,7 @@ pathSummary <- function(pd, value = c("pct", "time", "hits"),
     apd <- apd[rev(order(apd$counts)),]
 
     if (value == "pct")
-        pathSummaryPct(apd, gc && pd$haveGC)
+        pathSummaryPct(apd, gc && pd$haveGC, pd$total)
     else if (value == "time")
         pathSummaryTime(apd, gc && pd$haveGC, pd$interval / 1.0e6)
     else
@@ -1211,7 +1212,7 @@ srcSummary <- function(pd, byTotal = TRUE,
     rownames(val) <- label
     
     if (value == "pct") {
-        tot <- sum(pd$counts)
+        tot <- pd$total
         colnames(val) <- paste(colnames(val), "pct", sep = ".")
         as.data.frame(percent(val, tot))
     }

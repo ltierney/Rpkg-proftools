@@ -319,7 +319,7 @@ cvtProfileData <- function(pd) {
         if (! is.null(cycles))
             addCycleInfo(pd, data, cycles)
         ## **** add a class -- proftools_callgraph?
-        list(interval = pd$interval, count = sum(pd$count),
+        list(interval = pd$interval, count = pd$total,
              data = data, cycles = cycles)
     }
     else pd
