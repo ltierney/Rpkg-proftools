@@ -202,7 +202,10 @@ transformPD <- function(pd, fun) {
 }
 
 skipIDX <- function(pd, what, regex) {
-    isIn <- if (regex) patMatchAny else function(x, s) x %in% s
+    if (regex)
+        isIn <- function(s, x) sapply(s, function(s) any(patMatchAny(x, s)))
+    else
+        isIn <- function(s, x) s %in% x
     if (is.character(what)) {
         findFirst <- function(s) {
             idx <- isIn(s, what)
