@@ -183,7 +183,7 @@ one of the specified functions and with all functions leading up to
 the specified ones removed. As an option, if [[drop]] is not true then
 the stack frames not containing any of the specified functions are
 replaced by placeholder frames.
-<<[[focusPD]] function>>=
+<<old [[focusPD]] function>>=
 focusPD <- function(pd, which, drop = TRUE, regex = TRUE) {
     ## **** check that 'which' is character?
     if (drop)
@@ -192,6 +192,43 @@ focusPD <- function(pd, which, drop = TRUE, regex = TRUE) {
         skipPD(pd, which, TRUE, regex)
 }
 @ %def focusPD
+
+A revised version removes the [[drop]] argument and adds the option of
+trimming functions with low [[self]] percentage from the bottom of the
+stack or low [[total]] percentages from the top of the stack:
+<<[[focusPD]] function>>=
+focusPD <- function(pd, which, self.pct = 0, total.pct = 0, regex = TRUE) {
+    if (self.pct > 0 || total.pct > 0) {
+        fs <- funSummary(pd, srclines = FALSE)
+        funs <- rownames(fs)
+        if (self.pct > 0)
+            pd <- focusPD(pd, funs[fs$self.pct >= self.pct], regex = FALSE)
+        if (total.pct > 0) {
+            high <- funs[fs$total.pct >= total.pct]
+            pd <- focusPD(pd, high, regex = FALSE)
+            pd <- trimTop(pd, setdiff(funs, high))
+        }
+    }
+    if (missing(which))
+        pd
+    else
+        skipPD(subsetPD(pd, which, regex = regex), which, regex = regex)
+}
+@ %def focusPD
+The support function [[trimTop]] handles trimming back the top of the
+stack. It may be possible to do this just with [[prunePD]].
+<<[[focusPD]] function>>=
+trimTop <- function(pd, funs) {
+    to <- sapply(pd$stacks, function(s) {
+        notLow <- ! s %in% funs
+	if (any(notLow)) max(which(notLow)) else 0
+    })
+    pd <- prunePD(pd, to = to)
+    drop <- sapply(pd$stacks, function(s) all(s %in% funs))
+    subsetPD(pd, omit = drop)
+}
+@ %def trimTop
+
 
 \subsection{\texttt{subsetPD}}
 The [[subsetPD]] function takes a profile data object and a

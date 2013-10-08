@@ -145,12 +145,31 @@ subsetPD <- function(pd, select, omit, regex = TRUE) {
     pd
 }
 
-focusPD <- function(pd, which, drop = TRUE, regex = TRUE) {
-    ## **** check that 'which' is character?
-    if (drop)
-        skipPD(subsetPD(pd, which, regex = regex), which, regex = regex)
+focusPD <- function(pd, which, self.pct = 0, total.pct = 0, regex = TRUE) {
+    if (self.pct > 0 || total.pct > 0) {
+        fs <- funSummary(pd, srclines = FALSE)
+        funs <- rownames(fs)
+        if (self.pct > 0)
+            pd <- focusPD(pd, funs[fs$self.pct >= self.pct], regex = FALSE)
+        if (total.pct > 0) {
+            high <- funs[fs$total.pct >= total.pct]
+            pd <- focusPD(pd, high, regex = FALSE)
+            pd <- trimTop(pd, setdiff(funs, high))
+        }
+    }
+    if (missing(which))
+        pd
     else
-        skipPD(pd, which, TRUE, regex)
+        skipPD(subsetPD(pd, which, regex = regex), which, regex = regex)
+}
+trimTop <- function(pd, funs) {
+    to <- sapply(pd$stacks, function(s) {
+        notLow <- ! s %in% funs
+        if (any(notLow)) max(which(notLow)) else 0
+    })
+    pd <- prunePD(pd, to = to)
+    drop <- sapply(pd$stacks, function(s) all(s %in% funs))
+    subsetPD(pd, omit = drop)
 }
 
 compactPD <- function(pd) {
