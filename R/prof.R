@@ -482,7 +482,7 @@ hotPathsTime <- function(data, self, gc, delta) {
 
 hotPaths <- function(pd, value = c("pct", "time", "hits"),
                      self = FALSE, srclines = TRUE, gc = TRUE,
-                     maxdepth = 10) {
+                     maxdepth = 10, self.pct = 0, total.pct = 0) {
     value <- match.arg(value)
     if (! is.na(maxdepth))
         pd <- prunePD(pd, maxdepth)
@@ -491,6 +491,11 @@ hotPaths <- function(pd, value = c("pct", "time", "hits"),
 
     data <- hotPathData(pd)
     
+    if (self.pct > 0)
+        data <- data[data$self >= pd$total * (self.pct / 100),]
+    if (total.pct > 0)
+        data <- data[data$count >= pd$total * (total.pct / 100),]
+
     if (value == "pct")
         hotPathsPct(data, self, gc && pd$haveGC, pd$total)
     else if (value == "time")
@@ -698,7 +703,7 @@ funLabels <- function(fun, site, files) {
 funSummary <- function(pd, byTotal = TRUE,
                        value = c("pct", "time", "hits"),
                        srclines = TRUE,
-                       gc = TRUE) {
+                       gc = TRUE, self.pct = 0, total.pct = 0) {
     value <- match.arg(value)
 
     fc <- funCounts(pd, srclines)
@@ -706,6 +711,11 @@ funSummary <- function(pd, byTotal = TRUE,
         fc <- fc[rev(order(fc$total)), ]
     else
         fc <- fc[rev(order(fc$self)), ]
+
+    if (self.pct > 0)
+        fc <- fc[fc$self >= pd$total * (self.pct / 100),]
+    if (total.pct > 0)
+        fc <- fc[fc$total >= pd$total * (total.pct / 100),]
 
     label <- funLabels(fc$fun, fc$site, pd$files)
 
@@ -720,7 +730,7 @@ funSummary <- function(pd, byTotal = TRUE,
 callSummary <- function(pd, byTotal = TRUE,
                         value = c("pct", "time", "hits"),
                         srclines = TRUE,
-                        gc = TRUE) {
+                        gc = TRUE, self.pct = 0, total.pct = 0) {
     value <- match.arg(value)
 
     cc <- callCounts(pd, srclines, srclines)
@@ -728,6 +738,11 @@ callSummary <- function(pd, byTotal = TRUE,
         cc <- cc[rev(order(cc$total)), ]
     else
         cc <- cc[rev(order(cc$self)), ]
+
+    if (self.pct > 0)
+        cc <- cc[cc$self >= pd$total * (self.pct / 100),]
+    if (total.pct > 0)
+        cc <- cc[cc$total >= pd$total * (total.pct / 100),]
 
     caller.label <- funLabels(cc$caller, cc$caller.site, pd$files)
     callee.label <- funLabels(cc$callee, cc$callee.site, pd$files)
