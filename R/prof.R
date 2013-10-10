@@ -1226,7 +1226,7 @@ pathSummaryHits <- function(apd, gc) {
 }
 
 pathSummary <- function(pd, value = c("pct", "time", "hits"),
-                        GC = TRUE, srclines = FALSE, ...) {
+                        GC = TRUE, srclines = FALSE, total.pct = 0, ...) {
     value <- match.arg(value)
 
     if (srclines && pd$haveRefs) {
@@ -1246,6 +1246,9 @@ pathSummary <- function(pd, value = c("pct", "time", "hits"),
                            cbind(counts = pd$counts, gccounts = pd$gccounts))
     apd <- apd[rev(order(apd$counts)),]
 
+    if (total.pct > 0)
+        apd <- apd[apd$counts >= pd$total * (total.pct / 100),]
+
     if (value == "pct")
         pathSummaryPct(apd, GC && pd$haveGC, pd$total)
     else if (value == "time")
@@ -1256,7 +1259,7 @@ pathSummary <- function(pd, value = c("pct", "time", "hits"),
 
 srcSummary <- function(pd, byTotal = TRUE,
                        value = c("pct", "time", "hits"),
-                       GC = TRUE) {
+                       GC = TRUE, total.pct = 0) {
     if (! pd$haveRefs)
         stop("profile data does not contain source information")
 
@@ -1273,7 +1276,10 @@ srcSummary <- function(pd, byTotal = TRUE,
     else
         val <- cbind(total = rc$total)
     rownames(val) <- label
-    
+
+    if (total.pct > 0)
+        val <- val[val[,1] >= pd$total * (total.pct / 100),]
+
     if (value == "pct") {
         tot <- pd$total
         colnames(val) <- paste(colnames(val), "pct", sep = ".")
