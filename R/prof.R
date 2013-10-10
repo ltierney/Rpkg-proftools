@@ -95,6 +95,8 @@ readPD <- function(file) {
 }
 
 print.proftools_profData <- function(x, n = 6, ...) {
+    cat(sprintf("Samples: %d\n", x$total))
+    cat(sprintf("Time:    %.2f\n", x$total * (x$interval / 1000000)))
     fs <- funSummary(x)
     print(head(fs, n), ...)
     if (n < nrow(fs)) cat("...\n")
@@ -104,6 +106,24 @@ print.proftools_profData <- function(x, n = 6, ...) {
 ###
 ### Operations on profile data
 ###
+
+filterProfileData <- function(pd, select, omit,
+                              self.pct = 0, total.pct = 0,
+                              focus = FALSE,
+                              normalize = FALSE,
+                              regex = FALSE) {
+    pd <- focusPD(pd, self.pct = self.pct, total.pct = total.pct)
+    if (! missing(select))
+        if (focus)
+            pd <- focusPD(pd, select, regex = regex)
+        else
+            pd <- subsetPD(pd, select, regex = regex)
+    if (! missing(omit))
+        pd <- subsetPD(pd, omit = omit, regex = regex)
+    if (normalize)
+        pd$total <- sum(pd$counts)
+    pd
+}
 
 subsetIDX <- function(idx, pd, regex) {
     isIn <- if (regex) patMatchAny else function(x, s) x %in% s

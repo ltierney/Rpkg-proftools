@@ -147,10 +147,13 @@ countStacks <- function(trace, inGC) {
 }
 @ %def
 
-The custom print method prints the head of the function summary,
-followed by an ellipsis if rows have been dropped.
+The custom print method prints the sample count, run time, and the
+head of the function summary, followed by an ellipsis if rows have
+been dropped.
 <<[[print.proftools_profData]] method>>=
 print.proftools_profData <- function(x, n = 6, ...) {
+    cat(sprintf("Samples: %d\n", x$total))
+    cat(sprintf("Time:    %.2f\n", x$total * (x$interval / 1000000)))
     fs <- funSummary(x)
     print(head(fs, n), ...)
     if (n < nrow(fs)) cat("...\n")
@@ -582,6 +585,28 @@ pd$haveGC <- FALSE
 pd
 @ %def
 
+\subsection{A Higher Level Function}
+**** skip argument to skip first n? Don't create <Other> entry?
+**** are focus/regex default values right?
+<<[[filterProfileData]] function>>=
+filterProfileData <- function(pd, select, omit,
+                              self.pct = 0, total.pct = 0,
+                              focus = FALSE,
+                              normalize = FALSE,
+                              regex = FALSE) {
+    pd <- focusPD(pd, self.pct = self.pct, total.pct = total.pct)
+    if (! missing(select))
+        if (focus)
+            pd <- focusPD(pd, select, regex = regex)
+        else
+            pd <- subsetPD(pd, select, regex = regex)
+    if (! missing(omit))
+        pd <- subsetPD(pd, omit = omit, regex = regex)
+    if (normalize)
+        pd$total <- sum(pd$counts)
+    pd
+}
+@ %def filterProfileData
 
 \section{Summary Functions}
 \subsection{Hot Paths}
@@ -942,6 +967,8 @@ funSummaryHits <- function(fc, label, gc) {
 ###
 ### Operations on profile data
 ###
+
+<<[[filterProfileData]] function>>
 
 <<[[subsetIDX]] function>>
 
