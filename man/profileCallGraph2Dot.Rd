@@ -16,7 +16,7 @@ profileCallGraph2Dot(pd, score = c("none", "total", "self"),
                      nodeSizeScore = c("none", "total", "self"),
                      edgeSizeScore = c("none", "total"),
                      center = FALSE, size, shape = "ellipse",
-                     layout = "dot", style)
+                     layout = "dot", style, GC = TRUE)
 }
 \arguments{
   \item{pd}{profile data as returned by \code{readProfileData}.}
@@ -51,6 +51,7 @@ profileCallGraph2Dot(pd, score = c("none", "total", "self"),
   \item{layout}{ character; layout method to use.}
   \item{style}{named list of values for arguments \code{score} through
                \code{layout} to use if not explicitly supplied.}
+  \item{GC}{logical; include GC information or not.}
 }
 \value{Used for side effect.}
 \details{

@@ -6,7 +6,7 @@
   by \code{Rprof}.  Output can be directed to a connection or a file.
 }
 \usage{
-printProfileCallGraph(pd, file = stdout(), percent = TRUE)
+printProfileCallGraph(pd, file = stdout(), percent = TRUE, GC = TRUE)
 }
 \arguments{
   \item{pd}{profile data as returned by \code{readProfileData}.}
@@ -14,6 +14,7 @@ printProfileCallGraph(pd, file = stdout(), percent = TRUE)
                graph will be written. }
   \item{percent}{ logical; if true use percent of total time; otherwise
                   use time in seconds }
+  \item{GC}{logical; include GC information or not.}
 }
 \value{Used for side effect.}
 \details{

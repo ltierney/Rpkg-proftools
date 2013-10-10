@@ -6,12 +6,13 @@ Computes a flat profile reflecting time spent in functions themselves
 (self) and functions plus callees (total).
 }
 \usage{
-flatProfile(pd, byTotal = TRUE)
+flatProfile(pd, byTotal = TRUE, GC = TRUE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{pd}{profile data as returned by \code{readProfileData}.}
   \item{byTotal}{logical; sort by total time if true, self time if not. }
+  \item{GC}{logical; include GC information or not.}
 }
 \value{
   A matrix with one row per function recorded in the profile data.

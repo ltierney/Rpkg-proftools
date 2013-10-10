@@ -14,7 +14,7 @@ plotProfileCallGraph(pd, layout = "dot",
                      nodeDetails = FALSE, edgeDetails = FALSE,
                      nodeSizeScore = c("none", "total", "self"),
                      edgeSizeScore = c("none", "total"),
-                     shape = "ellipse", style, ...)
+                     shape = "ellipse", style, GC = TRUE, ...)
 }
 \arguments{
   \item{pd}{profile data as returned by \code{readProfileData}.}
@@ -44,6 +44,7 @@ plotProfileCallGraph(pd, layout = "dot",
                \code{layout} to use if not explicitly supplied.}
   \item{\dots}{ additional arguments for the \code{graphNEL} \code{plot}
                 method.}
+  \item{GC}{logical; include GC information or not.}
 }
 \value{Used for side effect.}
 \details{
