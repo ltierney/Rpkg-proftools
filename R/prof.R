@@ -365,7 +365,7 @@ mergeGC <- function(pd) {
 ###
 
 pathAbbrev <- function(paths) {
-    pad <- function(n) paste(rep("-> ", n), collapse = "")
+    pad <- function(n) paste(rep(". ", n), collapse = "")
     sapply(strsplit(paths, " -> "),
            function(path) {
                n <- length(path)

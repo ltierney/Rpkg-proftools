@@ -623,15 +623,15 @@ an [[lm]] fit looks like this:
 > head(hotPaths(focusPD(d, "lm")), 10)
  path                                    total.pct gc.pct
  lm                                      100.0     75.3  
- -> model.response                        51.1     41.4  
- -> -> as.character                       50.9     41.4  
- -> -> attr                                0.0      0.0  
- -> lm.fit                                34.1     30.6  
- -> -> .Call                              11.6      9.9  
- -> -> c                                   9.0      8.3  
- -> -> list                                4.6      4.2  
- -> -> structure                           4.5      4.1  
- -> -> rep.int                             2.4      2.3  
+ . model.response                         51.1     41.4  
+ . . as.character                         50.9     41.4  
+ . . attr                                  0.0      0.0  
+ . lm.fit                                 34.1     30.6  
+ . . .Call                                11.6      9.9  
+ . . c                                     9.0      8.3  
+ . . list                                  4.6      4.2  
+ . . structure                             4.5      4.1  
+ . . rep.int                               2.4      2.3  
 \end{verbatim}
 The maximal stack depth is set to 10 by default, again for
 readability.
@@ -774,7 +774,7 @@ be the same length so hey appear reasonably when printed with either
 left or right adjustment.
 <<[[pathAbbrev]] function>>=
 pathAbbrev <- function(paths) {
-    pad <- function(n) paste(rep("-> ", n), collapse = "")
+    pad <- function(n) paste(rep(". ", n), collapse = "")
     sapply(strsplit(paths, " -> "),
            function(path) {
                n <- length(path)
