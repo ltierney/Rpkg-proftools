@@ -1652,7 +1652,7 @@ pathSummaryHits <- function(apd, gc) {
 }
 
 pathSummary <- function(pd, value = c("pct", "time", "hits"),
-                        GC = TRUE, srclines = FALSE, total.pct = 0, ...) {
+                        srclines = FALSE, GC = TRUE, total.pct = 0, ...) {
     value <- match.arg(value)
 
     if (srclines && pd$haveRefs) {
