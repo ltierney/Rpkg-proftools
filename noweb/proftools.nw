@@ -643,7 +643,8 @@ percent, time, or hits.
 <<[[hotPaths]] function>>=
 hotPaths <- function(pd, value = c("pct", "time", "hits"),
                      self = FALSE, srclines = TRUE, GC = TRUE,
-                     maxdepth = 10, self.pct = 0, total.pct = 0) {
+                     maxdepth = 10, self.pct = 0, total.pct = 0,
+                     short = ". ") {
     value <- match.arg(value)
     if (! is.na(maxdepth))
         pd <- prunePD(pd, maxdepth)
@@ -657,7 +658,7 @@ hotPaths <- function(pd, value = c("pct", "time", "hits"),
     if (total.pct > 0)
         data <- data[data$count >= pd$total * (total.pct / 100),]
 
-    data$pa <- pathAbbrev(data$key)
+    data$pa <- pathAbbrev(data$key, short)
 
     if (value == "pct")
         hotPathsPct(data, self, GC && pd$haveGC, pd$total)
@@ -770,13 +771,14 @@ refLN <- function(refs)
     as.integer(sub("[[:digit:]]+#([[:digit:]]+)", "\\1", refs))
 @ %def refFN refLN
 
-Path abbreviations are constructed using [[pathAbbrev]]. The padding
-used could be made a configuration option. The strings are padded to
-be the same length so hey appear reasonably when printed with either
-left or right adjustment.
+Path abbreviations are constructed using [[pathAbbrev]]. The
+abbreviation used for functions farther down the call stack is
+specified in the [[short]] argument. The strings are padded to be the
+same length so hey appear reasonably when printed with either left or
+right adjustment.
 <<[[pathAbbrev]] function>>=
-pathAbbrev <- function(paths) {
-    pad <- function(n) paste(rep(". ", n), collapse = "")
+pathAbbrev <- function(paths, short) {
+    pad <- function(n) paste(rep(short, n), collapse = "")
     sapply(strsplit(paths, " -> "),
            function(path) {
                n <- length(path)

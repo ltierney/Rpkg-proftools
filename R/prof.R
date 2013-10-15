@@ -364,8 +364,8 @@ mergeGC <- function(pd) {
 ### Hot path summaries
 ###
 
-pathAbbrev <- function(paths) {
-    pad <- function(n) paste(rep(". ", n), collapse = "")
+pathAbbrev <- function(paths, short) {
+    pad <- function(n) paste(rep(short, n), collapse = "")
     sapply(strsplit(paths, " -> "),
            function(path) {
                n <- length(path)
@@ -482,7 +482,8 @@ hotPathsTime <- function(data, self, gc, delta) {
 
 hotPaths <- function(pd, value = c("pct", "time", "hits"),
                      self = FALSE, srclines = TRUE, GC = TRUE,
-                     maxdepth = 10, self.pct = 0, total.pct = 0) {
+                     maxdepth = 10, self.pct = 0, total.pct = 0,
+                     short = ". ") {
     value <- match.arg(value)
     if (! is.na(maxdepth))
         pd <- prunePD(pd, maxdepth)
@@ -496,7 +497,7 @@ hotPaths <- function(pd, value = c("pct", "time", "hits"),
     if (total.pct > 0)
         data <- data[data$count >= pd$total * (total.pct / 100),]
 
-    data$pa <- pathAbbrev(data$key)
+    data$pa <- pathAbbrev(data$key, short)
 
     if (value == "pct")
         hotPathsPct(data, self, GC && pd$haveGC, pd$total)
