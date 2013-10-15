@@ -657,10 +657,12 @@ hotPaths <- function(pd, value = c("pct", "time", "hits"),
     if (total.pct > 0)
         data <- data[data$count >= pd$total * (total.pct / 100),]
 
+    data$pa <- pathAbbrev(data$key)
+
     if (value == "pct")
         hotPathsPct(data, self, GC && pd$haveGC, pd$total)
     else if (value == "time")
-        hotPathsPct(data, self, GC && pd$haveGC, pd$interval / 1.0e6)
+        hotPathsTime(data, self, GC && pd$haveGC, pd$interval / 1.0e6)
     else
         hotPathsHits(data, self, GC && pd$haveGC)
 }
@@ -788,7 +790,7 @@ Final results are constructed by [[hotPathsPct]], [[hotPathsHits]], or
 allow a custom print method to be used.
 <<[[hotPathsPct]], [[hotPathsHits]], and [[hotPathsTime]] functions>>=
 hotPathsPct <- function(data, self, gc, grandTotal) {
-    pa <- pathAbbrev(data$key)
+    pa <- data$pa
     val <- data.frame(path = sprintf(sprintf("%%-%ds", max(nchar(pa))), pa),
                       total.pct = percent(data$count, grandTotal),
                       stringsAsFactors = FALSE)
@@ -802,7 +804,7 @@ hotPathsPct <- function(data, self, gc, grandTotal) {
 }
 
 hotPathsHits <- function(data, self, gc) {
-    pa <- pathAbbrev(data$key)
+    pa <- data$pa
     val <- data.frame(path = sprintf(sprintf("%%-%ds", max(nchar(pa))), pa),
                       total.hits = data$count,
                       stringsAsFactors = FALSE)
@@ -816,7 +818,7 @@ hotPathsHits <- function(data, self, gc) {
 }
 
 hotPathsTime <- function(data, self, gc, delta) {
-    pa <- pathAbbrev(data$key)
+    pa <- data$pa
     val <- data.frame(path = sprintf(sprintf("%%-%ds", max(nchar(pa))), pa),
                       total.time = data$count * delta,
                       stringsAsFactors = FALSE)
