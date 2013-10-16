@@ -483,7 +483,7 @@ hotPathsTime <- function(data, self, gc, delta) {
 hotPaths <- function(pd, value = c("pct", "time", "hits"),
                      self = TRUE, srclines = FALSE, GC = FALSE,
                      maxdepth = NA, self.pct = 0, total.pct = 0,
-                     short = ". ", cut = 15) {
+                     short = ". ", cut = 20) {
     value <- match.arg(value)
     if (! is.na(maxdepth))
         pd <- prunePD(pd, maxdepth)
@@ -492,8 +492,10 @@ hotPaths <- function(pd, value = c("pct", "time", "hits"),
 
     data <- hotPathData(pd)
 
-    if (total.pct == 0 && length(data$count) > cut)
-        total.pct <- 100 * (rev(sort(data$count))[cut] / pd$total)
+    if (length(data$count) > cut) {
+        top <- head(order(data$count, decreasing = TRUE), cut)
+        data <- data[1:nrow(data) %in% top,]
+    }
 
     if (self.pct > 0)
         data <- data[data$self >= pd$total * (self.pct / 100),]

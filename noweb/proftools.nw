@@ -654,8 +654,10 @@ hotPaths <- function(pd, value = c("pct", "time", "hits"),
 
     data <- hotPathData(pd)
 
-    if (length(data$count) > cut)
-        data <- data[1:nrow(data) %in% head(rev(order(data$count)), cut),]
+    if (length(data$count) > cut) {
+        top <- head(order(data$count, decreasing = TRUE), cut)
+        data <- data[1:nrow(data) %in% top,]
+    }
 
     if (self.pct > 0)
         data <- data[data$self >= pd$total * (self.pct / 100),]
