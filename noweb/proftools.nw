@@ -551,6 +551,7 @@ hasGC <- which(pd$gccounts > 0)
 
 @ %def
 \FIXME{Handle the trailing space better in woven output.}
+%% $ -- make emacs happy
 
 Stacks with GC calls appended are added to the stack list;
 corresponding references are added as as well.
@@ -558,6 +559,7 @@ corresponding references are added as as well.
 pd$stacks <- c(pd$stacks, lapply(pd$stacks[hasGC], c, "<GC>"))
 pd$refs <- c(pd$refs, lapply(pd$refs[hasGC], c, NA_character_))
 @ %def
+%% $ -- make emacs happy
 
 The [[counts]] for the original stacks are reduced by their
 [[gccounts]], and the [[gccounts]] for stacks with GC calls become the
@@ -567,6 +569,7 @@ pd$counts <- c(pd$counts - pd$gccounts, pd$gccounts[hasGC])
 pd$gccounts <- rep(0, length(pd$counts))
 
 @ %def
+%% $ -- make emacs happy
 
 The [[trace]] indices for entries during GC calls are updated
 to point to the new stacks with GC calls appended.
@@ -575,6 +578,7 @@ map <- match(seq_along(ostacks), hasGC) + length(ostacks)
 pd$trace[pd$inGC] <- map[pd$trace[pd$inGC]]
 
 @ %def
+%% $ -- make emacs happy
 
 Finally, the [[inGC]] and [[haveGC]] fields are updated and the new
 [[pd]] is returned.
@@ -584,10 +588,12 @@ pd$haveGC <- FALSE
 
 pd
 @ %def
+%% $ -- make emacs happy
 
 \subsection{A Higher Level Function}
-**** skip argument to skip first n? Don't create <Other> entry?
+**** skip argument to skip first n? Don't create [[<Other>]] entry?
 **** are focus/regex default values right?
+%% ' -- make emacs happy
 <<[[filterProfileData]] function>>=
 filterProfileData <- function(pd, select, omit,
                               self.pct = 0, total.pct = 0,
@@ -645,7 +651,7 @@ reasonably well but could probably use more tuning.
 hotPaths <- function(pd, value = c("pct", "time", "hits"),
                      self = TRUE, srclines = FALSE, GC = FALSE,
                      maxdepth = NA, self.pct = 0, total.pct = 0,
-                     short = ". ", cut = 20) {
+                     short = ". ", nlines = 20) {
     value <- match.arg(value)
     if (! is.na(maxdepth))
         pd <- prunePD(pd, maxdepth)
@@ -654,8 +660,8 @@ hotPaths <- function(pd, value = c("pct", "time", "hits"),
 
     data <- hotPathData(pd)
 
-    if (length(data$count) > cut) {
-        top <- head(order(data$count, decreasing = TRUE), cut)
+    if (! is.na(nlines) && length(data$count) > nlines) {
+        top <- head(order(data$count, decreasing = TRUE), nlines)
         data <- data[1:nrow(data) %in% top,]
     }
 
