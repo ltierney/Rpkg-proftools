@@ -2,7 +2,7 @@
 \alias{filterProfileData}
 \title{ Filter Profile Data }
 \description{
-  Allowd profile data to be filtered on several criteria.
+  Allow profile data to be filtered on several criteria.
 }
 \usage{
 filterProfileData(pd, select, omit, maxdepth = NA,
