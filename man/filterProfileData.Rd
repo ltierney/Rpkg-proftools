@@ -19,9 +19,9 @@ filterProfileData(pd, select, omit, maxdepth = NA,
               are dropped.}
   \item{maxdepth}{integer; stacks are truncated to have at most
                   \code{maxdepth} elements.}
-  \item{self.pct}{logical; functions at the bottom of the stacks with
+  \item{self.pct}{numeric; functions at the bottom of the stacks with
                   self percentages below this value are removed.}
-  \item{total.pct}{logical; functions at the top of the stacks with
+  \item{total.pct}{numeric; functions at the top of the stacks with
                    total percentages below this value are removed.}
   \item{focus}{logical; for use with the \code{select} argument. If
                true, functions at the bottom of the stack not matching the

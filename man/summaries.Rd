@@ -23,9 +23,9 @@ srcSummary(pd, byTotal = TRUE, value = c("pct", "time", "hits"),
   \item{value}{charactier; show result as percentage, time, or hits.}
   \item{srclines}{logical; include source information, if available, or not.}
   \item{GC}{logical; include GC information or not.}
-  \item{self.pct}{logical; functions at the bottom of the stacks with
+  \item{self.pct}{numeric; functions at the bottom of the stacks with
                   self percentages below this value are removed.}
-  \item{total.pct}{logical; functions at the top of the stacks with
+  \item{total.pct}{numeric; functions at the top of the stacks with
                    total percentages below this value are removed.}
   \item{...}{arguments to control path formatting; not useful at this time.}
 }
