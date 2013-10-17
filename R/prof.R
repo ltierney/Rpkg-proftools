@@ -485,8 +485,8 @@ hotPathsTime <- function(data, self, gc, delta) {
 
 hotPaths <- function(pd, value = c("pct", "time", "hits"),
                      self = TRUE, srclines = FALSE, GC = FALSE,
-                     maxdepth = NA, self.pct = 0, total.pct = 0,
-                     short = ". ", nlines = 20) {
+                     maxdepth = 10, self.pct = 0, total.pct = 0,
+                     short = ". ", nlines = NA) {
     value <- match.arg(value)
     if (! is.na(maxdepth))
         pd <- prunePD(pd, maxdepth)
