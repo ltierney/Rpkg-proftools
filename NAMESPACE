@@ -7,3 +7,7 @@ export(writeCallgrindFile)
 export(filterProfileData)
 export(plain.style, google.style)
 export(funSummary, callSummary, pathSummary, srcSummary)
+
+S3method(print, proftools_profData)
+S3method(print, proftools_hotPaths)
+
