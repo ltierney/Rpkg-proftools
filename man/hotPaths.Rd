@@ -7,10 +7,11 @@
 \usage{
 hotPaths(pd, value = c("pct", "time", "hits"), self = TRUE,
          srclines = FALSE, GC = FALSE, maxdepth = 10,
-         self.pct = 0, total.pct = 0, short = ". ", nlines = NA) {
+         self.pct = 0, total.pct = 0, short = ". ", nlines = NA)
 }
 \arguments{
   \item{pd}{profile data as returned by \code{readProfileData}.}
+  \item{value}{charactier; show result as percentage, time, or hits.}
   \item{self}{logical; include self time for each stack in the result.}
   \item{srclines}{logical; include source information, if available, or not.}
   \item{GC}{logical; include GC information or not.}
