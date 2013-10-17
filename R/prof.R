@@ -808,6 +808,12 @@ fgDataLine <- function(k, stacks, counts) {
                stringsAsFactors = FALSE)
 }
 
+default.cmap <- function(x) {
+    y <- unique(x)
+    clr <- rainbow(length(y))
+    clr[match(x, y)]
+}
+
 fgData <- function(stacks, counts, reorder = c("alpha", "hot", "no"),
                    colormap) {
     mx <- max(sapply(stacks, length))
@@ -828,6 +834,8 @@ fgData <- function(stacks, counts, reorder = c("alpha", "hot", "no"),
     val <- do.call(rbind, lapply(1 : mx, fgDataLine, stacks, counts))
     if (! is.null(colormap))
         val$col <- colormap(val$label)
+    else
+        val$col <- default.cmap(val$label)
     val
 }
 
