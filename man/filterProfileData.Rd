@@ -5,8 +5,9 @@
   Allowd profile data to be filtered on several criteria.
 }
 \usage{
-filterProfileData(pd, select, omit, self.pct = 0, total.pct = 0,
-                  focus = FALSE, normalize = FALSE, regex = FALSE)
+filterProfileData(pd, select, omit, maxdepth = NA,
+                  self.pct = 0, total.pct = 0, focus = FALSE,
+                  normalize = FALSE, regex = FALSE)
 }
 \arguments{
   \item{pd}{profile data as returned by \code{readProfileData}.}
@@ -16,6 +17,8 @@ filterProfileData(pd, select, omit, self.pct = 0, total.pct = 0,
   \item{omit}{character vector specifying names of functions; call
               stacks containing functions matching any of these names
               are dropped.}
+  \item{maxdepth}{integer; stacks are truncated to have at most
+                  \code{maxdepth} elements.}
   \item{self.pct}{logical; functions at the bottom of the stacks with
                   self percentages below this value are removed.}
   \item{total.pct}{logical; functions at the top of the stacks with

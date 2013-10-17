@@ -108,10 +108,13 @@ print.proftools_profData <- function(x, n = 6, ...) {
 ###
 
 filterProfileData <- function(pd, select, omit,
+                              maxdepth = NA,
                               self.pct = 0, total.pct = 0,
                               focus = FALSE,
                               normalize = FALSE,
                               regex = FALSE) {
+    if (! is.na(maxdepth))
+        pd <- prunePD(pd, to = maxdepth)
     pd <- focusPD(pd, self.pct = self.pct, total.pct = total.pct)
     if (! missing(select))
         if (focus)
