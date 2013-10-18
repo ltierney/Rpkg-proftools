@@ -842,7 +842,7 @@ fgData <- function(stacks, counts, reorder = c("alpha", "hot", "no"),
 ## This is computes the data with fdData and draws the graph with base
 ## graphics. This is the bit we would need to change for grid, maybe
 ## ggplot2, and for svg output.
-flameGraph <- function(stacks, counts, reorder, colormap, cex) {
+flameGraph <- function(stacks, counts, reorder, colormap, cex, main) {
     fdg <- fgData(stacks, counts, reorder, colormap)
     left <- fdg$left
     bottom <- fdg$bottom
@@ -852,7 +852,7 @@ flameGraph <- function(stacks, counts, reorder, colormap, cex) {
     label <- fdg$label
 
     plot(c(min(left), max(right)), c(min(bottom), max(top)),
-         type = "n", axes = FALSE, xlab = "", ylab = "")
+         type = "n", axes = FALSE, xlab = "", ylab = "", main = main)
 
     rect(left, bottom, right, top, col = col)
     
@@ -869,7 +869,7 @@ flameGraph <- function(stacks, counts, reorder, colormap, cex) {
 htmlencode <- function(x)
     sub(">", "&gt;", sub("<", "&lt;", x))
 
-svgFlameGraph <- function(file, stacks, counts, reorder, colormap) {
+svgFlameGraph <- function(file, stacks, counts, reorder, colormap, main) {
     fdg <- fgData(stacks, counts, reorder, colormap)
     fdg$col <- substr(fdg$col, 1, 7) ## remove 'alpha' component from colors
     mx <- max(fdg$top)
@@ -895,10 +895,10 @@ svgFlameGraph <- function(file, stacks, counts, reorder, colormap) {
         labels[show], " (", counts[show], " samples, ", percents[show], 
         "%)')\" onmouseout=\"c()\" >", labels[show],"</text>", sep=""))
         
-    writeFile(file, svgCode, mx)
+    writeFile(file, svgCode, mx, main)
 }
 ## This writes the header of the svg file
-writeFile <- function(file, svgCode, mx){
+writeFile <- function(file, svgCode, mx, main){
     write(c(paste("<?xml version=\"1.0\" standalone=\"no\"?>
     <!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">
     <svg version=\"1.1\" width=\"1200\" height=\"", 16*mx+66, "\" onload=\"init(evt)\" viewBox=\"0 0 1200 ", 16*mx+66, "\" xmlns=\"http://www.w3.org/2000/svg\" >
@@ -921,7 +921,7 @@ writeFile <- function(file, svgCode, mx){
     ]]>
     </script>
     <rect x=\"0.0\" y=\"0\" width=\"1200.0\" height=\"", 16*mx+66, "\" fill=\"url(#background)\"  />
-    <text text-anchor=\"middle\" x=\"600\" y=\"24\" font-size=\"17\" font-family=\"Verdana\" fill=\"rgb(0,0,0)\"  >Call Graph</text>
+    <text text-anchor=\"middle\" x=\"600\" y=\"24\" font-size=\"17\" font-family=\"Verdana\" font-weight=\"bold\" fill=\"rgb(0,0,0)\"  >", main, "</text>
     <text text-anchor=\"left\" x=\"10\" y=\"", 16*mx+50, "\" font-size=\"12\" font-family=\"Verdana\" fill=\"rgb(0,0,0)\"  >Function:</text>
     <text text-anchor=\"\" x=\"70\" y=\"", 16*mx+50, "\" font-size=\"12\" font-family=\"Verdana\" fill=\"rgb(0,0,0)\" id=\"details\" > </text>", sep=""), svgCode, "</svg>"), file = file)
 }
@@ -942,7 +942,8 @@ refStacks <- function(d) {
 
 ## produce a flame graph from an Rprof file
 fg <- function(file, svgfile, reorder = c("hot", "alpha", "no"),
-               colormap = NULL, srclines = FALSE, cex = 0.75) {
+               colormap = NULL, srclines = FALSE, cex = 0.75,
+               main = "Call Graph") {
     reorder <- match.arg(reorder)
     if (is.character(file))
         d <- readPD(file)
@@ -951,13 +952,14 @@ fg <- function(file, svgfile, reorder = c("hot", "alpha", "no"),
     counts <- d$counts
     stacks <- if (srclines) refStacks(d) else d$stacks
     if (! missing(svgfile))
-        svgFlameGraph(svgfile, stacks, counts, reorder, colormap)
+        svgFlameGraph(svgfile, stacks, counts, reorder, colormap, main)
     else
-        flameGraph(stacks, counts, reorder, colormap, cex)
+        flameGraph(stacks, counts, reorder, colormap, cex, main)
 }
 
 ## produce a time graph (like profr) from an Rprof file
-tg <- function(file, svgfile, colormap = NULL, srclines = FALSE, cex = 0.75) {
+tg <- function(file, svgfile, colormap = NULL, srclines = FALSE, cex = 0.75,
+               main = "Call Graph") {
     if (is.character(file))
         d <- readPD(file)
     else
@@ -967,9 +969,9 @@ tg <- function(file, svgfile, colormap = NULL, srclines = FALSE, cex = 0.75) {
     tstacks <- stacks[r$values]
     counts <- r$lengths
     if (! missing(svgfile))
-        svgFlameGraph(svgfile, tstacks, counts, "no", colormap)
+        svgFlameGraph(svgfile, tstacks, counts, "no", colormap, main)
     else
-        flameGraph(tstacks, counts, "no", colormap, cex)
+        flameGraph(tstacks, counts, "no", colormap, cex, main)
 }
 
 
