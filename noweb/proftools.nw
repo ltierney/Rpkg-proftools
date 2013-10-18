@@ -1279,7 +1279,7 @@ fgData <- function(stacks, counts, reorder = c("alpha", "hot", "no"),
 ## This is computes the data with fdData and draws the graph with base
 ## graphics. This is the bit we would need to change for grid, maybe
 ## ggplot2, and for svg output.
-flameGraph <- function(stacks, counts, reorder, colormap) {
+flameGraph <- function(stacks, counts, reorder, colormap, cex) {
     fdg <- fgData(stacks, counts, reorder, colormap)
     left <- fdg$left
     bottom <- fdg$bottom
@@ -1295,12 +1295,12 @@ flameGraph <- function(stacks, counts, reorder, colormap) {
     
     ## half-em for half-character offset used by text() when pos
     ## argument is used.
-    hm <- 0.5 * strwidth("m")
+    hm <- 0.5 * strwidth("m", cex = cex)
 
-    show <- (strheight(label) <= 0.9 &
-             strwidth(label) + 2 * hm <= 0.8 * (right - left))
+    show <- (strheight(label, cex = cex) <= 0.9 &
+             strwidth(label, cex = cex) + 2 * hm <= 0.8 * (right - left))
     if (any(show))
-        text(left[show], bottom[show] + 0.4, label[show], pos = 4)
+        text(left[show], bottom[show] + 0.4, label[show], pos = 4, cex = cex)
 }
 
 htmlencode <- function(x)
@@ -1378,7 +1378,7 @@ refStacks <- function(d) {
 
 ## produce a flame graph from an Rprof file
 fg <- function(file, svgfile, reorder = c("hot", "alpha", "no"),
-               colormap = NULL, srclines = FALSE) {
+               colormap = NULL, srclines = FALSE, cex = 0.75) {
     reorder <- match.arg(reorder)
     if (is.character(file))
         d <- readPD(file)
@@ -1389,11 +1389,11 @@ fg <- function(file, svgfile, reorder = c("hot", "alpha", "no"),
     if (! missing(svgfile))
         svgFlameGraph(svgfile, stacks, counts, reorder, colormap)
     else
-        flameGraph(stacks, counts, reorder, colormap)
+        flameGraph(stacks, counts, reorder, colormap, cex)
 }
 
 ## produce a time graph (like profr) from an Rprof file
-tg <- function(file, svgfile, colormap = NULL, srclines = FALSE) {
+tg <- function(file, svgfile, colormap = NULL, srclines = FALSE, cex = 0.75) {
     if (is.character(file))
         d <- readPD(file)
     else
@@ -1405,7 +1405,7 @@ tg <- function(file, svgfile, colormap = NULL, srclines = FALSE) {
     if (! missing(svgfile))
         svgFlameGraph(svgfile, tstacks, counts, "no", colormap)
     else
-        flameGraph(tstacks, counts, "no", colormap)
+        flameGraph(tstacks, counts, "no", colormap, cex)
 }
 
 
