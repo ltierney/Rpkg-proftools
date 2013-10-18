@@ -871,6 +871,7 @@ htmlencode <- function(x)
 
 svgFlameGraph <- function(file, stacks, counts, reorder, colormap) {
     fdg <- fgData(stacks, counts, reorder, colormap)
+    fdg$col <- substr(fdg$col, 1, 7) ## remove 'alpha' component from colors
     mx <- max(fdg$top)
     totalCount <- max(fdg$right)
     counts <- fdg$right-fdg$left
