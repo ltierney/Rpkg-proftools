@@ -1301,6 +1301,11 @@ stdFlameGraph <- function(stacks, counts, reorder, colormap, cex, main) {
              strwidth(label, cex = cex) + 2 * hm <= 0.8 * (right - left))
     if (any(show))
         text(left[show], bottom[show] + 0.4, label[show], pos = 4, cex = cex)
+
+    invisible(structure(list(left = left, right = right,
+                             bottom = bottom, top = top,
+                             label = label),
+                        class = "proftools_flameGraph"))
 }
 
 htmlencode <- function(x)
@@ -1363,14 +1368,14 @@ writeFile <- function(file, svgCode, mx, main){
     <text text-anchor=\"\" x=\"70\" y=\"", 16*mx+50, "\" font-size=\"12\" font-family=\"Verdana\" fill=\"rgb(0,0,0)\" id=\"details\" > </text>", sep=""), svgCode, "</svg>"), file = file)
 }
 
-## Merge non-NA refs into stacks. Add <Internal> for lef refs.
+## Merge non-NA refs into stacks. Add UnknownFunToken for leaf refs.
 refStacks <- function(d) {
     rs <-function(s, r, d) {
         if (is.na(r[length(r)]))
             r <- r[-length(r)]
         else
-            s <- c(s, "<Internal>")
-        fl <- d$files[refFN(r)]
+            s <- c(s, UnknownFunToken)
+        fl <- basename(d$files[refFN(r)])
         ln <- refLN(r)
         paste0(s, ifelse(is.na(r), "", sprintf(" (%s:%d)", fl, ln)))
     }
@@ -1393,6 +1398,16 @@ flameGraph <- function(file, svgfile, order = c("hot", "alpha", "time"),
         svgFlameGraph(svgfile, stacks, counts, order, colormap, main)
     else
         stdFlameGraph(stacks, counts, order, colormap, cex, main)
+}
+
+fgIdentify <- function(p) {
+    loc <- locator(1)
+    if (! is.null(loc)) {
+        idx <- which(loc$x >= p$left & loc$x <= p$right &
+                     loc$y >= p$bottom & loc$y <= p$top)
+        if (length(idx) > 0)
+            p$label[idx]
+    }
 }
 
 
