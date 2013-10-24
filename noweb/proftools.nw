@@ -1251,12 +1251,12 @@ default.cmap <- function(x) {
     clr[match(x, y)]
 }
 
-fgData <- function(stacks, counts, reorder = c("alpha", "hot", "no"),
+fgData <- function(stacks, counts, reorder = c("alpha", "hot", "time"),
                    colormap) {
     mx <- max(sapply(stacks, length))
 
     reorder <- match.arg(reorder)
-    if (reorder != "no") {
+    if (reorder != "time") {
         ## ord <- seq_along(stacks)
         ## for (i in (mx : 1))
         ##     ord <- ord[order(sapply(stacks[ord], `[`, i), na.last = FALSE)]
@@ -1378,10 +1378,10 @@ refStacks <- function(d) {
 }
 
 ## produce a flame graph from an Rprof file
-fg <- function(file, svgfile, reorder = c("hot", "alpha", "no"),
+fg <- function(file, svgfile, order = c("hot", "alpha", "time"),
                colormap = NULL, srclines = FALSE, cex = 0.75,
                main = "Call Graph") {
-    reorder <- match.arg(reorder)
+    order <- match.arg(order)
     if (is.character(file))
         d <- readPD(file)
     else
@@ -1389,9 +1389,9 @@ fg <- function(file, svgfile, reorder = c("hot", "alpha", "no"),
     counts <- d$counts
     stacks <- if (srclines) refStacks(d) else d$stacks
     if (! missing(svgfile))
-        svgFlameGraph(svgfile, stacks, counts, reorder, colormap, main)
+        svgFlameGraph(svgfile, stacks, counts, order, colormap, main)
     else
-        flameGraph(stacks, counts, reorder, colormap, cex, main)
+        flameGraph(stacks, counts, order, colormap, cex, main)
 }
 
 ## produce a time graph (like profr) from an Rprof file
@@ -1406,9 +1406,9 @@ tg <- function(file, svgfile, colormap = NULL, srclines = FALSE, cex = 0.75,
     tstacks <- stacks[r$values]
     counts <- r$lengths
     if (! missing(svgfile))
-        svgFlameGraph(svgfile, tstacks, counts, "no", colormap, main)
+        svgFlameGraph(svgfile, tstacks, counts, "time", colormap, main)
     else
-        flameGraph(tstacks, counts, "no", colormap, cex, main)
+        flameGraph(tstacks, counts, "time", colormap, cex, main)
 }
 
 
