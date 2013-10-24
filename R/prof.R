@@ -842,7 +842,7 @@ fgData <- function(stacks, counts, reorder = c("alpha", "hot", "time"),
 ## This is computes the data with fdData and draws the graph with base
 ## graphics. This is the bit we would need to change for grid, maybe
 ## ggplot2, and for svg output.
-flameGraph <- function(stacks, counts, reorder, colormap, cex, main) {
+stdFlameGraph <- function(stacks, counts, reorder, colormap, cex, main) {
     fdg <- fgData(stacks, counts, reorder, colormap)
     left <- fdg$left
     bottom <- fdg$bottom
@@ -940,10 +940,11 @@ refStacks <- function(d) {
     lapply(1:length(d$stacks), function(i) rs(d$stacks[[i]], d$refs[[i]], d))
 }
 
-## produce a flame graph from an Rprof file
-fg <- function(file, svgfile, order = c("hot", "alpha", "time"),
-               colormap = NULL, srclines = FALSE, cex = 0.75,
-               main = "Call Graph") {
+## produce a flame graph from an Rprof file.
+## order = "time" produces a graph like profr.
+flameGraph <- function(file, svgfile, order = c("hot", "alpha", "time"),
+                       colormap = NULL, srclines = FALSE, cex = 0.75,
+                       main = "Call Graph") {
     order <- match.arg(order)
     if (is.character(file))
         d <- readPD(file)
@@ -954,24 +955,7 @@ fg <- function(file, svgfile, order = c("hot", "alpha", "time"),
     if (! missing(svgfile))
         svgFlameGraph(svgfile, stacks, counts, order, colormap, main)
     else
-        flameGraph(stacks, counts, order, colormap, cex, main)
-}
-
-## produce a time graph (like profr) from an Rprof file
-tg <- function(file, svgfile, colormap = NULL, srclines = FALSE, cex = 0.75,
-               main = "Call Graph") {
-    if (is.character(file))
-        d <- readPD(file)
-    else
-        d <- file
-    r <- rle(d$trace)
-    stacks <- if (srclines) refStacks(d) else d$stacks
-    tstacks <- stacks[r$values]
-    counts <- r$lengths
-    if (! missing(svgfile))
-        svgFlameGraph(svgfile, tstacks, counts, "time", colormap, main)
-    else
-        flameGraph(tstacks, counts, "time", colormap, cex, main)
+        stdFlameGraph(stacks, counts, order, colormap, cex, main)
 }
 
 
