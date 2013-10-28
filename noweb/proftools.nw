@@ -1410,6 +1410,28 @@ fgIdentify <- function(p) {
     }
 }
 
+fgIdentify <- function(p, n = 1, print = FALSE) {
+    val <- NULL
+    while (n > 0) {
+        n <- n - 1
+        loc <- locator(1)
+        if (! is.null(loc)) {
+            idx <- which(loc$x >= p$left & loc$x <= p$right &
+                         loc$y >= p$bottom & loc$y <= p$top)
+            if (length(idx) > 0) {
+                if (print)
+                    cat(p$label[idx], "\n")
+                val <- c(val, p$label[idx])
+            }
+            else break
+        }
+        else break
+    }
+    val
+}
+
+identify.proftools_flameGraph <- fgIdentify
+
 
 ###
 ### Writing callgrind file
