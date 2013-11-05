@@ -1310,7 +1310,8 @@ stdFlameGraph <- function(stacks, counts, reorder, colormap, cex, main) {
 htmlencode <- function(x)
     sub(">", "&gt;", sub("<", "&lt;", x))
 
-svgFlameGraph <- function(file, stacks, counts, reorder, colormap, main) {
+svgFlameGraph <- function(file, stacks, counts, reorder, colormap, main,
+                          tooltip) {
     fdg <- fgData(stacks, counts, reorder, colormap)
     fdg$col <- substr(fdg$col, 1, 7) ## remove 'alpha' component from colors
     mx <- max(fdg$top)
@@ -1336,13 +1337,13 @@ svgFlameGraph <- function(file, stacks, counts, reorder, colormap, main) {
         labels[show], " (", counts[show], " samples, ", percents[show], 
         "%)')\" onmouseout=\"c()\" >", labels[show],"</text>", sep=""))
         
-    writeFile(file, svgCode, mx, main)
+    writeFile(file, svgCode, mx, main, tooltip)
 }
 ## This writes the header of the svg file
-writeFile <- function(file, svgCode, mx, main){
+writeFile <- function(file, svgCode, mx, main, tooltip){
     write(c(paste("<?xml version=\"1.0\" standalone=\"no\"?>
     <!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">
-    <svg version=\"1.1\" width=\"1200\" height=\"", 16*mx+66, "\" onload=\"init(evt)\" viewBox=\"0 0 1200 ", 16*mx+66, "\" xmlns=\"http://www.w3.org/2000/svg\" >
+    <svg version=\"1.1\" width=\"1200\" height=\"", 16*mx+66, "\" onload=\"init(evt)\"", if (tooltip) " onmousemove=\"mouseMove(evt)\" " else " ", "viewBox=\"0 0 1200 ", 16*mx+66, "\" xmlns=\"http://www.w3.org/2000/svg\" >
     <defs >
     <linearGradient id=\"background\" y1=\"0\" y2=\"1\" x1=\"0\" x2=\"0\" >
         <stop stop-color=\"#eeeeee\" offset=\"5%\" />
@@ -1354,17 +1355,83 @@ writeFile <- function(file, svgCode, mx, main){
     text:hover { stroke:black; stroke-width:1; stroke-opacity:0.35; }
     </style>
     <script type=\"text/ecmascript\">
-    <![CDATA[
+    <![CDATA[",
+                  if (tooltip) "
+    var bMouseDragging = false;
+    var nMouseOffsetX = 0;
+    var nMouseOffsetY = 0;
+    var detailss;
+    bMouseDragging = true;
+
+    var details = document.getElementById(\"details\");
+    var detailsBG = document.getElementById(\"detailsBG\");
+    if(details) {
+        var p = document.documentElement.createSVGPoint();
+        p.x = evt.clientX;
+        p.y = evt.clientY;
+    
+        var m = details.getScreenCTM();
+        p = p.matrixTransform(m.inverse());
+        nMouseOffsetX = p.x - parseInt(details.getAttribute(\"x\"));
+        nMouseOffsetY = p.y - parseInt(details.getAttribute(\"y\"));
+    }
+        
+    function mouseMove(evt) { 
+        var p = document.documentElement.createSVGPoint();
+        p.x = evt.clientX;
+        p.y = evt.clientY;
+        var bClient = true;
+        
+        if(bMouseDragging) {
+            var details = document.getElementById(\"details\");
+            var detailsBG = document.getElementById(\"detailsBG\");
+            if(details) {
+        
+                var m = details.getScreenCTM();
+                p = p.matrixTransform(m.inverse());
+
+                details.setAttribute(\"x\", p.x - nMouseOffsetX + 20);
+                details.setAttribute(\"y\", p.y - nMouseOffsetY + 18);
+                
+                var bbox = details.getBBox();
+                var width = bbox.width;
+                var height = bbox.height;
+                
+                detailsBG.setAttribute(\"x\", p.x - nMouseOffsetX + 15);
+                detailsBG.setAttribute(\"y\", p.y - nMouseOffsetY);
+                detailsBG.setAttribute(\"width\", width+10);
+                detailsBG.setAttribute(\"height\", height+10);
+                bClient = false;
+            }
+        }
+        
+    }
+    
+    function init() {
+        detailss = document.getElementById(\"details\").firstChild; 
+        var details = document.getElementById(\"details\");
+        var detailsBG = document.getElementById(\"detailsBG\");
+        if(details) {
+            details.addEventListener(\"mousemove\", mouseMove, false);
+        }
+    }
+    
+    function s(info) { detailss.nodeValue = info; }
+	function c() { detailss.nodeValue = ' '; }
+    ]]>" else "
     var details;
     function init(evt) { details = document.getElementById(\"details\").firstChild; }
     function s(info) { details.nodeValue = info; }
     function c() { details.nodeValue = ' '; }
-    ]]>
+    ]]>", "
     </script>
     <rect x=\"0.0\" y=\"0\" width=\"1200.0\" height=\"", 16*mx+66, "\" fill=\"url(#background)\"  />
-    <text text-anchor=\"middle\" x=\"600\" y=\"24\" font-size=\"17\" font-family=\"Verdana\" font-weight=\"bold\" fill=\"rgb(0,0,0)\"  >", main, "</text>
+    <text text-anchor=\"middle\" x=\"600\" y=\"24\" font-size=\"17\" font-family=\"Verdana\" font-weight=\"bold\" fill=\"rgb(0,0,0)\"  >", main, "</text>", if (tooltip) "" else paste0("
     <text text-anchor=\"left\" x=\"10\" y=\"", 16*mx+50, "\" font-size=\"12\" font-family=\"Verdana\" fill=\"rgb(0,0,0)\"  >Function:</text>
-    <text text-anchor=\"\" x=\"70\" y=\"", 16*mx+50, "\" font-size=\"12\" font-family=\"Verdana\" fill=\"rgb(0,0,0)\" id=\"details\" > </text>", sep=""), svgCode, "</svg>"), file = file)
+    <text text-anchor=\"\" x=\"70\" y=\"", 16*mx+50, "\" font-size=\"12\" font-family=\"Verdana\" fill=\"rgb(0,0,0)\" id=\"details\" > </text>"), sep=""), svgCode, if (tooltip) "
+    <rect x=\"10\" y=\"129\" width=\"200\" height=\"45.0\" fill=\"rgb(250,250,250)\" rx=\"2\" ry=\"2\" id=\"detailsBG\" />
+    <text x=\"70\" y=\"162\" font-size=\"12\" font-family=\"Verdana\" fill=\"rgb(0,0,0)\" id=\"details\" > </text>" else "", "
+    </svg>"), file = file)
 }
 
 ## Merge non-NA refs into stacks. Add UnknownFunToken for leaf refs.
@@ -1385,7 +1452,7 @@ refStacks <- function(d) {
 ## order = "time" produces a graph like profr.
 flameGraph <- function(file, svgfile, order = c("hot", "alpha", "time"),
                        colormap = NULL, srclines = FALSE, cex = 0.75,
-                       main = "Call Graph") {
+                       main = "Call Graph", tooltip = FALSE) {
     order <- match.arg(order)
     if (is.character(file))
         d <- readPD(file)
@@ -1394,7 +1461,7 @@ flameGraph <- function(file, svgfile, order = c("hot", "alpha", "time"),
     counts <- d$counts
     stacks <- if (srclines) refStacks(d) else d$stacks
     if (! missing(svgfile))
-        svgFlameGraph(svgfile, stacks, counts, order, colormap, main)
+        svgFlameGraph(svgfile, stacks, counts, order, colormap, main, tooltip)
     else
         stdFlameGraph(stacks, counts, order, colormap, cex, main)
 }
