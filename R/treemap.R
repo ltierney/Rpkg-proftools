@@ -162,6 +162,7 @@ makeTreeMapData <- function(n, left, bottom, right, top,
 calleeTreeMap <- function(pd, srclines = FALSE, cex = 0.75, colormap = NULL,
                           main = "Callee Tree Map", squarify = FALSE,
                           border = NULL) {
+    pd$total <- sum(pd$counts)
     plot(c(0,1), c(0,1), type = "n", xlab = "", ylab = "",
          axes = FALSE, main = main)
     if (srclines)
