@@ -166,7 +166,7 @@ calleeTreeMap <- function(pd, srclines = FALSE, cex = 0.75, colormap = NULL,
     if (srclines)
         pd$stacks <- refStacks(pd)
     tile <- if (squarify) squarifiedTiles else splitRect
-    v <-makeTreeMapData(makeTree("", pd), 0, 0, 1, 1, tile = tile)
+    v <-makeTreeMapData(makeTree("", pd), 0, 0, 1, 1, cex = cex, tile = tile)
     nc <- nrow(v)
     cmap <- if (! is.null(colormap)) colormap else default.cmap
     fun <- sub(" .*", "", v$label)
