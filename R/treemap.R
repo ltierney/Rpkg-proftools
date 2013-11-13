@@ -110,7 +110,7 @@ makeTreeMapData <- function(n, left, bottom, right, top,
     nc <- length(calls)
     callhits <- if (nc > 0) sapply(calls, function(x) x$hits) / hits else 0
     selffrac <- 1 - sum(callhits)
-    lpad <- strwidth("M", cex = cex)* 0.3 ## 0.01
+    lpad <- strwidth("M", cex = cex)* 0.6 ## was 0.3
     label <- n$fun
     wd <- strwidth(label, cex = cex) + 2 * lpad
     ht <- strheight(label, cex = cex) + 2 * lpad
