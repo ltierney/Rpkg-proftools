@@ -160,7 +160,8 @@ makeTreeMapData <- function(n, left, bottom, right, top,
 }
 
 calleeTreeMap <- function(pd, srclines = FALSE, cex = 0.75, colormap = NULL,
-                          main = "Callee Tree Map", squarify = FALSE) {
+                          main = "Callee Tree Map", squarify = FALSE,
+                          border = NULL) {
     plot(c(0,1), c(0,1), type = "n", xlab = "", ylab = "",
          axes = FALSE, main = main)
     if (srclines)
@@ -171,7 +172,7 @@ calleeTreeMap <- function(pd, srclines = FALSE, cex = 0.75, colormap = NULL,
     cmap <- if (! is.null(colormap)) colormap else default.cmap
     fun <- sub(" .*", "", v$label)
     col <- cmap(fun, val$depth, val$hits)
-    rect(v$left, v$bottom, v$right, v$top, col = col)
+    rect(v$left, v$bottom, v$right, v$top, col = col, border = border)
     vlr <- subset(v, showLabel & rotate)
     if (nrow(vlr) > 0)
         with(vlr, text(labX, labY, label, srt = -90, adj = c(0, 1), cex = cex))
