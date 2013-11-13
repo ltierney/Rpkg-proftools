@@ -193,7 +193,7 @@ ctmIdentify <- function(p, n = 1, print = FALSE) {
                 stack <- p$label[idx][-1]
                 if (print)
                     cat(stack, "\n")
-                val <- c(val, stack)
+                val <- c(val, list(stack))
             }
             else break
         }
