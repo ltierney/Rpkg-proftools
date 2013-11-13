@@ -952,16 +952,17 @@ writeFile <- function(file, svgCode, mx, main, tooltip){
         
                 var m = details.getScreenCTM();
                 p = p.matrixTransform(m.inverse());
+                var totalOffset = evt.pageY;
 
                 details.setAttribute(\"x\", p.x - nMouseOffsetX + 20);
-                details.setAttribute(\"y\", p.y - nMouseOffsetY + 18);
+                details.setAttribute(\"y\", totalOffset - nMouseOffsetY + 18);
                 
                 var bbox = details.getBBox();
                 var width = bbox.width;
                 var height = bbox.height;
                 
                 detailsBG.setAttribute(\"x\", p.x - nMouseOffsetX + 15);
-                detailsBG.setAttribute(\"y\", p.y - nMouseOffsetY);
+                detailsBG.setAttribute(\"y\", totalOffset - nMouseOffsetY);
                 detailsBG.setAttribute(\"width\", width+10);
                 detailsBG.setAttribute(\"height\", height+10);
                 bClient = false;
@@ -992,7 +993,7 @@ writeFile <- function(file, svgCode, mx, main, tooltip){
     <text text-anchor=\"middle\" x=\"600\" y=\"24\" font-size=\"17\" font-family=\"Verdana\" font-weight=\"bold\" fill=\"rgb(0,0,0)\"  >", main, "</text>", if (tooltip) "" else paste0("
     <text text-anchor=\"left\" x=\"10\" y=\"", 16*mx+50, "\" font-size=\"12\" font-family=\"Verdana\" fill=\"rgb(0,0,0)\"  >Function:</text>
     <text text-anchor=\"\" x=\"70\" y=\"", 16*mx+50, "\" font-size=\"12\" font-family=\"Verdana\" fill=\"rgb(0,0,0)\" id=\"details\" > </text>"), sep=""), svgCode, if (tooltip) "
-    <rect x=\"10\" y=\"129\" width=\"200\" height=\"45.0\" fill=\"rgb(250,250,250)\" rx=\"2\" ry=\"2\" id=\"detailsBG\" />
+    <rect x=\"10\" y=\"129\" width=\"1\" height=\"1.0\" fill=\"rgb(250,250,250)\" rx=\"2\" ry=\"2\" id=\"detailsBG\" />
     <text x=\"70\" y=\"162\" font-size=\"12\" font-family=\"Verdana\" fill=\"rgb(0,0,0)\" id=\"details\" > </text>" else "", "
     </svg>"), file = file)
 }
