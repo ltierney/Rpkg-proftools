@@ -119,30 +119,36 @@ makeTreeMapData <- function(n, left, bottom, right, top,
         rotate <- FALSE
         labX <- left + lpad
         labY <- top - lpad
-        sTop <- top - selffrac * (top - bottom)
-        sRight <- right
     }
     else if (wd <= top - bottom && ht <= selffrac * (right - left)) {
         showLabel <- TRUE
         rotate <- TRUE
         labX <- right - lpad
         labY <- top - lpad
-        sTop <- top
-        sRight <- right - selffrac * (right - left)
     }
     else {
         showLabel <- FALSE
         rotate <- FALSE
         labX <- 0
         labY <- 0
-        sTop <- top - selffrac * (top - bottom)
-        sRight <- right
     }
     if (nc > 0) {
+        sRight <- right
+        sTop <- top
+        if (showLabel)
+            if (rotate) sRight <- sRight - ht
+            else sTop <- sTop - ht
+        w <- (sRight - left) * sqrt(1 - selffrac)
+        h <- (sTop - bottom) * sqrt(1 - selffrac)
+        dw <- ((sRight - left) - w) / 2
+        dh <- ((sTop - bottom) - h) / 2
+        sLeft <- left + (if (rotate) min(dh, dw) else dw)
+        sRight <- sLeft + w
+        sBottom <- bottom + (if (rotate) dh else min(dh, dw))
+        sTop <- sBottom + h
         calls <- calls[order(callhits, decreasing = TRUE)]
         callhits <- sort(callhits, decreasing = TRUE)
-        pad <- min(right - left, top - bottom) * 0.01
-        s <- tile(callhits, left + pad, bottom + pad, sRight - pad, sTop - pad)
+        s <- tile(callhits, sLeft, sBottom, sRight, sTop)
         rest <- mapply(function(n, left, bottom, right, top)
                        makeTreeMapData(n, left, bottom, right, top,
                                        cex, depth + 1, tile),
@@ -172,7 +178,7 @@ calleeTreeMap <- function(pd, srclines = FALSE, cex = 0.75, colormap = NULL,
     nc <- nrow(v)
     cmap <- if (! is.null(colormap)) colormap else default.cmap
     fun <- sub(" .*", "", v$label)
-    col <- cmap(fun, val$depth, val$hits)
+    col <- cmap(fun, v$depth, v$hits)
     rect(v$left, v$bottom, v$right, v$top, col = col, border = border)
     vlr <- subset(v, showLabel & rotate)
     if (nrow(vlr) > 0)
