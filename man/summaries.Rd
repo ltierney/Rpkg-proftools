@@ -15,7 +15,7 @@ callSummary(pd, byTotal = TRUE, value = c("pct", "time", "hits"),
 pathSummary(pd, value = c("pct", "time", "hits"),
             srclines = FALSE, GC = TRUE, total.pct = 0, ...)
 srcSummary(pd, byTotal = TRUE, value = c("pct", "time", "hits"),
-           GC = TRUE, total.pct = 0)
+           GC = TRUE, total.pct = 0, source = TRUE, width = getOption("width"))
 }
 \arguments{
   \item{pd}{profile data as returned by \code{readProfileData}.}
@@ -27,7 +27,11 @@ srcSummary(pd, byTotal = TRUE, value = c("pct", "time", "hits"),
                   self percentages below this value are removed.}
   \item{total.pct}{numeric; functions at the top of the stacks with
                    total percentages below this value are removed.}
-  \item{...}{arguments to control path formatting; not useful at this time.}
+  \item{source}{logical; if true, include source lines if available.}
+  \item{width}{maximal line length to use; source lines are abbreviated
+    to fit if necessary.}
+  \item{...}{arguments to control path formatting; not useful at this
+    time.}
 }
 \value{
   A data frame of summary information.

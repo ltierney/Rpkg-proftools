@@ -1827,9 +1827,16 @@ pathSummary <- function(pd, value = c("pct", "time", "hits"),
         pathSummaryHits(apd, GC && pd$haveGC)
 }
 
+trimOrPad <- function(str, width) {
+    ifelse(nchar(str) > width,
+           paste(substr(str, 1, width - 4), "..."),
+           sprintf("%-*s", width, str))
+}
+
 srcSummary <- function(pd, byTotal = TRUE,
                        value = c("pct", "time", "hits"),
-                       GC = TRUE, total.pct = 0) {
+                       GC = TRUE, total.pct = 0,
+                       source = TRUE, width = getOption("width")) {
     if (! pd$haveRefs)
         stop("profile data does not contain source information")
 
@@ -1853,18 +1860,34 @@ srcSummary <- function(pd, byTotal = TRUE,
     if (value == "pct") {
         tot <- pd$total
         colnames(val) <- paste(colnames(val), "pct", sep = ".")
-        as.data.frame(percent(val, tot))
+        val <- as.data.frame(percent(val, tot))
     }
     else if (value == "time") {
         delta <- pd$interval / 1.0e6
         colnames(val) <- paste(colnames(val), "time", sep = ".")
-        as.data.frame(val * delta)
+        val <- as.data.frame(val * delta)
     }
     else {
         colnames(val) <- paste(colnames(val), "hits", sep = ".")
-        as.data.frame(val)
+        val <- as.data.frame(val)
     }
-
+    if (source) {
+        pad <- 5 ## allow for padding print.data.frame might insert
+        width <- width - max(nchar(capture.output(print(val)))) - pad
+        src <- unlist(
+            lapply(seq_along(pd$files),
+                   function(fn) {
+                       fname <- pd$files[fn]
+                       which <- refFN(rc$refs) == fn
+                       if (file.exists(fname))
+                           readLines(fname)[refLN(rc$refs[which])]
+                       else
+                           rep("<source not available>", sum(which))
+               }))
+        cbind(val, data.frame(source = trimOrPad(src, width),
+                              stringsAsFactors = FALSE))
+    }
+    else val
 }
 @ %def
 \end{document}
