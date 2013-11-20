@@ -180,10 +180,10 @@ calleeTreeMap <- function(pd, srclines = FALSE, cex = 0.75, colormap = NULL,
     fun <- sub(" .*", "", v$label)
     col <- cmap(fun, v$depth, v$hits)
     rect(v$left, v$bottom, v$right, v$top, col = col, border = border)
-    vlr <- subset(v, showLabel & rotate)
+    vlr <- v[v$showLabel & v$rotate,]
     if (nrow(vlr) > 0)
         with(vlr, text(labX, labY, label, srt = -90, adj = c(0, 1), cex = cex))
-    vlnr <- subset(v, showLabel & ! rotate)
+    vlnr <- v[v$showLabel & ! v$rotate,]
     if (nrow(vlnr) > 0)
         with(vlnr, text(labX, labY, label, adj = c(0, 1), cex = cex))
     invisible(structure(v, class = c("proftools_calleeTreeMap", class(v))))
