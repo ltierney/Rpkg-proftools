@@ -1390,16 +1390,23 @@ writeFile <- function(file, svgCode, mx, main, tooltip){
                 var m = details.getScreenCTM();
                 p = p.matrixTransform(m.inverse());
                 var totalOffset = evt.pageY;
+                var totalXOffset = evt.pageX;
 
-                details.setAttribute(\"x\", p.x - nMouseOffsetX + 20);
                 details.setAttribute(\"y\", totalOffset - nMouseOffsetY + 18);
+                detailsBG.setAttribute(\"y\", totalOffset - nMouseOffsetY);
                 
                 var bbox = details.getBBox();
                 var width = bbox.width;
                 var height = bbox.height;
+                if(totalXOffset+width >= 1150){
+                    details.setAttribute(\"x\", totalXOffset - nMouseOffsetX - 15 - width);
+                    detailsBG.setAttribute(\"x\", totalXOffset - nMouseOffsetX - 20 - width);
+                }
+                else{
+                    details.setAttribute(\"x\", totalXOffset - nMouseOffsetX + 20);              
+                    detailsBG.setAttribute(\"x\", totalXOffset - nMouseOffsetX + 15);              
+                }
                 
-                detailsBG.setAttribute(\"x\", p.x - nMouseOffsetX + 15);
-                detailsBG.setAttribute(\"y\", totalOffset - nMouseOffsetY);
                 detailsBG.setAttribute(\"width\", width+10);
                 detailsBG.setAttribute(\"height\", height+10);
                 bClient = false;
