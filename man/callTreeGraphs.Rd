@@ -1,6 +1,8 @@
 \name{callTreeGraphs}
 \alias{flameGraph}
 \alias{calleeTreeMap}
+\alias{identify.proftools_calleeTreeMap}
+\alias{identify.proftools_flameGraph}
 \title{ Call Tree Graphs }
 \description{
   Produce a flame graph or a callee tree map for the call tree in a profile
@@ -13,6 +15,11 @@ flameGraph(pd, svgfile, order = c("hot", "alpha", "time"),
 
 calleeTreeMap(pd, srclines = FALSE, cex = 0.75, colormap = NULL,
               main = "Callee Tree Map", squarify = FALSE, border = NULL)
+
+\method{identify}{proftools_calleeTreeMap}(x, n = 1, print = FALSE, ...)
+
+\method{identify}{proftools_flameGraph}(x, n = 1, print = FALSE,
+                                        outline = FALSE, ...)
 }
 \arguments{
   \item{pd}{profile data as returned by \code{readProfileData}.}
@@ -25,7 +32,13 @@ calleeTreeMap(pd, srclines = FALSE, cex = 0.75, colormap = NULL,
   \item{tooltip}{logical; whether SVG should show details in tooltips.}
   \item{border}{character or \code{NULL}; border color for rectangles.}
   \item{squarify}{logical; whether the squarified tiling algorithm should
-                  be used.}
+    be used.}
+  \item{x}{\code{flameGraph} of \code{calleeTreeMap} object to use.}
+  \item{n}{integer; number of items to identify.}
+  \item{print}{logical; whether to print result on each click.}
+  \item{outline}{logical; whether to outline rectangles corresponding to
+    identified call.}
+  \item{...}{Further arguments for the identify methods; currently ignored.}
 }
 \value{Objects that can be used with \code{identify}.}
 \details{
@@ -53,7 +66,10 @@ rectangle. The arguments are the function name, call depth, and number
 of hits.
 
 The results returned by \code{flameGraph} and \code{calleeTreeMap} can
-be passed to \code{identify}.
+be passed to \code{identify}. The \code{identify} method for
+\code{calleeTreeMap} returns a list of the call stacks for the
+identified rectangles. The \code{identify} method for \code{flameGraph}
+returns a character vector of the labels of the identified rectangles.
 }
 \author{ Luke Tierney }
 
