@@ -1458,16 +1458,14 @@ refStacks <- function(d) {
 
 ## produce a flame graph from an Rprof file.
 ## order = "time" produces a graph like profr.
-flameGraph <- function(file, svgfile, order = c("hot", "alpha", "time"),
+flameGraph <- function(pd, svgfile, order = c("hot", "alpha", "time"),
                        colormap = NULL, srclines = FALSE, cex = 0.75,
                        main = "Call Graph", tooltip = FALSE) {
     order <- match.arg(order)
-    if (is.character(file))
-        d <- readPD(file)
-    else
-        d <- file
-    counts <- d$counts
-    stacks <- if (srclines) refStacks(d) else d$stacks
+    if (is.character(pd))
+        pd <- readPD(pd)
+    counts <- pd$counts
+    stacks <- if (srclines) refStacks(pd) else pd$stacks
     if (! missing(svgfile))
         svgFlameGraph(svgfile, stacks, counts, order, colormap, main, tooltip)
     else
