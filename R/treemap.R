@@ -189,16 +189,16 @@ calleeTreeMap <- function(pd, srclines = FALSE, cex = 0.75, colormap = NULL,
     invisible(structure(v, class = c("proftools_calleeTreeMap", class(v))))
 }
 
-ctmIdentify <- function(p, n = 1, print = FALSE) {
+ctmIdentify <- function(x, n = 1, print = FALSE, ...) {
     val <- list()
     while (n > 0) {
         n <- n - 1
         loc <- locator(1)
         if (! is.null(loc)) {
-            idx <- which(loc$x >= p$left & loc$x <= p$right &
-                         loc$y >= p$bottom & loc$y <= p$top)
+            idx <- which(loc$x >= x$left & loc$x <= x$right &
+                         loc$y >= x$bottom & loc$y <= x$top)
             if (length(idx) > 0) {
-                stack <- p$label[idx][-1]
+                stack <- x$label[idx][-1]
                 if (print)
                     cat(stack, "\n")
                 val <- c(val, list(stack))

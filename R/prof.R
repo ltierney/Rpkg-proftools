@@ -1066,7 +1066,8 @@ fgIdentify <- function(p, n = 1, print = FALSE) {
 }
 
 ## Outline clicked things (could redraw before outlining -- would need colors):
-fgIdentify <- function(p, n = 1, print = FALSE, outline = FALSE) {
+fgIdentify <- function(x, n = 1, print = FALSE, outline = FALSE, ...) {
+    p <- x
     val <- NULL
     while (n > 0) {
         n <- n - 1
