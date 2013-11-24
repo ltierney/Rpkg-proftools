@@ -8,7 +8,11 @@ export(filterProfileData)
 export(plain.style, google.style)
 export(funSummary, callSummary, pathSummary, srcSummary)
 export(hotPaths)
+export(flameGraph, calleeTreeMap)
 
 S3method(print, proftools_profData)
 S3method(print, proftools_hotPaths)
+S3method(identify, proftools_flameGraph)
+S3method(identify, proftools_calleeTreeMap)
+
 
