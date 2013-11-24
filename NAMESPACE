@@ -9,6 +9,7 @@ export(plain.style, google.style)
 export(funSummary, callSummary, pathSummary, srcSummary)
 export(hotPaths)
 export(flameGraph, calleeTreeMap)
+export(annotateSource)
 
 S3method(print, proftools_profData)
 S3method(print, proftools_hotPaths)

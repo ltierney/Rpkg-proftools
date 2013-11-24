@@ -1458,3 +1458,49 @@ srcSummary <- function(pd, byTotal = TRUE,
     }
     else val
 }
+
+annotateSource <- function(pd, GC = TRUE, sep = ":  ", show = TRUE, ...) {
+    if (! is.null(pd$files)) {
+        r <- refCounts(pd)
+        file <- refFN(r$ref)
+        line <- refLN(r$ref)
+        if (GC && pd$haveGC)
+            s <- sprintf(" %5.2f%% %5.2f%%  ",
+                         round(100 * (r$total / pd$total), 2),
+                         round(100 * (r$gctotal / pd$total), 2))
+        else
+            s <- sprintf(" %5.2f%%  ", round(100 * (r$total / pd$total), 2))
+        ann <- lapply(seq_along(pd$files),
+                      function(fn) {
+                          flines <- readLines(pd$files[fn])
+                          b <- rep(paste0(rep(" ", nchar(s[1])), collapse = ""),
+                                   length(flines))
+                          b[line[file == fn]] <- s[file == fn]
+                          paste(b, flines, sep = sep)
+                      })
+        names(ann) <- pd$files
+        if (show) {
+            showAnnotation(ann, ...)
+            invisible(ann)
+        }
+        else ann
+    }
+}
+
+## **** option to only show lines with annotation, plus or minus a few?
+## **** show line numbers?
+showAnnotation <- function(ann, width = getOption("width"), ...) {
+    tmp <- tempfile()
+    on.exit(unlink(tmp))
+    for (i in seq_along(ann)) {
+        a <- ann[[i]]
+        if (is.na(width))
+            ta <- a
+        else
+            ta <- ifelse(nchar(a) > width,
+                         paste(substr(a, 1, width - 4), "..."),
+                         a)
+        writeLines(ta, tmp)
+        file.show(tmp, ...)
+    }
+}
