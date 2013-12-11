@@ -1459,17 +1459,31 @@ srcSummary <- function(pd, byTotal = TRUE,
     else val
 }
 
-annotateSource <- function(pd, GC = TRUE, sep = ":  ", show = TRUE, ...) {
+annotateSource <- function(pd, value = c("pct", "time", "hits"),
+                           GC = TRUE, sep = ":  ", show = TRUE, ...) {
     if (! is.null(pd$files)) {
         r <- refCounts(pd)
         file <- refFN(r$ref)
         line <- refLN(r$ref)
+        value <- match.arg(value)
+        delta <- pd$interval / 1.0e6
         if (GC && pd$haveGC)
-            s <- sprintf(" %5.2f%% %5.2f%%  ",
-                         round(100 * (r$total / pd$total), 2),
-                         round(100 * (r$gctotal / pd$total), 2))
+            if(value == "pct")
+                s <- sprintf(" %5.2f%% %5.2f%%  ",
+                             round(100 * (r$total / pd$total), 2),
+                             round(100 * (r$gctotal / pd$total), 2))
+            else if(value == "time")
+                s <- sprintf(" %5.2f %5.2f  ", round(r$total*delta, 2), 
+                             round(r$gctotal*delta, 2))
+            else
+                s <- sprintf(" %5d %5d  ", r$total, r$gctotal)
         else
-            s <- sprintf(" %5.2f%%  ", round(100 * (r$total / pd$total), 2))
+            if(value == "pct")
+                s <- sprintf(" %5.2f%%  ", round(100 * (r$total / pd$total), 2))
+            else if(value == "time") 
+                s <- sprintf(" %5.2f  ", round(r$total*delta, 2))
+            else
+                s <- sprintf(" %5d  ", r$total)
         ann <- lapply(seq_along(pd$files),
                       function(fn) {
                           flines <- readLines(pd$files[fn])

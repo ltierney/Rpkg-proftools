@@ -20,7 +20,7 @@ srcSummary(pd, byTotal = TRUE, value = c("pct", "time", "hits"),
 \arguments{
   \item{pd}{profile data as returned by \code{readProfileData}.}
   \item{byTotal}{logical; sort by total or by self time.}
-  \item{value}{charactier; show result as percentage, time, or hits.}
+  \item{value}{character; show result as percentage, time, or hits.}
   \item{srclines}{logical; include source information, if available, or not.}
   \item{GC}{logical; include GC information or not.}
   \item{self.pct}{numeric; functions at the bottom of the stacks with

@@ -5,10 +5,12 @@
   Annotates source files with profile information.
 }
 \usage{
-annotateSource(pd, GC = TRUE, sep = ":  ", show = TRUE, ...)
+annotateSource(pd, value = c("pct", "time", "hits"), GC = TRUE,
+               sep = ":  ", show = TRUE, ...)
 }
 \arguments{
   \item{pd}{profile data as returned by \code{readProfileData}.}
+  \item{value}{character; show result as percentage, time, or hits.}
   \item{GC}{logical; include GC information or not.}
   \item{sep}{character; separator between s profile info and source
     lines.}
