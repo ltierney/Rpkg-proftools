@@ -38,7 +38,7 @@ google.style
   \item{shape}{ character; node shape.}
 }
 \details{
-  The \code{plain.style} style corresponds to the default parameter setitngs
+  The \code{plain.style} style corresponds to the default parameter settings
   in the display functions. It can be used as the basis for creating a
   new custom style.
 
