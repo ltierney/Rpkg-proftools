@@ -12,7 +12,7 @@ annotateSource(pd, value = c("pct", "time", "hits"), GC = TRUE,
   \item{pd}{profile data as returned by \code{readProfileData}.}
   \item{value}{character; show result as percentage, time, or hits.}
   \item{GC}{logical; include GC information or not.}
-  \item{sep}{character; separator between s profile info and source
+  \item{sep}{character; separator between profile info and source
     lines.}
   \item{show}{logical; if true, show files with \code{file.show}.}
   \item{...}{additional arguments for \code{file.show}.}	   
