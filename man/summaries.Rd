@@ -5,7 +5,7 @@
 \alias{srcSummary}
 \title{Basic Profile Data Summaries}
 \description{
-  Functions to summaries profile data.
+  Functions to summarize profile data.
 }
 \usage{
 funSummary(pd, byTotal = TRUE, value = c("pct", "time", "hits"),
@@ -48,7 +48,7 @@ srcSummary(pd, byTotal = TRUE, value = c("pct", "time", "hits"),
   \code{pathSummary} returns a summary of time spent in each unique call
   path contained in the profile data.
 
-  For profile data containing sourc einformation \code{srcSummary}
+  For profile data containing source information \code{srcSummary}
   returns a summary of time spent in each file line recorded in the
   profile data.
 }
