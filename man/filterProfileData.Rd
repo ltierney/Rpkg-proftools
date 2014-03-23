@@ -30,13 +30,13 @@ filterProfileData(pd, select, omit, maxdepth = NA,
                    total number of hits in the reduced profile data;
                    otherwise the original value is retained.}
   \item{regex}{logical; if true the specifications in \code{select} and
-               \code{omit} are trated as regular expressions; otherwise
+               \code{omit} are treated as regular expressions; otherwise
                exact matches are required.}
 }
 \value{A reduced profile data structure.}
 \details{
-  This function can be used to make plots an summaries more readable or
-  relavant by removing functions that are not of direct interest or have
+  This function can be used to make plots and summaries more readable or
+  relevant by removing functions that are not of direct interest or have
   low hit counts.
 }
 \author{ Luke Tierney }
