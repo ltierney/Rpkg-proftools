@@ -59,7 +59,7 @@ uses the hot path ordering with the call with the largest amount of
 time first. The \code{"time"} ordering preserves the original time
 ordering within the stack trace file.
 
-Default folors are based on the \code{rainbow} palette. Alternative
+Default colors are based on the \code{rainbow} palette. Alternative
 colors can be specified by a \code{colormap} function. This function
 is called with three argument vectors, with one element for each
 rectangle. The arguments are the function name, call depth, and number
