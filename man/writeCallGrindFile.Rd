@@ -19,8 +19,8 @@ writeCallgrindFile(pd, file = "Rprof.cg", GC = TRUE)
 
   The callgrind format is used by Valgrind's callgrind tool. The KDE
   tool \code{kcachegrind} can be used to display the file;
-  \code{kcachegrind} displays the sumary statistics, a call graph, and
-  annotaded soruce code if sorce information is
+  \code{kcachegrind} displays the summary statistics, a call graph, and
+  annotated source code if source information is
   available. \code{kcachegrind} is available in Linux and Windows; on
   Mac OSX \code{qcachegrind} is available.
 }
