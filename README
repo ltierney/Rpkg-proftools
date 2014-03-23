@@ -70,6 +70,16 @@ Obtain flat profile information:
 
           flatProfile(pd)
           flatProfile(pd, FALSE)
+          
+Obtain hot paths information
+          
+          hotPaths(pd, maxdepth = 10)
+          
+Summaries can be obtained in a similar way
+
+          funSummary(pd)
+          callSummary(pd)
+          pathSummary(pd)
 
 Obtain a printed call graph on the standard output:
 
@@ -107,7 +117,12 @@ or as a postscript file with
           dot -Tps glm.dot > glm.ps
           gv glm.ps
 
-Finally, if you have the packages graph and Rgraphviz from
+You can also write the profile data to a callgrind file to use with 
+kcachegrind or qcachegrind
+
+          writeCallgrindFile(pd, file = "Rprof.cg")
+          
+If you have the packages graph and Rgraphviz from
 Bioconductor installed, then you can view the call graph within R
 using
 
@@ -123,6 +138,21 @@ For example,
 displayes the call graph in a style similar to the one used by the
 pprof tool in the Google Performance Tools suite.
 
+Similarly, you can plot a flame graph and callee tree map using
+
+          flameGraph(pd)
+          calleeTreeMap(pd)
+          
+Finally, you can filter the profile data by selecting or dropping 
+certain functions. For example, 
+
+          filteredPD <- filterProfileData(pd, select = "anova", focus = TRUE)
+          
+Now we can use filteredPD in our calls to summaries functions or 
+plots, for example
+
+          hotPaths(filteredPD, maxdepth = 10)
+          flameGraph(filteredPD)
 
 OPEN ISSUES
 
