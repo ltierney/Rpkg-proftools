@@ -2,7 +2,7 @@
 \alias{profileCallGraph2Dot}
 \title{ Write Call Graph for Rprof Profile Data to Graphviz Dot File }
 \description{
-   Prints a Graphviz .cot file representation of the call graph for profile
+   Prints a Graphviz .dot file representation of the call graph for profile
    data produced by \code{Rprof}.
 }
 \usage{
@@ -29,13 +29,13 @@ profileCallGraph2Dot(pd, score = c("none", "total", "self"),
     specifications as produced by \code{rainbow}; \code{transfer} of
     score is mapped to color }
   \item{filename}{ name of \code{.dot} file }
-  \item{landscape}{ logical; whether to ad the \code{rotate=90} option to
+  \item{landscape}{ logical; whether to add the \code{rotate=90} option to
                     the \code{.dot} file }
   \item{mergeCycles}{ logical; whether to merge each cycle of recursion into
                       a single node }
   \item{edgesColored}{ logical; whether to color edges }
   \item{rankDir}{ character; value to use for the \code{rankdir=} option to
-                  specifythe direction that the plot is laid out using
+                  specify the direction that the plot is laid out using
                   the \code{dot} layout; must be either \code{"TB"} for
                   Top-to-Bottom or \code{"LR"} for Left-to-Right.  The
                   default value is \code{"LR"}.}
