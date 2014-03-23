@@ -22,7 +22,7 @@ printProfileCallGraph(pd, file = stdout(), percent = TRUE, GC = TRUE)
   \code{printProfileCallGraph} produces a printed representation of
   the call graph for profile data produced by \code{Rprof}.  The
   representation is analogous to the call graph produced by
-  \code{gprof} with a few minor changes.  eventually more complete
+  \code{gprof} with a few minor changes.  Eventually more complete
   documentation of the format will be provided here; for now, reading
   the \code{gprof} manual section on the call graph should help
   understanding this output.  The output is similar enough to
