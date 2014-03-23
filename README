@@ -71,11 +71,11 @@ Obtain flat profile information:
           flatProfile(pd)
           flatProfile(pd, FALSE)
           
-Obtain hot paths information
+Obtain hot paths information:
           
           hotPaths(pd, maxdepth = 10)
           
-Summaries can be obtained in a similar way
+Summaries can be obtained in a similar way:
 
           funSummary(pd)
           callSummary(pd)
