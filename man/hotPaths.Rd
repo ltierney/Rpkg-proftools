@@ -2,7 +2,7 @@
 \alias{hotPaths}
 \title{ Hot Paths in Profile Data }
 \description{
-  Computes and displays put paths in profiling data.
+  Computes and displays hot paths in profiling data.
 }
 \usage{
 hotPaths(pd, value = c("pct", "time", "hits"), self = TRUE,
