@@ -29,7 +29,7 @@ hotPaths(pd, value = c("pct", "time", "hits"), self = TRUE,
 \value{A data frame designed to produce a useful printed result.}
 \details{
 The hot path ordering sorts stacks in the profile data first by the
-frequency with with the bottom functions on the stack are called, with
+frequency with which the bottom functions on the stack are called, with
 highest frequency first, then within each bottom function by the
 frequency of the bottom two, and so on. Examining the result of
 \code{hotPaths} starting with low values of \code{maxdepth} and then
