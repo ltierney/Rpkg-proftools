@@ -18,6 +18,11 @@
 
 \begin{document}
 \maketitle
+
+For now, this file is used to generate the [[prof.R]] source
+file. Eventually it is intended that this file document the entire
+implementation, but this is very much work in progress.
+
 \section{Reading Profile Data}
 The function [[readPD]] reads the data file produced by the [[Rprof]]
 profiling mechanism.
