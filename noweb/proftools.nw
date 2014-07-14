@@ -1860,6 +1860,12 @@ srcSummary <- function(pd, byTotal = TRUE,
         val <- cbind(total = rc$total)
     rownames(val) <- label
 
+    ## order rows by row number within file and alphabetically by file.
+    ord <- order(line)
+    val <- val[ord,]
+    file <- file[ord]
+    val <- val[order(file),]
+
     if (total.pct > 0)
         val <- val[val[,1] >= pd$total * (total.pct / 100),]
 
