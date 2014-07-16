@@ -1262,6 +1262,21 @@ siteCounts <- function(pd)
 
 
 ###
+### Collecting profile data
+###
+
+profileExpr <- function(expr, GC = TRUE, srclines = TRUE) {
+    tmp <- tempfile()
+    on.exit(unlink(tmp))
+    Rprof(tmp, gc.profiling = GC, line.profiling = TRUE)
+    expr
+    Rprof(NULL)
+    pd <- readProfileData(tmp)
+    mydepth <- length(sys.calls())
+    skipPD(pd, mydepth)
+}
+
+###
 ### Experimental stuff
 ###
 

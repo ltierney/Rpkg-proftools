@@ -10,6 +10,7 @@ export(funSummary, callSummary, pathSummary, srcSummary)
 export(hotPaths)
 export(flameGraph, calleeTreeMap)
 export(annotateSource)
+export(profileExpr)
 
 S3method(print, proftools_profData)
 S3method(print, proftools_hotPaths)
