@@ -286,7 +286,7 @@ if (! missing(omit))
 @ %def
 
 Next, the stacks, references, and counts are reduced to the ones
-specifies in [[keep]].
+specified in [[keep]].
 <<reduce stacks and counts>>=
 pd$stacks <- pd$stacks[keep]
 pd$refs <- pd$refs[keep]
@@ -301,7 +301,7 @@ traceKeep <- which(pd$trace %in% keep)
 pd$inGC <- pd$inGC[traceKeep]
 pd$trace <- pd$trace[traceKeep]
 @ %def
-%% $ -- make amacs happy
+%% $ -- make emacs happy
 
 At this point the indices in [[trace]] refer to the original set of
 stack traces; these need to be remapped to the new set.
@@ -595,6 +595,26 @@ pd
 @ %def
 %% $ -- make emacs happy
 
+
+\subsection{Selecting Part of a Trace}
+<<[[timeSubsetPD]] function>>=
+timeSubsetPD <- function(pd, interval) {
+    lo <- interval[1]
+    hi <- interval[2]
+    idx <- lo : hi
+    pd$trace <- pd$trace[idx]
+    pd$inGC <- pd$inGC[idx]
+    sidx <- unique(pd$trace)
+    pd$trace <- match(seq_along(pd$stacks), sidx)[pd$trace]
+    pd$stacks <- pd$stacks[sidx]
+    pd$refs <- pd$refs[sidx]
+    cs <- countStacks(pd$trace,pd$inGC)
+    pd$counts <- cs$counts
+    pd$gccounts <- cs$gccounts
+    pd
+}
+@ %def timeSubsetPD
+
 \subsection{A Higher Level Function}
 **** skip argument to skip first n? Don't create [[<Other>]] entry?
 **** are focus/regex default values right?
@@ -604,6 +624,7 @@ filterProfileData <- function(pd, select, omit,
                               maxdepth = NA,
                               self.pct = 0, total.pct = 0,
                               focus = FALSE,
+                              interval,
                               normalize = FALSE,
                               regex = FALSE) {
     if (! is.na(maxdepth))
@@ -616,6 +637,8 @@ filterProfileData <- function(pd, select, omit,
             pd <- subsetPD(pd, select, regex = regex)
     if (! missing(omit))
         pd <- subsetPD(pd, omit = omit, regex = regex)
+    if (! missing(interval))
+        pd <- timeSubsetPD(pd, interval)
     if (normalize)
         pd$total <- sum(pd$counts)
     pd
@@ -1035,6 +1058,8 @@ funSummaryHits <- function(fc, label, gc) {
 <<[[prunePD]] function>>
 
 <<[[mergeGC]] function>>
+
+<<[[timeSubsetPD]] function>>
 
 
 ###

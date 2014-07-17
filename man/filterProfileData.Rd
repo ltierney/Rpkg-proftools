@@ -7,7 +7,7 @@
 \usage{
 filterProfileData(pd, select, omit, maxdepth = NA,
                   self.pct = 0, total.pct = 0, focus = FALSE,
-                  normalize = FALSE, regex = FALSE)
+                  interval, normalize = FALSE, regex = FALSE)
 }
 \arguments{
   \item{pd}{profile data as returned by \code{readProfileData}.}
@@ -26,6 +26,8 @@ filterProfileData(pd, select, omit, maxdepth = NA,
   \item{focus}{logical; for use with the \code{select} argument. If
                true, functions at the bottom of the stack not matching the
                \code{select} specification are dropped.}
+  \item{interval}{inter vector of length 2 specifying first and last
+                  sample to use.}
   \item{normalize}{logical; if true the total hit count is set to the
                    total number of hits in the reduced profile data;
                    otherwise the original value is retained.}

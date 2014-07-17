@@ -111,6 +111,7 @@ filterProfileData <- function(pd, select, omit,
                               maxdepth = NA,
                               self.pct = 0, total.pct = 0,
                               focus = FALSE,
+                              interval,
                               normalize = FALSE,
                               regex = FALSE) {
     if (! is.na(maxdepth))
@@ -123,6 +124,8 @@ filterProfileData <- function(pd, select, omit,
             pd <- subsetPD(pd, select, regex = regex)
     if (! missing(omit))
         pd <- subsetPD(pd, omit = omit, regex = regex)
+    if (! missing(interval))
+        pd <- timeSubsetPD(pd, interval)
     if (normalize)
         pd$total <- sum(pd$counts)
     pd
@@ -359,6 +362,22 @@ mergeGC <- function(pd) {
     pd$inGC[] <- FALSE
     pd$haveGC <- FALSE
 
+    pd
+}
+
+timeSubsetPD <- function(pd, interval) {
+    lo <- interval[1]
+    hi <- interval[2]
+    idx <- lo : hi
+    pd$trace <- pd$trace[idx]
+    pd$inGC <- pd$inGC[idx]
+    sidx <- unique(pd$trace)
+    pd$trace <- match(seq_along(pd$stacks), sidx)[pd$trace]
+    pd$stacks <- pd$stacks[sidx]
+    pd$refs <- pd$refs[sidx]
+    cs <- countStacks(pd$trace,pd$inGC)
+    pd$counts <- cs$counts
+    pd$gccounts <- cs$gccounts
     pd
 }
 
