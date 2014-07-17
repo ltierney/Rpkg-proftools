@@ -1256,15 +1256,22 @@ default.cmap <- function(x, ...) {
     clr[match(x, y)]
 }
 
-fgData <- function(stacks, counts, reorder = c("alpha", "hot", "time"),
+fgData <- function(data, reorder = c("alpha", "hot", "time"),
                    colormap) {
+    stacks <- data$stacks
     mx <- max(sapply(stacks, length))
 
     reorder <- match.arg(reorder)
-    if (reorder != "time") {
+    if (reorder == "time") {
+        runs <- rle(data$trace)
+        stacks <- stacks[runs$values]
+        counts <- runs$lengths
+    }
+    else {
         ## ord <- seq_along(stacks)
         ## for (i in (mx : 1))
         ##     ord <- ord[order(sapply(stacks[ord], `[`, i), na.last = FALSE)]
+        counts <- data$counts
         if (reorder == "hot")
             ord <- hotPathOrd(stacks, counts)
         else
@@ -1283,8 +1290,8 @@ fgData <- function(stacks, counts, reorder = c("alpha", "hot", "time"),
 ## This is computes the data with fdData and draws the graph with base
 ## graphics. This is the bit we would need to change for grid, maybe
 ## ggplot2, and for svg output.
-stdFlameGraph <- function(stacks, counts, reorder, colormap, cex, main) {
-    fdg <- fgData(stacks, counts, reorder, colormap)
+stdFlameGraph <- function(data, reorder, colormap, cex, main) {
+    fdg <- fgData(data, reorder, colormap)
     left <- fdg$left
     bottom <- fdg$bottom
     right <- fdg$right
@@ -1315,9 +1322,9 @@ stdFlameGraph <- function(stacks, counts, reorder, colormap, cex, main) {
 htmlencode <- function(x)
     sub(">", "&gt;", sub("<", "&lt;", x))
 
-svgFlameGraph <- function(file, stacks, counts, reorder, colormap, main,
+svgFlameGraph <- function(file, data, reorder, colormap, main,
                           tooltip) {
-    fdg <- fgData(stacks, counts, reorder, colormap)
+    fdg <- fgData(data, reorder, colormap)
     fdg$col <- substr(fdg$col, 1, 7) ## remove 'alpha' component from colors
     mx <- max(fdg$top)
     totalCount <- max(fdg$right)
@@ -1469,12 +1476,13 @@ flameGraph <- function(pd, svgfile, order = c("hot", "alpha", "time"),
     order <- match.arg(order)
     if (is.character(pd))
         pd <- readPD(pd)
-    counts <- pd$counts
-    stacks <- if (srclines) refStacks(pd) else pd$stacks
+    data <- list(counts = pd$counts,
+                 stacks = if (srclines) refStacks(pd) else pd$stacks,
+                 trace = pd$trace)
     if (! missing(svgfile))
-        svgFlameGraph(svgfile, stacks, counts, order, colormap, main, tooltip)
+        svgFlameGraph(svgfile, data, order, colormap, main, tooltip)
     else
-        stdFlameGraph(stacks, counts, order, colormap, cex, main)
+        stdFlameGraph(data, order, colormap, cex, main)
 }
 
 fgIdentify <- function(p) {
