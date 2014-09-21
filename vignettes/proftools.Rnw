@@ -1,0 +1,140 @@
+\documentclass[nojss]{jss}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% declarations for jss.cls %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% almost as usual
+\author{Luke Tierney\\University of Iowa \And 
+        Riad Jarjour\\University of Iowa}
+\title{An Example of using the \pkg{proftools} Package}
+
+%% for pretty printing and a nice hypersummary also set:
+\Plainauthor{Luke Tierney, Riad Jarjour} %% comma-separated
+\Plaintitle{An Example of using the proftools Package} %% without formatting
+%$ \Shorttitle{\pkg{foo}: A Capitalized Title} %% a short title (if necessary)
+
+%% an abstract and keywords
+\Abstract{
+  The abstract of the article.
+}
+\Keywords{\pkg{proftools}, profiling, R, Rprof, profr}
+\Plainkeywords{proftools, profiling, R, Rprof, profr} %% without formatting
+%% at least one keyword must be supplied
+
+%% publication information
+%% NOTE: Typically, this can be left commented and will be filled out by the technical editor
+%% \Volume{50}
+%% \Issue{9}
+%% \Month{June}
+%% \Year{2012}
+%% \Submitdate{2012-06-04}
+%% \Acceptdate{2012-06-04}
+
+%% The address of (at least) one author should be given
+%% in the following format:
+\Address{
+  Luke Tierney\\
+  Department of Statistics and Actuarial Science\\
+  Faculty of Statistics\\
+  University of Iowa\\
+  Iowa City, USA\\
+  E-mail: \email{luke-tierney@uiowa.edu}\\
+  URL: \url{http://homepage.stat.uiowa.edu/~luke/}
+}
+%% It is also possible to add a telephone and fax number
+%% before the e-mail in the following format:
+%% Telephone: +43/512/507-7103
+%% Fax: +43/512/507-2851
+
+%% for those who use Sweave please include the following line (with % symbols):
+%% need no \usepackage{Sweave.sty}
+
+%% end of declarations %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\begin{document}
+
+%% include your article here, just as usual
+%% Note that you should use the \pkg{}, \proglang{} and <<>>=} commands.
+
+\section{A simple example}
+We illustrate some uses of the package with a simple example. We 
+begin by reading the profile data from a stack file.
+<<echo=false,results=hide>>=
+library("proftools")
+@ 
+
+<<>>=
+pd <- readProfileData(system.file("samples", "glmEx.out", package="proftools"))
+@ 
+We can now use the pd object to obtain a flat profile view. Note 
+that by default the GC argument is assumed to be TRUE.
+
+<<>>=
+head(flatProfile(pd, GC = FALSE))
+@ 
+And we can obtain hot paths information by
+
+<<>>=
+hotPaths(pd, value = "pct", GC = FALSE, maxdepth = 10)
+@
+We could have alternatively used "time" or "hits" for the value 
+argument. \\
+\newpage
+We can get summaries in a similar manner.
+
+<<>>=
+head(funSummary(pd, value = "pct", srclines = TRUE, GC = FALSE))
+head(callSummary(pd, value = "time", srclines = TRUE, GC = FALSE)) 
+pathSummary(pd, value = "hits", srclines = TRUE, GC = FALSE)
+@ 
+\newpage
+We can get a printed version of the call graph, similar to the call graph produced by \code{gprof}, by running (output has been omitted)
+
+<<eval=FALSE>>=
+printProfileCallGraph(pd)
+@ 
+
+Alternatively, if you have the packages graph and Rgraphviz from
+Bioconductor installed, then you can view the call graph within R
+using
+
+<<fig=true>>=
+plotProfileCallGraph(pd, score = "total", style = google.style, GC = FALSE)
+@ 
+\\
+The plot doesn't look very readable, but focusing on a particular section will make it so, and we show how to do this later in this paper.
+\newpage
+We can also plot a hot paths flamegraph, time graph, or alphabetical flame graph by using "hot", "time", or "alpha" in the 
+order argument below.
+
+<<fig=true>>=
+flameGraph(pd, order = "hot")
+@ 
+\\
+Furthermore, an svg file of the graph can be outputted by using the svg argument as below
+
+<<eval=FALSE>>=
+flameGraph(pd, svg = "graph.svg", order = "hot")
+@ 
+\newpage
+A callee tree map can be given by
+
+<<fig=true>>=
+calleeTreeMap(pd)
+@ 
+\\
+In many cases it can be useful to focus on a particular subset of the pd object. We can filter the pd object by selecting or dropping certain functions. For example,
+
+<<>>=
+filteredPD <- filterProfileData(pd, select = "glm.fit", focus = TRUE)
+@ 
+Now we can use the filtered object in our calls to summary functions or plots, for example
+
+<<fig=true>>=
+hotPaths(filteredPD, maxdepth = 10) 
+flameGraph(filteredPD)
+@
+
+\end{document}
