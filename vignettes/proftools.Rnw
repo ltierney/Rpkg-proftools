@@ -74,7 +74,7 @@ that by default the GC argument is assumed to be TRUE.
 <<>>=
 head(flatProfile(pd, GC = FALSE))
 @ 
-And we can obtain hot paths information by
+Hot paths information can be obtained by
 
 <<>>=
 hotPaths(pd, value = "pct", GC = FALSE, maxdepth = 10)
@@ -90,7 +90,7 @@ head(callSummary(pd, value = "time", srclines = TRUE, GC = FALSE))
 pathSummary(pd, value = "hits", srclines = TRUE, GC = FALSE)
 @ 
 \newpage
-We can get a printed version of the call graph, similar to the call graph produced by \code{gprof}, by running (output has been omitted)
+A printed version of the call graph, similar to the call graph produced by \code{gprof}, can be obtained by running (output has been omitted)
 
 <<eval=FALSE>>=
 printProfileCallGraph(pd)
