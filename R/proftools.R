@@ -215,7 +215,7 @@ findReachableMat <- function(m) {
     m <- m %*% m
     while (n <= nr) {
         n <- 2 * n
-        m <- m %*% m
+        m <- sign(m %*% m)
     }
     m
 }
