@@ -225,7 +225,7 @@ findMatCycles <- function(m) {
     cycles <- NULL
     visited <- rep(FALSE, nr)
 
-    for (i in 1 : (nr - 1)) {
+    for (i in seq_len(nr - 1)) {
         if (! visited[i]) {
             visited[i] <- TRUE ## not really needed
             v <- i
