@@ -810,7 +810,8 @@ plotProfileCallGraph <- function(pd, layout = "dot",
     if (anyEdges)
         graph::edgeRenderInfo(g) <- list(col = p$edgeColors)
     graph::nodeRenderInfo(g) <- list(fill = p$nodeColors)
-    Rgraphviz::renderGraph(g, ...)
+    tryCatch(Rgraphviz::renderGraph(g, ...),
+             error = function(e) NULL) ## catch and ignore errors
 }
 
 plain.style <- list(layout = "dot", score = "none",
