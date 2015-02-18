@@ -783,17 +783,20 @@ plotProfileCallGraph <- function(pd, layout = "dot",
     }
 
     edgeCounts <- unlist(p$callCounts)
-    if (edgeSizeScore != "none") {
-        edgeWeights <- log10(edgeCounts+10)
-        names(edgeWeights) <- edgeNames
-        graph::edgeRenderInfo(g) <- list(lwd = edgeWeights)
-    }
+    anyEdges <- (length(edgeCounts) > 0)
+    if (anyEdges) {
+        if (edgeSizeScore != "none") {
+            edgeWeights <- log10(edgeCounts+10)
+            names(edgeWeights) <- edgeNames
+            graph::edgeRenderInfo(g) <- list(lwd = edgeWeights)
+        }
 
-    if (edgeDetails) {
-        spacing <- sapply(edgeCounts, function(x){rep("   ", length(x))})
-        edgeCounts <- paste(spacing, edgeCounts, sep="")
-        names(edgeCounts) <- edgeNames
-        graph::edgeRenderInfo(g) <- list(label = edgeCounts, fontsize = 8)
+        if (edgeDetails) {
+            spacing <- sapply(edgeCounts, function(x){rep("   ", length(x))})
+            edgeCounts <- paste(spacing, edgeCounts, sep="")
+            names(edgeCounts) <- edgeNames
+            graph::edgeRenderInfo(g) <- list(label = edgeCounts, fontsize = 8)
+        }
     }
 
     ## The order of layout and rendering info calls below
@@ -804,7 +807,8 @@ plotProfileCallGraph <- function(pd, layout = "dot",
     if (layout == "dot")
         attrs$graph <- list(rankdir = rankDir)
     g <- Rgraphviz::layoutGraph(g, layoutType = layout, attrs = attrs)
-    graph::edgeRenderInfo(g) <- list(col = p$edgeColors)
+    if (anyEdges)
+        graph::edgeRenderInfo(g) <- list(col = p$edgeColors)
     graph::nodeRenderInfo(g) <- list(fill = p$nodeColors)
     Rgraphviz::renderGraph(g, ...)
 }
