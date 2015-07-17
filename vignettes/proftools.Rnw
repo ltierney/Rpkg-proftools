@@ -1,3 +1,4 @@
+%%\VignetteIndexEntry{Using proftools}
 \documentclass[nojss]{jss}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
