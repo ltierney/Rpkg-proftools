@@ -8,6 +8,26 @@
 }
 \details{
   \pkg{proftools} is
+
+  \code{profileExpr}
+  \code{readProfileData}
+  \code{filterProfileData}
+  
+  Summaries:
+  \code{callSummary} \code{funSummary} \code{pathSummary} \code{hotPaths}
+  \code{flatProfile}
+
+  Source-level summaries:
+  \code{srcSummary} \code{annotateSource}
+  
+  Visualizations: **** need plot method?
+  \code{plotProfileCallGraph} \code{google.style} \code{plain.style}
+  \code{calleeTreeMap} \code{flameGraph}
+  \code{printProfileCallGraph} \code{profileCallGraph2Dot}  
+  
+  Cachegrind support:
+  \code{writeCallgrindFile}   
+
   %%See the first example below to display the ChangeLog.
 }
 %%\seealso{****}
