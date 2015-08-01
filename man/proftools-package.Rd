@@ -28,14 +28,17 @@
   \code{\link{srcSummary}} to show profiling by source lines, and
   \code{\link{annotateSource}} produces an annotated version of the
   source files.
-  
-  Visualizations: **** need plot method?
-  \code{plotProfileCallGraph} \code{google.style} \code{plain.style}
-  \code{calleeTreeMap} \code{flameGraph}
-  \code{printProfileCallGraph} \code{profileCallGraph2Dot}  
-  
-  Cachegrind support:
-  \code{writeCallgrindFile}
+
+  The \code{\link{plot}} method for profile data objects can produce
+  call graphs, tree maps, flame graphs, and time graphs; the
+  \code{type} argument choses the particular visualization to
+  produce. These graphs can also be produced by the functions
+  \code{\link{plotProfileCallGraph}}, \code{\link{calleeTreeMap}}, and
+  \code{\link{flameGraph}}.
+
+  The function \code{\link{writeCallgrindFile}} writes a file for use
+  by the code{kcachegrind} program available on some operating
+  systems.
 
   \code{\link{flatProfile}}
 
