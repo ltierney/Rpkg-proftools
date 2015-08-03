@@ -42,12 +42,17 @@
 
   \code{\link{flatProfile}}
 
-  %%See the first example below to display the ChangeLog.
 }
 %%\seealso{****}
-%%\examples{
-%%file.show(system.file("NEWS", package = "proftools"))
-%%example(hotPaths)
-%%}
+\examples{
+pd <- readProfileData(system.file("samples", "glmEx.out", package="proftools"))
+funSummary(pd)
+callSummary(pd)
+pathSummary(pd)
+hotPaths(pd)
+plot(pd)
+plot(filterProfileData(pd, select = "glm", self.pct=1, total.pct=10,
+                       focus = TRUE))
+}
 \keyword{programming}
 \keyword{utilities}
