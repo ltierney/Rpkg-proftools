@@ -1916,14 +1916,14 @@ srcSummary <- function(pd, byTotal = TRUE,
     ## order rows of val and rc by row number within file and alphabetically
     ## by file.
     ord <- order(line)
-    val <- val[ord,]
-    rc <- rc[ord, ]
+    val <- val[ord, , drop = FALSE]
+    rc <- rc[ord, , drop = FALSE]
     file <- file[ord]
-    val <- val[order(file),]
-    rc <- rc[order(file), ]
+    val <- val[order(file), , drop = FALSE]
+    rc <- rc[order(file), , drop = FALSE]
 
     if (total.pct > 0)
-        val <- val[val[,1] >= pd$total * (total.pct / 100),]
+        val <- val[val[,1] >= pd$total * (total.pct / 100), , drop = FALSE]
 
     if (value == "pct") {
         tot <- pd$total
