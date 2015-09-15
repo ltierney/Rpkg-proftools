@@ -325,6 +325,9 @@ cvtProfileData <- function(pd, GC) {
     else pd
 }
 
+profileDataCycles <- function(pd, GC)
+    cvtProfileData(pd, GC)$cycles
+
 revProfCallGraphMap <- function(data) {
     rg <- mkHash()
     for (from in lsEnv(data)) {

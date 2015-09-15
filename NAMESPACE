@@ -12,6 +12,8 @@ export(flameGraph, calleeTreeMap)
 export(annotateSource)
 export(profileExpr)
 
+export(profileDataCycles)
+
 S3method(plot, proftools_profData)
 S3method(print, proftools_profData)
 S3method(print, proftools_hotPaths)
