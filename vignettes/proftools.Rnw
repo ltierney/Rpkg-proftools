@@ -42,6 +42,13 @@
   Iowa City, USA\\
   E-mail: \email{luke-tierney@uiowa.edu}\\
   URL: \url{http://homepage.stat.uiowa.edu/~luke/}
+  
+  Riad Jarjour\\
+  Department of Statistics and Actuarial Science\\
+  Faculty of Statistics\\
+  University of Iowa\\
+  Iowa City, USA\\
+  E-mail: \email{riad-jarjour@uiowa.edu}
 }
 %% It is also possible to add a telephone and fax number
 %% before the e-mail in the following format:
@@ -91,7 +98,9 @@ head(callSummary(pd, value = "time", srclines = TRUE, GC = FALSE))
 pathSummary(pd, value = "hits", srclines = TRUE, GC = FALSE)
 @ 
 \newpage
-A printed version of the call graph, similar to the call graph produced by \code{gprof}, can be obtained by running (output has been omitted)
+A printed version of the call graph, similar to the call graph
+produced by \code{gprof}, can be obtained by running (output has been
+omitted)
 
 <<eval=FALSE>>=
 printProfileCallGraph(pd)
@@ -103,18 +112,22 @@ using
 
 <<fig=true>>=
 plotProfileCallGraph(pd, score = "total", style = google.style, GC = FALSE)
-@ 
+@
 \\
-The plot doesn't look very readable, but focusing on a particular section will make it so, and we show how to do this later in this paper.
+The plot doesn't look very readable, but focusing on a particular
+section will make it so, and we show how to do this later in this
+paper.
 \newpage
-We can also plot a hot paths flamegraph, time graph, or alphabetical flame graph by using "hot", "time", or "alpha" in the 
-order argument below.
+We can also plot a hot paths flamegraph, time graph, or alphabetical
+flame graph by using "hot", "time", or "alpha" in the order argument
+below.
 
 <<fig=true>>=
 flameGraph(pd, order = "hot")
-@ 
+@
 \\
-Furthermore, an svg file of the graph can be outputted by using the svg argument as below
+Furthermore, an svg file of the graph can be outputted by using the
+svg argument as below
 
 <<eval=FALSE>>=
 flameGraph(pd, svg = "graph.svg", order = "hot")
@@ -124,14 +137,17 @@ A callee tree map can be given by
 
 <<fig=true>>=
 calleeTreeMap(pd)
-@ 
+@
 \\
-In many cases it can be useful to focus on a particular subset of the pd object. We can filter the pd object by selecting or dropping certain functions. For example,
+In many cases it can be useful to focus on a particular subset of the
+pd object. We can filter the pd object by selecting or dropping
+certain functions. For example,
 
 <<>>=
 filteredPD <- filterProfileData(pd, select = "glm.fit", focus = TRUE)
-@ 
-Now we can use the filtered object in our calls to summary functions or plots, for example
+@
+Now we can use the filtered object in our calls to summary functions
+or plots, for example
 
 <<fig=true>>=
 hotPaths(filteredPD, maxdepth = 10) 
