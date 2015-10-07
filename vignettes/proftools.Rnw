@@ -17,7 +17,7 @@
 
 %% an abstract and keywords
 \Abstract{
-  The abstract of the article.
+  A small example of using \pkg{proftools}.
 }
 \Keywords{\pkg{proftools}, profiling, R, Rprof, profr}
 \Plainkeywords{proftools, profiling, R, Rprof, profr} %% without formatting
@@ -42,6 +42,13 @@
   Iowa City, USA\\
   E-mail: \email{luke-tierney@uiowa.edu}\\
   URL: \url{http://homepage.stat.uiowa.edu/~luke/}
+  
+  Riad Jarjour\\
+  Department of Statistics and Actuarial Science\\
+  Faculty of Statistics\\
+  University of Iowa\\
+  Iowa City, USA\\
+  E-mail: \email{riad-jarjour@uiowa.edu}
 }
 %% It is also possible to add a telephone and fax number
 %% before the e-mail in the following format:
@@ -64,78 +71,99 @@ We illustrate some uses of the package with a simple example. We
 begin by reading the profile data from a stack file.
 <<echo=false,results=hide>>=
 library("proftools")
-@ 
-
+@ %%
 <<>>=
 pd <- readProfileData(system.file("samples", "glmEx.out", package="proftools"))
+@ %%
+
+\section{Summary Functions}
+We can now use the \code{pd} object to obtain summaries by function:
+<<>>=
+head(funSummary(pd, value = "pct"))
+@ %%
+Data can also be summarized by call:
+<<>>=
+head(callSummary(pd, value = "time")) 
 @ 
-We can now use the pd object to obtain a flat profile view. Note 
-that by default the GC argument is assumed to be TRUE.
+
+Hot path information can be obtained by
+<<>>=
+hotPaths(pd, value = "pct", maxdepth = 10)
+@ %%
+We could have alternatively used \code{"time"} or \code{"hits"} for
+the value argument.
+
+Other summaries are \code{pathSummary} and \code{srcSummary}.
+%% **** filtering
+
+\section{Filtering Profile Data}
+In many cases it can be useful to focus on a particular subset of the
+\code{pd} object. We can filter the \code{pd} object by selecting or
+dropping certain functions. For example,
+<<>>=
+filteredPD <- filterProfileData(pd, select = "glm.fit", focus = TRUE)
+@ %%
+Now we can use the filtered object in our calls to summary functions
+or plots, for example
 
 <<>>=
-head(flatProfile(pd, GC = FALSE))
-@ 
-Hot paths information can be obtained by
-
-<<>>=
-hotPaths(pd, value = "pct", GC = FALSE, maxdepth = 10)
+hotPaths(filteredPD, maxdepth = 10) 
 @
-We could have alternatively used "time" or "hits" for the value 
-argument. \\
-\newpage
-We can get summaries in a similar manner.
 
-<<>>=
-head(funSummary(pd, value = "pct", srclines = TRUE, GC = FALSE))
-head(callSummary(pd, value = "time", srclines = TRUE, GC = FALSE)) 
-pathSummary(pd, value = "hits", srclines = TRUE, GC = FALSE)
-@ 
-\newpage
-A printed version of the call graph, similar to the call graph produced by \code{gprof}, can be obtained by running (output has been omitted)
-
+\section{Call Graphs}
+A printed version of the call graph, similar to the call graph
+produced by \code{gprof}, can be obtained by running (output has been
+omitted)
 <<eval=FALSE>>=
 printProfileCallGraph(pd)
-@ 
-
+@ %%
 Alternatively, if you have the packages graph and Rgraphviz from
 Bioconductor installed, then you can view the call graph within R
 using
 
 <<fig=true>>=
-plotProfileCallGraph(pd, score = "total", style = google.style, GC = FALSE)
-@ 
+plotProfileCallGraph(pd, style = google.style)
+@ %%
 \\
-The plot doesn't look very readable, but focusing on a particular section will make it so, and we show how to do this later in this paper.
-\newpage
-We can also plot a hot paths flamegraph, time graph, or alphabetical flame graph by using "hot", "time", or "alpha" in the 
-order argument below.
+This plot isn't very readable; but focusing on a particular
+section will make more useful. For example,
+<<fig=true>>=
+plotProfileCallGraph(
+    filterProfileData(
+        filterProfileData(pd, select="glm", focus=TRUE),maxdepth=10 ),
+    style = google.style)
+@ %%
 
+\section{Other Visualizations}
+\subsection{Flame Graphs}
+We can also plot a hot paths flame graph with
 <<fig=true>>=
 flameGraph(pd, order = "hot")
-@ 
+@
 \\
-Furthermore, an svg file of the graph can be outputted by using the svg argument as below
-
+A flame graph of the filtered data is produced by
+<<fig=true>>=
+flameGraph(filteredPD)
+@ %%
+\\
+Furthermore, an svg file of the graph can be outputted by using the
+svg argument:
 <<eval=FALSE>>=
 flameGraph(pd, svg = "graph.svg", order = "hot")
 @ 
-\newpage
-A callee tree map can be given by
 
+Alternative \code{order} values are \code{"time"} \code{"alpha"}.
+Specifying \code{"time"} presents the calls in the order in which they
+occurred.
+<<fig=TRUE>>=
+flameGraph(pd, order = "time")
+@ 
+
+\subsection{Callee Tree Maps}
+A callee tree map can be obtained with
 <<fig=true>>=
 calleeTreeMap(pd)
-@ 
-\\
-In many cases it can be useful to focus on a particular subset of the pd object. We can filter the pd object by selecting or dropping certain functions. For example,
-
-<<>>=
-filteredPD <- filterProfileData(pd, select = "glm.fit", focus = TRUE)
-@ 
-Now we can use the filtered object in our calls to summary functions or plots, for example
-
-<<fig=true>>=
-hotPaths(filteredPD, maxdepth = 10) 
-flameGraph(filteredPD)
 @
+\\
 
 \end{document}
