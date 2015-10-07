@@ -8,7 +8,7 @@
 %% almost as usual
 \author{Luke Tierney\\University of Iowa \And 
         Riad Jarjour\\University of Iowa}
-\title{An Example of using the \pkg{proftools} Package}
+\title{Examining R Profiling Data: The \pkg{proftools} Package}
 
 %% for pretty printing and a nice hypersummary also set:
 \Plainauthor{Luke Tierney, Riad Jarjour} %% comma-separated
@@ -17,7 +17,8 @@
 
 %% an abstract and keywords
 \Abstract{
-  A small example of using \pkg{proftools}.
+  This note introduces the \pkg{proftools} package for examining R
+  profiling data and illustrates its use with a small example.
 }
 \Keywords{\pkg{proftools}, profiling, R, Rprof, profr}
 \Plainkeywords{proftools, profiling, R, Rprof, profr} %% without formatting
