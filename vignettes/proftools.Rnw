@@ -21,7 +21,7 @@
   This note introduces the \pkg{proftools} package for examining R
   profiling data and illustrates its use with a small example.
 }
-\Keywords{\pkg{proftools}, profiling, R, Rprof, profr}
+\Keywords{\pkg{proftools}, profiling, R, \code{Rprof}, \code{profr}}
 \Plainkeywords{proftools, profiling, R, Rprof, profr} %% without formatting
 %% at least one keyword must be supplied
 
@@ -68,25 +68,68 @@
 %% include your article here, just as usual
 %% Note that you should use the \pkg{}, \proglang{} and <<>>=} commands.
 
-\section{A simple example}
-We illustrate some uses of the package with a simple example. We 
-begin by reading the profile data from a stack file.
+\section{Introduction}
 <<echo=false,results=hide>>=
 library("proftools")
+options(keep.source = TRUE)
 @ %%
+R includes a sampling based profiling mechanism that records
+information about calls on the stack at specified time intervals.  The
+function \code{summaryRprof} provides a simple interface for examining
+this data. The \pkg{proftools} package provides a much more extensive
+set of tools for summarizing, visualizing, and subsetting profiling
+data.
+
+The \pkg{proftools} package includes an example script \code{bootlm.R}
+in the \code{samples} directory that includes several examples from
+the \pkg{boot} package and fitting a simple linear model. The file
+path can be obtained as
 <<>>=
-pd <- readProfileData(system.file("samples", "glmEx.out", package="proftools"))
+srcfile <- system.file("samples", "bootlmEx.R", package = "proftools")
+@  %%
+
+The traditional way to collect profiling data in R is to call
+\code{Rprof} to start profiling, run the code to be profiled, and then
+call \code{Rprof} again to end profiling. For example, to collect GC
+and line information if available while running the example script,
+you could use
+<<eval = FALSE>>=
+profout <- tempfile()
+Rprof(file = profout, gc.profiling = TRUE, line.profiling = TRUE)
+source(srcfile)
+Rprof(NULL)
+pd <- readProfileData(profout)
+unlink(profout)
 @ %%
+The \pkg{proftools} provides the alternative
+<<>>=
+pd <- profileExpr(source(srcfile))
+@ %%
+\code{profileExpr} by default enables GC and source information to be
+collected. It also trims off stack information leading up to the
+\code{profileExpr} call.
 
 \section{Summary Functions}
-We can now use the \code{pd} object to obtain summaries by function:
+The most basic summary function is \code{funSummary} for summarizing
+profile results at the function level. It produces information similar
+to the result returned by R's \code{summaryRprof} but in a more usable
+form:
 <<>>=
-head(funSummary(pd, value = "pct"))
+head(funSummary(pd), 10)
 @ %%
 Data can also be summarized by call:
 <<>>=
-head(callSummary(pd, value = "time")) 
-@ 
+head(callSummary(pd), 10)
+@ %%
+
+When source information is available in the profile data the
+\code{srcSummary} function can be used to summarize at the source line
+level; only lines appearing in the sample are included:
+<<>>=
+srcSummary(pd)
+@ %%
+The function \code{annotateSource} can show the full files with
+profiling annotations.
 
 Hot path information can be obtained by
 <<>>=
@@ -103,7 +146,7 @@ In many cases it can be useful to focus on a particular subset of the
 \code{pd} object. We can filter the \code{pd} object by selecting or
 dropping certain functions. For example,
 <<>>=
-filteredPD <- filterProfileData(pd, select = "glm.fit", focus = TRUE)
+filteredPD <- filterProfileData(pd, select = "glm", focus = TRUE)
 @ %%
 Now we can use the filtered object in our calls to summary functions
 or plots, for example
