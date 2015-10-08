@@ -12,7 +12,8 @@
 
 %% for pretty printing and a nice hypersummary also set:
 \Plainauthor{Luke Tierney, Riad Jarjour} %% comma-separated
-\Plaintitle{An Example of using the proftools Package} %% without formatting
+\Plaintitle{Examining R Profiling Data:
+  The proftools Package} %% without formatting
 %$ \Shorttitle{\pkg{foo}: A Capitalized Title} %% a short title (if necessary)
 
 %% an abstract and keywords
