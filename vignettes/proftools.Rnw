@@ -131,20 +131,29 @@ srcSummary(pd)
 The function \code{annotateSource} can show the full files with
 profiling annotations.
 
-Hot path information can be obtained by
+A useful way to examine profile data is to look for hot execution
+paths.  This approach sorts functions called at top level by the
+amount of time spent in their top level calls; within each top level
+call to a function \code{f} the funcitons called by \code{f} are
+sorted by the amount of time spent in them within the top level call
+to \code{f}; and the process continues for higher level calls. The
+function \code{hotPaths} produces a hot path summary; the
+\code{maxdepth} argument determines how far up the call stack the
+paths are followed:
 <<>>=
-hotPaths(pd, value = "pct", maxdepth = 10)
+hotPaths(pd, maxdepth = 6)
 @ %%
-We could have alternatively used \code{"time"} or \code{"hits"} for
-the value argument.
 
-Other summaries are \code{pathSummary} and \code{srcSummary}.
+%% Other summaries are \code{pathSummary} and \code{srcSummary}.
 %% **** filtering
 
 \section{Filtering Profile Data}
 In many cases it can be useful to focus on a particular subset of the
 \code{pd} object. We can filter the \code{pd} object by selecting or
 dropping certain functions. For example,
+<<>>=
+hotPaths(filterProfileData(pd, skip = 4), maxdepth = 2)
+@ 
 <<>>=
 filteredPD <- filterProfileData(pd, select = "glm", focus = TRUE)
 @ %%
