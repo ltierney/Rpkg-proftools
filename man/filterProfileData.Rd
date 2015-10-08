@@ -5,7 +5,7 @@
   Allow profile data to be filtered on several criteria.
 }
 \usage{
-filterProfileData(pd, select, omit, maxdepth = NA,
+filterProfileData(pd, select, omit, skip = NA, maxdepth = NA,
                   self.pct = 0, total.pct = 0, focus = FALSE,
                   interval, normalize = FALSE, regex = FALSE)
 }
@@ -17,6 +17,8 @@ filterProfileData(pd, select, omit, maxdepth = NA,
   \item{omit}{character vector specifying names of functions; call
               stacks containing functions matching any of these names
               are dropped.}
+  \item{skip}{integer; the number of elements to trim from the bottom of
+              the stacks.}
   \item{maxdepth}{integer; stacks are truncated to have at most
                   \code{maxdepth} elements.}
   \item{self.pct}{numeric; functions at the bottom of the stacks with
