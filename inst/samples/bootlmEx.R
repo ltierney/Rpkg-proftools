@@ -1,5 +1,6 @@
 
 ## Examples from boot:
+library(boot)
 
 ## Stratified resampling
 diff.means <- function(d, f)
