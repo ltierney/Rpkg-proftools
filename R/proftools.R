@@ -724,21 +724,22 @@ plotProfileCallGraph <- function(pd, layout = "dot",
                                  nodeSizeScore = c("none", "total", "self"),
                                  edgeSizeScore = c("none", "total"),
                                  shape = "ellipse", style, GC = TRUE, ...) {
-    if (! missing(style)) {
-        if (missing(layout)) layout <- style$layout
-        if (missing(score)) score <- style$score
-        if (missing(transfer)) transfer <- style$transfer
-        if (missing(nodeColorMap)) nodeColorMap <- style$nodeColorMap
-        if (missing(edgeColorMap)) edgeColorMap <- style$edgeColorMap
-        if (missing(mergeCycles)) mergeCycles <- style$mergeCycles
-        if (missing(edgesColored)) edgesColored <- style$edgesColored
-        if (missing(rankDir)) rankDir <- style$rankDir
-        if (missing(nodeDetails)) nodeDetails <- style$nodeDetails
-        if (missing(edgeDetails)) edgeDetails <- style$edgeDetails
-        if (missing(nodeSizeScore)) nodeSizeScore <- style$nodeSizeScore
-        if (missing(edgeSizeScore)) edgeSizeScore <- style$edgeSizeScore
-        if (missing(shape)) shape <- style$shape
-    }
+    if (missing(style)) style <- google.style
+
+    if (missing(layout)) layout <- style$layout
+    if (missing(score)) score <- style$score
+    if (missing(transfer)) transfer <- style$transfer
+    if (missing(nodeColorMap)) nodeColorMap <- style$nodeColorMap
+    if (missing(edgeColorMap)) edgeColorMap <- style$edgeColorMap
+    if (missing(mergeCycles)) mergeCycles <- style$mergeCycles
+    if (missing(edgesColored)) edgesColored <- style$edgesColored
+    if (missing(rankDir)) rankDir <- style$rankDir
+    if (missing(nodeDetails)) nodeDetails <- style$nodeDetails
+    if (missing(edgeDetails)) edgeDetails <- style$edgeDetails
+    if (missing(nodeSizeScore)) nodeSizeScore <- style$nodeSizeScore
+    if (missing(edgeSizeScore)) edgeSizeScore <- style$edgeSizeScore
+    if (missing(shape)) shape <- style$shape
+
     score <- match.arg(score)
     rankDir <- match.arg(rankDir)
     nodeSizeScore <- match.arg(nodeSizeScore)
