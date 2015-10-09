@@ -148,76 +148,104 @@ hotPaths(pd, maxdepth = 6)
 %% **** filtering
 
 \section{Filtering Profile Data}
-In many cases it can be useful to focus on a particular subset of the
-\code{pd} object. We can filter the \code{pd} object by selecting or
-dropping certain functions. For example,
+The hot path summary shows information associated with the source
+command itself that is not directly relevant to our analysis. The
+\code{filterProfileData} function can be uses to select or omit
+certain functions, drop functions with small self or total times,
+narrow to a particular time interval, among others.  For example, by
+selecting only stack traces that include calls to \code{withVisible}
+and then trimming off the leading four calls we can focus just on the
+work done in the sourced file:
 <<>>=
-hotPaths(filterProfileData(pd, skip = 4), maxdepth = 2)
-@ 
-<<>>=
-filteredPD <- filterProfileData(pd, select = "glm", focus = TRUE)
+filteredPD <- filterProfileData(pd, select = "withVisible")
+filteredPD <- filterProfileData(filteredPD, skip = 4)
 @ %%
-Now we can use the filtered object in our calls to summary functions
-or plots, for example
-
+The hot path summary for this reduced profile is
 <<>>=
-hotPaths(filteredPD, maxdepth = 10) 
-@
+hotPaths(filteredPD, maxdepth = 3) 
+@ %%
 
-\section{Call Graphs}
+We can further narrow our examination to the calls to \code{glm}, and
+use the \code{focus} argument to remove all calls preceding the first
+glm call from the selected stack frames:
+<<>>=
+glmPD <- filterProfileData(filteredPD, select = "glm", focus = TRUE)
+hotPaths(glmPD, maxdepth = 3)
+@ %%
+
+The details of the \code{filterProfileData} interface may change
+before release to make it easier to express a pipeline of
+transformations within one call.
+
+\section{Visualizing Profile Data}
+Call graphs annotated with profile information are a very popular way
+to view profiling results.  \code{plotProfileCallGraph} uses the
+\pkg{graph} and \pkg{Rgraphviz} from Bioconductor to render an
+annotated call graph. The default style for the graph is based on the
+style used in Google's profiling library but can be customized in a
+number of ways.  A call graph for the full profile data is produced by
+<<fullCallGraphCmd>>=
+plotProfileCallGraph(pd)
+@ 
+and shown in Figure \ref{fullCallGraph}
+\begin{figure}
+  \centering
+<<fig=true,echo=false>>=
+<<fullCallGraphCmd>>
+@ %%
+\caption{Full call graph of \code{pd}.}
+\label{fullCallGraph}
+\end{figure}
+
+We can obtain a more readable graph by fitering. For example, to
+examine the \code{boot} call and its callees we can use
+<<bootCallGraphCmd>>=
+plotProfileCallGraph(filterProfileData(pd, select = "boot",
+                                       focus = TRUE,
+                                       total.pct = 5,
+                                       maxdepth = 10))
+@ 
+\begin{figure}
+  \centering
+<<fig=true,echo=false>>=
+<<bootCallGraphCmd>>
+@ %%
+\caption{Call graph for \code{boot} call.}
+\label{bootCallGraph}
+\end{figure}
+The result is shown in Figure \ref{bootCallGraph}.
+
 A printed version of the call graph, similar to the call graph
-produced by \code{gprof}, can be obtained by running (output has been
-omitted)
+produced by \code{gprof}, can be obtained with
 <<eval=FALSE>>=
 printProfileCallGraph(pd)
 @ %%
-Alternatively, if you have the packages graph and Rgraphviz from
-Bioconductor installed, then you can view the call graph within R
-using
 
-<<fig=true>>=
-plotProfileCallGraph(pd, style = google.style)
-@ %%
-\\
-This plot isn't very readable; but focusing on a particular
-section will make more useful. For example,
-<<fig=true>>=
-plotProfileCallGraph(
-    filterProfileData(
-        filterProfileData(pd, select="glm", focus=TRUE),maxdepth=10 ),
-    style = google.style)
-@ %%
-
-\section{Other Visualizations}
-\subsection{Flame Graphs}
-We can also plot a hot paths flame graph with
+Another visualization sometimes used is a flame graph. This is
+essentially a visual representation of the hot path summary.
 <<fig=true>>=
 flameGraph(pd, order = "hot")
-@
-\\
+@ %%
 A flame graph of the filtered data is produced by
 <<fig=true>>=
 flameGraph(filteredPD)
 @ %%
-\\
-Furthermore, an svg file of the graph can be outputted by using the
-svg argument:
-<<eval=FALSE>>=
-flameGraph(pd, svg = "graph.svg", order = "hot")
-@ 
+%% Furthermore, an svg file of the graph can be outputted by using the
+%% svg argument:
+%% <<eval=FALSE>>=
+%% flameGraph(pd, svg = "graph.svg", order = "hot")
+%% @ 
 
-Alternative \code{order} values are \code{"time"} \code{"alpha"}.
-Specifying \code{"time"} presents the calls in the order in which they
-occurred.
+Specifying \code{order = "time"} shows the calls in the order in which
+they occurred:
 <<fig=TRUE>>=
 flameGraph(pd, order = "time")
-@ 
+@ %%
+The \code{boot} calls precede the data generation and the \code{lm} call.
 
-\subsection{Callee Tree Maps}
-A callee tree map can be obtained with
+A third visualization that is sometimes used is a  callee tree map:
 <<fig=true>>=
 calleeTreeMap(pd)
 @
-\\
 
 \end{document}
