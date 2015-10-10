@@ -76,9 +76,10 @@ options(keep.source = TRUE)
 R includes a sampling based profiling mechanism that records
 information about calls on the stack at specified time intervals.  The
 function \code{summaryRprof} provides a simple interface for examining
-this data. The \pkg{proftools} package provides a much more extensive
-set of tools for summarizing, visualizing, and subsetting profiling
-data.
+this data. The
+\href{https://github.com/ltierney/Rpkg-proftools}{\pkg{proftools}}
+package provides a much more extensive set of tools for summarizing,
+visualizing, and subsetting profiling data.
 
 The \pkg{proftools} package includes an example script \code{bootlm.R}
 in the \code{samples} directory that includes several examples from
@@ -182,19 +183,20 @@ Call graphs annotated with profile information are a very popular way
 to view profiling results.  \code{plotProfileCallGraph} uses the
 \pkg{graph} and \pkg{Rgraphviz} from Bioconductor to render an
 annotated call graph. The default style for the graph is based on the
-style used in Google's profiling library but can be customized in a
-number of ways.  A call graph for the full profile data is produced by
+style used in \href{https://github.com/gperftools}{Google's profiling
+  library} but can be customized in a number of ways.  A call graph
+for the full profile data is produced by
 <<fullCallGraphCmd>>=
 plotProfileCallGraph(pd)
 @ 
-and shown in Figure \ref{fullCallGraph}
+and shown in Figure \ref{fullCallGraphFig}
 \begin{figure}
   \centering
 <<fig=true,echo=false>>=
 <<fullCallGraphCmd>>
 @ %%
 \caption{Full call graph of \code{pd}.}
-\label{fullCallGraph}
+\label{fullCallGraphFig}
 \end{figure}
 
 We can obtain a more readable graph by fitering. For example, to
@@ -211,9 +213,9 @@ plotProfileCallGraph(filterProfileData(pd, select = "boot",
 <<bootCallGraphCmd>>
 @ %%
 \caption{Call graph for \code{boot} call.}
-\label{bootCallGraph}
+\label{bootCallGraphFig}
 \end{figure}
-The result is shown in Figure \ref{bootCallGraph}.
+The result is shown in Figure \ref{bootCallGraphFig}.
 
 A printed version of the call graph, similar to the call graph
 produced by \code{gprof}, can be obtained with
@@ -221,15 +223,36 @@ produced by \code{gprof}, can be obtained with
 printProfileCallGraph(pd)
 @ %%
 
-Another visualization sometimes used is a flame graph. This is
-essentially a visual representation of the hot path summary.
-<<fig=true>>=
-flameGraph(pd, order = "hot")
+Another visualization sometimes used is a
+\href{http://www.brendangregg.com/flamegraphs.html}{flame graph}.  By
+default the \code{flameGraph} function orders functions within call
+levels by execution time, which produces a visual representation of
+the hot path summary;
+<<flameGraphCmd>>=
+flameGraph(pd)
 @ %%
-A flame graph of the filtered data is produced by
-<<fig=true>>=
+\begin{figure}
+  \centering
+<<fig=true,echo=false>>=
+<<flameGraphCmd>>
+@ %%
+\caption{Flame graph visualizing hot paths for the full profile data.}
+\label{flameGraphFig}
+\end{figure}
+the result is shown in Figure \ref{flameGraphFig}.  A flame graph of
+the filtered data is produced by
+<<filteredFlameGraphCmd>>=
 flameGraph(filteredPD)
 @ %%
+\begin{figure}
+  \centering
+<<fig=true,echo=false>>=
+<<filteredFlameGraphCmd>>
+@ %%
+\caption{Flame graph of the filtered profile data.}
+\label{filteredFlameGraphFig}
+\end{figure}
+and shown in Figure \ref{filteredFlameGraphFig}
 %% Furthermore, an svg file of the graph can be outputted by using the
 %% svg argument:
 %% <<eval=FALSE>>=
@@ -238,14 +261,57 @@ flameGraph(filteredPD)
 
 Specifying \code{order = "time"} shows the calls in the order in which
 they occurred:
-<<fig=TRUE>>=
+<<timeGraphCmd>>=
 flameGraph(pd, order = "time")
 @ %%
-The \code{boot} calls precede the data generation and the \code{lm} call.
+\begin{figure}
+  \centering
+<<fig=true,echo=false>>=
+<<timeGraphCmd>>
+@ %%
+\caption{Time graph of the full profile data.}
+\label{timeGraphFig}
+\end{figure}
+Figure \ref{timeGraphFig} shows the \code{boot} calls preceding the
+data generation for the \code{lm} call and the \code{lm} call itself.
 
-A third visualization that is sometimes used is a  callee tree map:
-<<fig=true>>=
+Flame graphs can also order functions within a level alphabetically.
+
+A third visualization that is sometimes used is a callee tree map,
+produced by
+<<calleeTreeCmd>>=
 calleeTreeMap(pd)
-@
+@ %%
+\begin{figure}
+  \centering
+<<fig=true,echo=false>>=
+<<calleeTreeCmd>>
+@ %%
+\caption{Call tree map of the full profile data.}
+\label{calleeTreeMapFig}
+\end{figure}
+and shown in Figure \ref{calleeTreeMapFig}.
 
+\section{Graphical User Interfaces}
+The function \code{writeCallgrindFile} can be used to write the
+profile data in \href{valgrind.org}{Valgrind's} \code{callgrind}
+format for use with the
+\href{http://kcachegrind.sourceforge.net/html/Home.html}{\code{kcachegrind}}
+or \code{qcachegrind} graphical user interfaces available on Linux and
+Mac OS X.
+
+Graphical user interfaces within R will be made available in the
+\href{https://github.com/ltierney/Rpkg-proftools-GUI}{\pkg{proftoolsGUI}}
+package. The development version provides two interfaces, one based on
+\pkg{gWidgets2} and one on \pkg{shiny}. At the time of writing these
+interfaces are started with
+<<eval=false>>=
+startWidget(pd)
+runShiny(pd)
+@ %%
+but this will certainly change. Also the shiny interface currently
+gets into an infinite recursion for this example; we will sort that
+out. The current interfaces are on the \code{graphics} branch in the
+Git repository for \pkg{proftoolsGUI}; they will be merged into the
+\code{master} branch shortly.
 \end{document}
