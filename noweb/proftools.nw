@@ -648,6 +648,36 @@ filterProfileData <- function(pd, select, omit,
 }
 @ %def filterProfileData
 
+An alternate version that allows a sequence of filters to be applied,
+including repetitions:
+<<[[filterProfileData]] function>>=
+function (pd, ..., normalize = FALSE, regex = FALSE)
+{
+    fargs <- list(...)
+    fnames <- names(fargs)
+    if (is.null(fnames) || any(nchar(fnames) == 0))
+        stop("all filters must be named")
+    for (i in seq_along(fargs)) {
+        pd <- switch(fnames[i],
+                     skip = skipPD(pd, fargs[[i]]),
+                     maxdepth = prunePD(pd, to = fargs[[i]]),
+                     self.pct = focusPD(pd, self.pct = fargs[[i]]),
+                     total.pct = focusPD(pd, total.pct = fargs[[i]]),
+                     focus = focusPD(pd, fargs[[i]], regex = regex),
+                     select = subsetPD(pd, fargs[[i]], regex = regex),
+                     omit = subsetPD(pd, omit = fargs[[i]], regex = regex),
+                     interval = timeSubsetPD(pd, fargs[[i]]),
+                     stop("unknown filter: ", fnames[i]))
+    }
+    if (normalize) 
+        pd$total <- sum(pd$counts)
+    pd
+}
+@ %
+**** Need to make sure that the total.pct and self.pct filters are
+doing the right thing. Also need to document this alternate version. 
+
+
 \section{Summary Functions}
 \subsection{Hot Paths}
 The hot path summary is based loosely on an idea described in an
