@@ -133,6 +133,28 @@ filterProfileData <- function(pd, select, omit,
         pd$total <- sum(pd$counts)
     pd
 }
+fpd <- function(pd, ..., normalize = FALSE, regex = FALSE)
+{
+    fargs <- list(...)
+    fnames <- names(fargs)
+    if (is.null(fnames) || any(nchar(fnames) == 0))
+        stop("all filters must be named")
+    for (i in seq_along(fargs)) {
+        pd <- switch(fnames[i],
+                     skip = skipPD(pd, fargs[[i]]),
+                     maxdepth = prunePD(pd, to = fargs[[i]]),
+                     self.pct = focusPD(pd, self.pct = fargs[[i]]),
+                     total.pct = focusPD(pd, total.pct = fargs[[i]]),
+                     focus = focusPD(pd, fargs[[i]], regex = regex),
+                     select = subsetPD(pd, fargs[[i]], regex = regex),
+                     omit = subsetPD(pd, omit = fargs[[i]], regex = regex),
+                     interval = timeSubsetPD(pd, fargs[[i]]),
+                     stop("unknown filter: ", fnames[i]))
+    }
+    if (normalize) 
+        pd$total <- sum(pd$counts)
+    pd
+}
 
 subsetIDX <- function(idx, pd, regex) {
     isIn <- if (regex) patMatchAny else function(x, s) x %in% s

@@ -174,7 +174,7 @@ readProfileData <- function(filename = "Rprof.out")
 
 
 \section{Operations on Profile Data}
-Raw profile date may contain references to function calls that take
+Raw profile data may contain references to function calls that take
 little time or for other reasons are not of primary
 interest. Filtering these out can make it easier to detect true points
 of concern. Filtering can be done at the data level or the summary
@@ -332,7 +332,7 @@ stacks and references and possibly recomputing the counts after
 eliminating duplicate stacks introduced by the rewriting. The common
 pattern is abstracted into the function [[transformPD]]. This function
 takes a profile data object and a transformation function as
-arguments. The transformation function in tern is called wit each
+arguments. The transformation function in turn is called with each
 stack and reference pair, along with the index of the pair in the
 stack sequence.
 \FIXME{Why is the index needed?}
@@ -651,7 +651,7 @@ filterProfileData <- function(pd, select, omit,
 An alternate version that allows a sequence of filters to be applied,
 including repetitions:
 <<[[filterProfileData]] function>>=
-function (pd, ..., normalize = FALSE, regex = FALSE)
+fpd <- function(pd, ..., normalize = FALSE, regex = FALSE)
 {
     fargs <- list(...)
     fnames <- names(fargs)
@@ -674,8 +674,8 @@ function (pd, ..., normalize = FALSE, regex = FALSE)
     pd
 }
 @ %
-**** Need to make sure that the total.pct and self.pct filters are
-doing the right thing. Also need to document this alternate version. 
+\FIXME{Need to make sure that the total.pct and self.pct filters are
+doing the right thing. Also need to document this alternate version.}
 
 
 \section{Summary Functions}
