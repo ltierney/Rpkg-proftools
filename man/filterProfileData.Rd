@@ -57,14 +57,11 @@ filterProfileData(pd, select, omit, focus, skip = NA, maxdepth = NA,
 }
 \examples{
 pd <- readProfileData(system.file("samples", "glmEx.out", package="proftools"))
-plotProfileCallGraph(pd, style=google.style, score = "total")
-plotProfileCallGraph(filterProfileData(pd, self.pct=1),
-                     style=google.style, score = "total")
-plotProfileCallGraph(filterProfileData(pd, self.pct=1, total.pct=10),
-                     style=google.style, score = "total")
+plotProfileCallGraph(pd)
+plotProfileCallGraph(filterProfileData(pd, self.pct=1))
+plotProfileCallGraph(filterProfileData(pd, self.pct=1, total.pct=10))
 plotProfileCallGraph(filterProfileData(pd, select = "glm", self.pct=1,
-                                       total.pct=10),
-                      style=google.style, score = "total")
+                                       total.pct=10))
 }
 \keyword{programming}
 \keyword{utilities}

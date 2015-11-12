@@ -25,7 +25,7 @@
 \examples{
 pd <- readProfileData(system.file("samples", "glmEx.out", package="proftools"))
 plot(pd)
-plot(pd, style = google.style)
+plot(pd, style = plain.style)
 plot(pd, type = "call")
 plot(pd, type = "flame")
 }

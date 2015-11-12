@@ -86,7 +86,7 @@ plotProfileCallGraph(pd, layout = "dot",
 pd <- readProfileData(system.file("samples", "glmEx.out", package="proftools"))
 plotProfileCallGraph(pd)
 plotProfileCallGraph(pd, score = "total")
-plotProfileCallGraph(pd, style = google.style, score = "total")
+plotProfileCallGraph(pd, style = plain.style, score = "total")
 }
 \keyword{programming}
 \keyword{utilities}
