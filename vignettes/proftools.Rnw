@@ -167,10 +167,10 @@ hotPaths(filteredPD, maxdepth = 3)
 @ %%
 
 We can further narrow our examination to the calls to \code{glm}, and
-use the \code{focus} argument to remove all calls preceding the first
-glm call from the selected stack frames:
+use the \code{focus} argument to also remove all calls preceding the first
+\code{glm} call from the selected stack frames:
 <<>>=
-glmPD <- filterProfileData(filteredPD, select = "glm", focus = TRUE)
+glmPD <- filterProfileData(filteredPD, focus = "glm")
 hotPaths(glmPD, maxdepth = 3)
 @ %%
 
@@ -202,8 +202,7 @@ and shown in Figure \ref{fullCallGraphFig}
 We can obtain a more readable graph by fitering. For example, to
 examine the \code{boot} call and its callees we can use
 <<bootCallGraphCmd>>=
-plotProfileCallGraph(filterProfileData(pd, select = "boot",
-                                       focus = TRUE,
+plotProfileCallGraph(filterProfileData(pd, focus = "boot",
                                        total.pct = 5,
                                        maxdepth = 10))
 @ 

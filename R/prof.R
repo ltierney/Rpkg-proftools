@@ -107,11 +107,10 @@ print.proftools_profData <- function(x, n = 6, ...) {
 ### Operations on profile data
 ###
 
-filterProfileData <- function(pd, select, omit,
+filterProfileData <- function(pd, select, omit, focus,
                               skip = NA,
                               maxdepth = NA,
                               self.pct = 0, total.pct = 0,
-                              focus = FALSE,
                               interval,
                               normalize = FALSE,
                               regex = FALSE) {
@@ -121,10 +120,10 @@ filterProfileData <- function(pd, select, omit,
         pd <- prunePD(pd, to = maxdepth)
     pd <- focusPD(pd, self.pct = self.pct, total.pct = total.pct)
     if (! missing(select))
-        if (focus)
-            pd <- focusPD(pd, select, regex = regex)
+        pd <- subsetPD(pd, select, regex = regex)
+    if (! missing(focus))
+        pd <- focusPD(pd, focus, regex = regex)
         else
-            pd <- subsetPD(pd, select, regex = regex)
     if (! missing(omit))
         pd <- subsetPD(pd, omit = omit, regex = regex)
     if (! missing(interval))

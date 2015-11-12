@@ -5,8 +5,8 @@
   Allow profile data to be filtered on several criteria.
 }
 \usage{
-filterProfileData(pd, select, omit, skip = NA, maxdepth = NA,
-                  self.pct = 0, total.pct = 0, focus = FALSE,
+filterProfileData(pd, select, omit, focus, skip = NA, maxdepth = NA,
+                  self.pct = 0, total.pct = 0,
                   interval, normalize = FALSE, regex = FALSE)
 }
 \arguments{
@@ -17,6 +17,11 @@ filterProfileData(pd, select, omit, skip = NA, maxdepth = NA,
   \item{omit}{character vector specifying names of functions; call
               stacks containing functions matching any of these names
               are dropped.}
+  \item{focus}{character vector specifying names of functions; call
+                stacks not containing functions matching any of these
+                names are dropped, and functions at the bottom of the
+		stack not matching the \code{focus} specification are
+		dropped.}
   \item{skip}{integer; the number of elements to trim from the bottom of
               the stacks.}
   \item{maxdepth}{integer; stacks are truncated to have at most
@@ -25,9 +30,6 @@ filterProfileData(pd, select, omit, skip = NA, maxdepth = NA,
                   self percentages below this value are removed.}
   \item{total.pct}{numeric; functions at the top of the stacks with
                    total percentages below this value are removed.}
-  \item{focus}{logical; for use with the \code{select} argument. If
-               true, functions at the bottom of the stack not matching the
-               \code{select} specification are dropped.}
   \item{interval}{inter vector of length 2 specifying first and last
                   sample to use.}
   \item{normalize}{logical; if true the total hit count is set to the

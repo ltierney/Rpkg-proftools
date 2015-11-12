@@ -51,8 +51,7 @@ callSummary(pd)
 pathSummary(pd)
 hotPaths(pd)
 plot(pd)
-plot(filterProfileData(pd, select = "glm", self.pct=1, total.pct=10,
-                       focus = TRUE))
+plot(filterProfileData(pd, focus = "glm", self.pct=1, total.pct=10))
 }
 \keyword{programming}
 \keyword{utilities}
