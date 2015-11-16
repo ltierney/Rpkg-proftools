@@ -650,7 +650,7 @@ filterProfileData <- function(pd, select, omit, focus,
 An alternate version that allows a sequence of filters to be applied,
 including repetitions:
 <<[[filterProfileData]] function>>=
-fpd <- function(pd, ..., normalize = FALSE, regex = FALSE)
+filterProfileData <- function(pd, ..., normalize = FALSE, regex = FALSE)
 {
     fargs <- list(...)
     fnames <- names(fargs)
@@ -672,9 +672,9 @@ fpd <- function(pd, ..., normalize = FALSE, regex = FALSE)
         pd$total <- sum(pd$counts)
     pd
 }
-@ %
+@ %def filterProfileData
 \FIXME{Need to make sure that the total.pct and self.pct filters are
-doing the right thing. Also need to document this alternate version.}
+doing the right thing.}
 
 
 \section{Summary Functions}

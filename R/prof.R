@@ -132,7 +132,7 @@ filterProfileData <- function(pd, select, omit, focus,
         pd$total <- sum(pd$counts)
     pd
 }
-fpd <- function(pd, ..., normalize = FALSE, regex = FALSE)
+filterProfileData <- function(pd, ..., normalize = FALSE, regex = FALSE)
 {
     fargs <- list(...)
     fnames <- names(fargs)
