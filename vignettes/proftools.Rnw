@@ -8,7 +8,7 @@
 %% almost as usual
 \author{Luke Tierney\\University of Iowa \And 
         Riad Jarjour\\University of Iowa}
-\title{Examining R Profiling Data: The \pkg{proftools} Package}
+\title{Examining \proglang{R} Profiling Data: The \pkg{proftools} Package}
 
 %% for pretty printing and a nice hypersummary also set:
 \Plainauthor{Luke Tierney, Riad Jarjour} %% comma-separated
@@ -18,11 +18,14 @@
 
 %% an abstract and keywords
 \Abstract{
-  This note introduces the \pkg{proftools} package for examining R
-  profiling data and illustrates its use with a small example.
+  This note introduces the \pkg{proftools} package for examining data
+  collected by \proglang{R}'s sampling profiler.  \pkg{proftools}
+  includes facilities for summarizing, filtering and visualizing
+  profiling data. Use of the package is illustrated with a small
+  running example.
 }
-\Keywords{\pkg{proftools}, profiling, R, \code{Rprof}, \code{profr}}
-\Plainkeywords{proftools, profiling, R, Rprof, profr} %% without formatting
+\Keywords{\pkg{proftools}, profiling, \proglang{R}, \code{Rprof}}
+\Plainkeywords{proftools, profiling, R, Rprof} %% without formatting
 %% at least one keyword must be supplied
 
 %% publication information
@@ -73,17 +76,26 @@
 library("proftools")
 options(keep.source = TRUE)
 @ %%
-R includes a sampling based profiling mechanism that records
-information about calls on the stack at specified time intervals.  The
-function \code{summaryRprof} provides a simple interface for examining
-this data. The
+Profiling is a program analysis method for determining where a program
+run spends most of its execution time, and can be very helpful in
+guiding programmer effort for improving program performance.
+\proglang{R} includes a sampling based profiling mechanism that
+records information about calls on the stack at specified time
+intervals.  If available, information about the specific source code
+lines active at the sampling point is recorded as well. Information
+about time spent in the garbage collector can also be collected. The
+collected profiling data is written to a file, by default the file
+\code{Rprof.out} in the current working directory.  The function
+\code{summaryRprof} provides a simple interface for examining this
+data. The
 \href{https://github.com/ltierney/Rpkg-proftools}{\pkg{proftools}}
 package provides a much more extensive set of tools for summarizing,
-visualizing, and subsetting profiling data.
+visualizing, and filtering this data.
 
+\section{Collecting Profile Data}
 The \pkg{proftools} package includes an example script \code{bootlm.R}
-in the \code{samples} directory that includes several examples from
-the \pkg{boot} package and fitting a simple linear model. The file
+in the \code{samples} directory that runs several examples from
+the \pkg{boot} package and fits a simple linear model. The file
 path can be obtained as
 <<>>=
 srcfile <- system.file("samples", "bootlmEx.R", package = "proftools")
@@ -91,9 +103,9 @@ srcfile <- system.file("samples", "bootlmEx.R", package = "proftools")
 
 The traditional way to collect profiling data in R is to call
 \code{Rprof} to start profiling, run the code to be profiled, and then
-call \code{Rprof} again to end profiling. For example, to collect GC
-and line information if available while running the example script,
-you could use
+call \code{Rprof} again to end profiling. For example, to profile the
+code in \code{bootlm.R}, and collect both source line and GC
+information, you could use
 <<eval = FALSE>>=
 profout <- tempfile()
 Rprof(file = profout, gc.profiling = TRUE, line.profiling = TRUE)
@@ -102,7 +114,7 @@ Rprof(NULL)
 pd <- readProfileData(profout)
 unlink(profout)
 @ %%
-The \pkg{proftools} provides the alternative
+The \pkg{proftools} package provides the alternative
 <<>>=
 pd <- profileExpr(source(srcfile))
 @ %%
@@ -133,9 +145,9 @@ The function \code{annotateSource} can show the full files with
 profiling annotations.
 
 A useful way to examine profile data is to look for hot execution
-paths.  This approach sorts functions called at top level by the
+paths.  This approach sorts functions called at top level by the total
 amount of time spent in their top level calls; within each top level
-call to a function \code{f} the funcitons called by \code{f} are
+call to a function \code{f} the functions called by \code{f} are
 sorted by the amount of time spent in them within the top level call
 to \code{f}; and the process continues for higher level calls. The
 function \code{hotPaths} produces a hot path summary; the
@@ -158,38 +170,35 @@ selecting only stack traces that include calls to \code{withVisible}
 and then trimming off the leading four calls we can focus just on the
 work done in the sourced file:
 <<>>=
-filteredPD <- filterProfileData(pd, select = "withVisible")
-filteredPD <- filterProfileData(filteredPD, skip = 4)
+filteredPD <- filterProfileData(pd, select = "withVisible", skip = 4)
 @ %%
 The hot path summary for this reduced profile is
 <<>>=
 hotPaths(filteredPD, maxdepth = 3) 
 @ %%
 
-We can further narrow our examination to the calls to \code{glm}, and
-use the \code{focus} argument to also remove all calls preceding the first
-\code{glm} call from the selected stack frames:
+We can use the \code{focus} filter to further narrow our examination
+to stack frames containing calls to \code{glm} and also remove all
+calls preceding the first \code{glm} call from the selected stack
+frames:
 <<>>=
 glmPD <- filterProfileData(filteredPD, focus = "glm")
 hotPaths(glmPD, maxdepth = 3)
 @ %%
 
-The details of the \code{filterProfileData} interface may change
-before release to make it easier to express a pipeline of
-transformations within one call.
 
 \section{Visualizing Profile Data}
 Call graphs annotated with profile information are a very popular way
 to view profiling results.  \code{plotProfileCallGraph} uses the
-\pkg{graph} and \pkg{Rgraphviz} from Bioconductor to render an
-annotated call graph. The default style for the graph is based on the
-style used in \href{https://github.com/gperftools}{Google's profiling
-  library} but can be customized in a number of ways.  A call graph
-for the full profile data is produced by
+\pkg{graph} and \pkg{Rgraphviz} packages from Bioconductor to render
+an annotated call graph. The default style for the graph is based on
+the style used in \href{https://github.com/gperftools}{Google's
+  profiling library} but can be customized in a number of ways.  A
+call graph for the full profile data is produced by
 <<fullCallGraphCmd>>=
 plotProfileCallGraph(pd)
 @ 
-and shown in Figure \ref{fullCallGraphFig}
+and is shown in Figure \ref{fullCallGraphFig}
 \begin{figure}
   \centering
 <<fig=true,echo=false>>=
@@ -217,11 +226,20 @@ plotProfileCallGraph(filterProfileData(pd, focus = "boot",
 The result is shown in Figure \ref{bootCallGraphFig}.
 
 A printed version of the call graph, similar to the call graph
-produced by \code{gprof}, can be obtained with \code{printProfileCallGraph}.
-For the subgraph of the \code{glm.fit} calls, for example:
-<<>>=
+produced by \code{gprof} \citep{Graham:1982:GCG:800230.806987}, can be
+obtained with \code{printProfileCallGraph}.  For the subgraph of the
+\code{glm.fit} calls, for example,
+<<printProfileCallGraph, eval=false>>=
 printProfileCallGraph(filterProfileData(pd, focus = "glm.fit"))
 @ %%
+produces the printed representation shown in Figure \ref{printGraphFig}.
+\begin{figure}
+<<echo=false>>=
+<<printProfileCallGraph>>
+@ %%
+\caption{Printed call graph.}
+\label{printGraphFig}
+\end{figure}
 
 Another visualization sometimes used is a
 \href{http://www.brendangregg.com/flamegraphs.html}{flame graph}.  By
@@ -302,16 +320,8 @@ Mac OS X.
 
 Graphical user interfaces within R will be made available in the
 \href{https://github.com/ltierney/Rpkg-proftools-GUI}{\pkg{proftoolsGUI}}
-package. The development version provides two interfaces, one based on
-\pkg{gWidgets2} and one on \pkg{shiny}. At the time of writing these
-interfaces are started with
-<<eval=false>>=
-startWidget(pd)
-runShiny(pd)
-@ %%
-but this will certainly change. Also the shiny interface currently
-gets into an infinite recursion for this example; we will sort that
-out. The current interfaces are on the \code{graphics} branch in the
-Git repository for \pkg{proftoolsGUI}; they will be merged into the
-\code{master} branch shortly.
+package. The current development version provides two interfaces, one
+based on \pkg{gWidgets2} and one on \pkg{shiny}.
+
+\bibliography{proftools}
 \end{document}
