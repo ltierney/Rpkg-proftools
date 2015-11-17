@@ -217,9 +217,10 @@ plotProfileCallGraph(filterProfileData(pd, focus = "boot",
 The result is shown in Figure \ref{bootCallGraphFig}.
 
 A printed version of the call graph, similar to the call graph
-produced by \code{gprof}, can be obtained with
-<<eval=FALSE>>=
-printProfileCallGraph(pd)
+produced by \code{gprof}, can be obtained with \code{printProfileCallGraph}.
+For the subgraph of the \code{glm.fit} calls, for example:
+<<>>=
+printProfileCallGraph(filterProfileData(pd, focus = "glm.fit"))
 @ %%
 
 Another visualization sometimes used is a
