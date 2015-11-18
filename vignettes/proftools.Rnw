@@ -94,9 +94,9 @@ visualizing, and filtering this data.
 
 \section{Collecting Profile Data}
 The \pkg{proftools} package includes an example script \code{bootlm.R}
-in the \code{samples} directory that runs several examples from
-the \pkg{boot} package and fits a simple linear model. The file
-path can be obtained as
+in the \code{samples} directory that runs several examples from the
+\pkg{boot} package \citep{CantyRipley:Boot} and fits a simple linear
+model. The file path can be obtained as
 <<>>=
 srcfile <- system.file("samples", "bootlmEx.R", package = "proftools")
 @  %%
@@ -190,11 +190,12 @@ hotPaths(glmPD, maxdepth = 3)
 \section{Visualizing Profile Data}
 Call graphs annotated with profile information are a very popular way
 to view profiling results.  \code{plotProfileCallGraph} uses the
-\pkg{graph} and \pkg{Rgraphviz} packages from Bioconductor to render
-an annotated call graph. The default style for the graph is based on
-the style used in \href{https://github.com/gperftools}{Google's
-  profiling library} but can be customized in a number of ways.  A
-call graph for the full profile data is produced by
+\pkg{graph} \citep{Gentleman:graph} and \pkg{Rgraphviz}
+\cite{Gentry:Rgraphviz} packages from Bioconductor to render an
+annotated call graph. The default style for the graph is based on the
+style used in \href{https://github.com/gperftools}{Google's profiling
+  library} but can be customized in a number of ways.  A call graph
+for the full profile data is produced by
 <<fullCallGraphCmd>>=
 plotProfileCallGraph(pd)
 @ 
@@ -234,6 +235,7 @@ printProfileCallGraph(filterProfileData(pd, focus = "glm.fit"))
 @ %%
 produces the printed representation shown in Figure \ref{printGraphFig}.
 \begin{figure}
+  \small
 <<echo=false>>=
 <<printProfileCallGraph>>
 @ %%
@@ -321,7 +323,8 @@ Mac OS X.
 Graphical user interfaces within R will be made available in the
 \href{https://github.com/ltierney/Rpkg-proftools-GUI}{\pkg{proftoolsGUI}}
 package. The current development version provides two interfaces, one
-based on \pkg{gWidgets2} and one on \pkg{shiny}.
+based on \pkg{gWidgets2} \citep{Verzani:gWidgets2} and one on
+\pkg{shiny} \citep{Chang:shiny}.
 
 \bibliography{proftools}
 \end{document}
