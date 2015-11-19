@@ -19,9 +19,11 @@
 
 %% an abstract and keywords
 \Abstract{
-  This note introduces the \pkg{proftools} package for examining data
-  collected by \proglang{R}'s sampling profiler.  \pkg{proftools}
-  includes facilities for summarizing, filtering and visualizing
+  This note introduces the \pkg{proftools} package for
+  examining data collected by \proglang{R}'s sampling profiler.
+  \pkg{proftools} includes facilities for summarizing results at the
+  function, call, and source line level; for filtering to narrow the
+  focus to functions of primary interest; and for visualizing
   profiling data. Use of the package is illustrated with a small
   running example.
 }
@@ -76,6 +78,7 @@
 <<echo=FALSE,results='hide'>>=
 library("proftools")
 options(keep.source = TRUE)
+knitr::opts_chunk$set(size = "small")
 @ %%
 Profiling is a program analysis method for determining where a program
 run spends most of its execution time, and can be very helpful in
@@ -87,8 +90,8 @@ lines active at the sampling point is recorded as well. Information
 about time spent in the garbage collector can also be collected. The
 collected profiling data is written to a file, by default the file
 \code{Rprof.out} in the current working directory.  The function
-\code{summaryRprof} provides a simple interface for examining this
-data. The
+\code{summaryRprof}, available in the \pkg{base} package in
+\proglang{R}, provides a simple interface for examining this data. The
 \href{https://github.com/ltierney/Rpkg-proftools}{\pkg{proftools}}
 package provides a much more extensive set of tools for summarizing,
 visualizing, and filtering this data.
@@ -119,7 +122,7 @@ The \pkg{proftools} package provides the alternative
 <<cache = TRUE>>=
 pd <- profileExpr(source(srcfile))
 @ %%
-\code{profileExpr} by default enables GC and source information to be
+By default \code{profileExpr} enables GC and source information to be
 collected. It also trims off stack information leading up to the
 \code{profileExpr} call.
 
@@ -131,6 +134,18 @@ form:
 <<>>=
 head(funSummary(pd), 10)
 @ %%
+The result returned by \code{funSummary}, and most summary functions,
+is a data frame, so \code{head} can be used to focue on the top
+entries. 
+
+By default, when source information is available results are
+summarized at the call level, so multiple calls to \code{boot} from
+different source lines are shown separately. This can be suppressed by
+supplying the \code{srclines = FALSE} argument:
+<<>>=
+head(funSummary(pd, srclines = FALSE), 10)
+@ %%
+
 Data can also be summarized by call:
 <<>>=
 head(callSummary(pd), 10)
@@ -146,20 +161,24 @@ The function \code{annotateSource} can show the full files with
 profiling annotations.
 
 A useful way to examine profile data is to look for hot execution
-paths.  This approach sorts functions called at top level by the total
-amount of time spent in their top level calls; within each top level
-call to a function \code{f} the functions called by \code{f} are
-sorted by the amount of time spent in them within the top level call
-to \code{f}; and the process continues for higher level calls. The
-function \code{hotPaths} produces a hot path summary; the
-\code{maxdepth} argument determines how far up the call stack the
-paths are followed:
+paths.  This approach sorts functions called at top level, i.e. at the
+bottom of the call stack, by the total amount of time spent in their
+top level calls; within each top level call to a function \code{f} the
+functions called by \code{f} are sorted by the amount of time spent in
+them within the top level call to \code{f}; and the process continues
+for higher level calls. The function \code{hotPaths} produces a hot
+path summary; the \code{total.pct} argument causes leaf functions in
+stack traces to be pruned back until the execution time percentage for
+each stack trace is at least \code{total.pct}:
 <<>>=
-hotPaths(pd, maxdepth = 6)
+hotPaths(pd, total.pct = 10.0)
 @ %%
-
-%% Other summaries are \code{pathSummary} and \code{srcSummary}.
-%% **** filtering
+Examining the result of \code{hotPaths} starting with high values of
+\code{total.pct} and then moving to lower values is a useful way to
+expore where the computational effort is concentrated.  An alternative
+to limiting the depth to which stack traces are followed is provided
+by the \code{maxdepth} argument.
+%% Other summary: \code{pathSummary}
 
 \section{Filtering Profile Data}
 The hot path summary shows information associated with the source
@@ -175,16 +194,17 @@ filteredPD <- filterProfileData(pd, select = "withVisible", skip = 4)
 @ %%
 The hot path summary for this reduced profile is
 <<>>=
-hotPaths(filteredPD, maxdepth = 3) 
+hotPaths(filteredPD, total.pct = 10.0) 
 @ %%
 
 We can use the \code{focus} filter to further narrow our examination
 to stack frames containing calls to \code{glm} and also remove all
 calls preceding the first \code{glm} call from the selected stack
-frames:
+frames. For this reduced data it also makes sense to follow the paths
+further by lowering \code{total.pct} to 5\%:
 <<>>=
 glmPD <- filterProfileData(filteredPD, focus = "glm")
-hotPaths(glmPD, maxdepth = 3)
+hotPaths(glmPD, total.pct = 5.0)
 @ %%
 
 
@@ -200,7 +220,7 @@ for the full profile data is produced by
 <<fullCallGraphCmd, eval = FALSE>>=
 plotProfileCallGraph(pd)
 @ 
-and is shown in Figure \ref{fullCallGraphFig}
+and is shown in Figure \ref{fullCallGraphFig}.
 \begin{figure}
   \centering
 <<echo=FALSE>>=
@@ -211,21 +231,19 @@ and is shown in Figure \ref{fullCallGraphFig}
 \end{figure}
 
 We can obtain a more readable graph by fitering. For example, to
-examine the \code{boot} call and its callees we can use
-<<bootCallGraphCmd, eval = FALSE>>=
-plotProfileCallGraph(filterProfileData(pd, focus = "boot",
-                                       total.pct = 5,
-                                       maxdepth = 10))
+examine the \code{glm.fit} call and its callees we can use
+<<filteredCallGraphCmd, eval = FALSE>>=
+plotProfileCallGraph(filterProfileData(pd, focus = "glm.fit"))
 @ 
 \begin{figure}
   \centering
 <<echo=FALSE>>=
-<<bootCallGraphCmd>>
+<<filteredCallGraphCmd>>
 @ %%
-\caption{Call graph for \code{boot} call.}
-\label{bootCallGraphFig}
+\caption{Call graph for \code{glm.fit} call.}
+\label{filteredCallGraphFig}
 \end{figure}
-The result is shown in Figure \ref{bootCallGraphFig}.
+The result is shown in Figure \ref{filteredCallGraphFig}.
 
 A printed version of the call graph, similar to the call graph
 produced by \code{gprof} \citep{Graham:1982:GCG:800230.806987}, can be
@@ -327,5 +345,35 @@ package. The current development version provides two interfaces, one
 based on \pkg{gWidgets2} \citep{Verzani:gWidgets2} and one on
 \pkg{shiny} \citep{Chang:shiny}.
 
+\section{Fixups}
+The time trimming isn't right. It's good in \code{hotPaths} but not in
+\code{filterProfileData}. This function does more or less what
+\code{hotPaths} trimming does for \code{total.pct = 100 p} but not as
+efficiently.
+<<>>=
+foo <- function(pd, p){
+    trim <- function(x) {
+        n <- length(x)
+        if (n > 0) x[-n] else x
+    }
+    repeat {
+        lns <- sapply(pd$stacks, length)
+        low <- pd$counts < p * pd$total
+        if (sum(low) == 0 || max(lns[low]) <=1)
+            return(pd)
+        idx <- which(low & lns == max(lns[low]))
+        for (i in idx)
+            pd$stacks[[i]] <- trim(pd$stacks[[i]])
+        if (pd$haveRefs)
+            for (i in idx)
+                pd$refs[[i]] <- trim(pd$refs[[i]])
+        pd <- proftools:::compactPD(pd)
+    }
+}
+@ %%
+This does a nice job:
+<<fig.cap="Better filtered view">>=
+plotProfileCallGraph(foo(pd, .05))
+@ 
 \bibliography{proftools}
 \end{document}
