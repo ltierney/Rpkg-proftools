@@ -72,7 +72,7 @@
 %% Note that you should use the \pkg{}, \proglang{} and <<>>=} commands.
 
 \section{Introduction}
-<<echo=false,results=hide>>=
+<<echo=FALSE,results='hide'>>=
 library("proftools")
 options(keep.source = TRUE)
 @ %%
@@ -196,13 +196,13 @@ annotated call graph. The default style for the graph is based on the
 style used in \href{https://github.com/gperftools}{Google's profiling
   library} but can be customized in a number of ways.  A call graph
 for the full profile data is produced by
-<<fullCallGraphCmd>>=
+<<fullCallGraphCmd, eval = FALSE>>=
 plotProfileCallGraph(pd)
 @ 
 and is shown in Figure \ref{fullCallGraphFig}
 \begin{figure}
   \centering
-<<fig=true,echo=false>>=
+<<fig=TRUE,echo=FALSE>>=
 <<fullCallGraphCmd>>
 @ %%
 \caption{Full call graph of \code{pd}.}
@@ -211,14 +211,14 @@ and is shown in Figure \ref{fullCallGraphFig}
 
 We can obtain a more readable graph by fitering. For example, to
 examine the \code{boot} call and its callees we can use
-<<bootCallGraphCmd>>=
+<<bootCallGraphCmd, eval = FALSE>>=
 plotProfileCallGraph(filterProfileData(pd, focus = "boot",
                                        total.pct = 5,
                                        maxdepth = 10))
 @ 
 \begin{figure}
   \centering
-<<fig=true,echo=false>>=
+<<fig=true,echo=FALSE>>=
 <<bootCallGraphCmd>>
 @ %%
 \caption{Call graph for \code{boot} call.}
@@ -230,13 +230,13 @@ A printed version of the call graph, similar to the call graph
 produced by \code{gprof} \citep{Graham:1982:GCG:800230.806987}, can be
 obtained with \code{printProfileCallGraph}.  For the subgraph of the
 \code{glm.fit} calls, for example,
-<<printProfileCallGraph, eval=false>>=
+<<printProfileCallGraph, eval=FALSE>>=
 printProfileCallGraph(filterProfileData(pd, focus = "glm.fit"))
 @ %%
 produces the printed representation shown in Figure \ref{printGraphFig}.
 \begin{figure}
-  \small
-<<echo=false>>=
+  \tiny
+<<echo = FALSE>>=
 <<printProfileCallGraph>>
 @ %%
 \caption{Printed call graph.}
@@ -248,12 +248,12 @@ Another visualization sometimes used is a
 default the \code{flameGraph} function orders functions within call
 levels by execution time, which produces a visual representation of
 the hot path summary;
-<<flameGraphCmd>>=
+<<flameGraphCmd, eval = FALSE>>=
 flameGraph(pd)
 @ %%
 \begin{figure}
   \centering
-<<fig=true,echo=false>>=
+<<fig=true,echo = FALSE>>=
 <<flameGraphCmd>>
 @ %%
 \caption{Flame graph visualizing hot paths for the full profile data.}
@@ -261,12 +261,12 @@ flameGraph(pd)
 \end{figure}
 the result is shown in Figure \ref{flameGraphFig}.  A flame graph of
 the filtered data is produced by
-<<filteredFlameGraphCmd>>=
+<<filteredFlameGraphCmd, eval = FALSE>>=
 flameGraph(filteredPD)
 @ %%
 \begin{figure}
   \centering
-<<fig=true,echo=false>>=
+<<fig=TRUE,echo=FALSE>>=
 <<filteredFlameGraphCmd>>
 @ %%
 \caption{Flame graph of the filtered profile data.}
@@ -281,12 +281,12 @@ and shown in Figure \ref{filteredFlameGraphFig}
 
 Specifying \code{order = "time"} shows the calls in the order in which
 they occurred:
-<<timeGraphCmd>>=
+<<timeGraphCmd, eval = FALSE>>=
 flameGraph(pd, order = "time")
 @ %%
 \begin{figure}
   \centering
-<<fig=true,echo=false>>=
+<<fig=true,echo=FALSE>>=
 <<timeGraphCmd>>
 @ %%
 \caption{Time graph of the full profile data.}
@@ -299,12 +299,12 @@ Flame graphs can also order functions within a level alphabetically.
 
 A third visualization that is sometimes used is a callee tree map,
 produced by
-<<calleeTreeCmd>>=
+<<calleeTreeCmd, eval = FALSE>>=
 calleeTreeMap(pd)
 @ %%
 \begin{figure}
   \centering
-<<fig=true,echo=false>>=
+<<fig=TRUE,echo=FALSE>>=
 <<calleeTreeCmd>>
 @ %%
 \caption{Call tree map of the full profile data.}
