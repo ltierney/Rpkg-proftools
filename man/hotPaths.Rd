@@ -6,7 +6,7 @@
 }
 \usage{
 hotPaths(pd, value = c("pct", "time", "hits"), self = TRUE,
-         srclines = FALSE, GC = FALSE, maxdepth = 10,
+         srclines = TRUE, GC = FALSE, maxdepth = 10,
          self.pct = 0, total.pct = 0, short = ". ", nlines = NA)
 }
 \arguments{

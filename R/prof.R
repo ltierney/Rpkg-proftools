@@ -527,7 +527,7 @@ hotPathsTime <- function(data, self, gc, delta) {
 }
 
 hotPaths <- function(pd, value = c("pct", "time", "hits"),
-                     self = TRUE, srclines = FALSE, GC = FALSE,
+                     self = TRUE, srclines = TRUE, GC = FALSE,
                      maxdepth = 10, self.pct = 0, total.pct = 0,
                      short = ". ", nlines = NA) {
     value <- match.arg(value)
