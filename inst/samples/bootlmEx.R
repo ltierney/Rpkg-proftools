@@ -41,6 +41,9 @@ nuke.boot <- boot(nuke.data, nuke.fun, R = 999, m = 1,
 mean(nuke.boot$t[, 8]^2)
 new.fit - sort(nuke.boot$t[, 8])[c(975, 25)]
 
+nuke.boot <- boot(nuke.data, nuke.fun, R = 999, m = 1, 
+                  fit.pred = new.fit, x.pred = new.data)
+
 ## A linear model fit:
 n <- 500000
 p <- 10
