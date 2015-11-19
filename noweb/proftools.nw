@@ -1621,7 +1621,7 @@ commonFile <- function(refs) {
 ## If they do, then assume this is the file in which the caller is
 ## defined.  Otherwise treat the caller's home file as unkown. The
 ## result returned by this function is a named vector with one element
-## per function for which the home file is assumed know.  The names
+## per function for which the home file is assumed known.  The names
 ## are the names of the callers, and the values are the indices of the
 ## files in whicn the callers are defined.  For leaf calls NA sites
 ## are ignored. Possibly a disagreement of the leaf call site with
@@ -1649,7 +1649,7 @@ leafCallRefs <- function(pd) {
 ##     fc = function counts and leaf call references
 ##     cc = call counts and call site references
 ##
-## To fc we add the indes of the home file for each cunction (NA if
+## To fc we add the index of the home file for each function (NA if
 ## not known) in fl.
 ##
 ## To cc we add in cfl the index of the home file of the function
