@@ -371,9 +371,26 @@ foo <- function(pd, p){
     }
 }
 @ %%
-This does a nice job:
+This does a nice job; should do about what hot paths trimming on total does.
 <<fig.cap="Better filtered view">>=
 plotProfileCallGraph(foo(pd, .05))
-@ 
+@ %%
+
+This should be closer to removing low total nodes:
+<<>>=
+bar <- function(pd, p) {
+    fs <- funSummary(pd, srclines=FALSE)
+    funs <- rownames(fs)
+    low <- funs[fs$total.pct < p * pd$total]
+    to <- sapply(pd$stacks, function(x) min(match(low,x, length(x) + 1)))
+    ## what if to[i] == 0?
+    proftools:::prunePD(pd, to = to)
+}
+@ %%
+Need to figure out what \verb|??| means in
+\code{hotPaths(bar(pd, 0.1))}
+and compare to
+\code{hotPaths(pd, total.pct=10)}
+
 \bibliography{proftools}
 \end{document}
