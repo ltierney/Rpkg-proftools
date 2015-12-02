@@ -408,5 +408,31 @@ if (all(sapply(pd$stacks, `[`, 1) == "source") &&
 }
 @ 
 
+New version of \code{cvtProfileData}:
+<<>>=
+cvtProfileData <- function(pd, GC) {
+    if (inherits(pd, "proftools_profData")) {
+        if (GC && pd$haveGC)
+            pd <- mergeGC(pd)
+        data <- rawProfCallGraph(pd)
+        v <- eapply(data, function(x) x$total)
+        drop <- names(v)[v < pd$total * 0.05]
+        rm(list = drop, envir = data)
+        eapply(data, function(x) {
+            e <- x$edges
+            rm(list = intersect(names(e), drop), envir = e)
+        })
+        cycles <- findCycles(data)
+        if (! is.null(cycles))
+            addCycleInfo(pd, data, cycles)
+        ## **** add a class -- proftools_callgraph?
+        list(interval = pd$interval, count = pd$total,
+             data = data, cycles = cycles)
+    }
+    else pd
+}
+@ %
+Apparently something in \code{getProfCallGraphNodeEntry} is looking
+into \code{pd} for names instead of getting them from \code{data}.
 \bibliography{proftools}
 \end{document}
