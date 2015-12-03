@@ -16,7 +16,8 @@ profileCallGraph2Dot(pd, score = c("none", "total", "self"),
                      nodeSizeScore = c("none", "total", "self"),
                      edgeSizeScore = c("none", "total"),
                      center = FALSE, size, shape = "ellipse",
-                     layout = "dot", style, GC = TRUE)
+                     layout = "dot", style, GC = TRUE,
+                     maxnodes = NA, total.pct = 0)
 }
 \arguments{
   \item{pd}{profile data as returned by \code{readProfileData}.}
@@ -52,6 +53,10 @@ profileCallGraph2Dot(pd, score = c("none", "total", "self"),
   \item{style}{named list of values for arguments \code{score} through
                \code{layout} to use if not explicitly supplied.}
   \item{GC}{logical; include GC information or not.}
+  \item{maxnodes}{integer; maximal number of nodes to use; nodes with
+                  lower total hit counts are dropped.}
+  \item{total.pct}{numeric; if positive, nodes with hit percentages
+    below this level are dropped.}	      
 }
 \value{Used for side effect.}
 \details{

@@ -14,7 +14,8 @@ plotProfileCallGraph(pd, layout = "dot",
                      nodeDetails = FALSE, edgeDetails = FALSE,
                      nodeSizeScore = c("none", "total", "self"),
                      edgeSizeScore = c("none", "total"),
-                     shape = "ellipse", style, GC = TRUE, ...)
+                     shape = "ellipse", style, GC = TRUE,
+                     maxnodes = NA, total.pct = 0, ...)
 }
 \arguments{
   \item{pd}{profile data as returned by \code{readProfileData}.}
@@ -45,6 +46,10 @@ plotProfileCallGraph(pd, layout = "dot",
   \item{\dots}{ additional arguments for the \code{graphNEL} \code{plot}
                 method.}
   \item{GC}{logical; include GC information or not.}
+  \item{maxnodes}{integer; maximal number of nodes to use; nodes with
+                  lower total hit counts are dropped.}
+  \item{total.pct}{numeric; if positive, nodes with hit percentages
+    below this level are dropped.}	      
 }
 \value{Used for side effect.}
 \details{

@@ -6,7 +6,8 @@
   by \code{Rprof}.  Output can be directed to a connection or a file.
 }
 \usage{
-printProfileCallGraph(pd, file = stdout(), percent = TRUE, GC = TRUE)
+printProfileCallGraph(pd, file = stdout(), percent = TRUE, GC = TRUE,
+                      maxnodes = NA, total.pct = 0)
 }
 \arguments{
   \item{pd}{profile data as returned by \code{readProfileData}.}
@@ -15,6 +16,10 @@ printProfileCallGraph(pd, file = stdout(), percent = TRUE, GC = TRUE)
   \item{percent}{ logical; if true use percent of total time; otherwise
                   use time in seconds }
   \item{GC}{logical; include GC information or not.}
+  \item{maxnodes}{integer; maximal number of nodes to use; nodes with
+                  lower total hit counts are dropped.}
+  \item{total.pct}{numeric; if positive, nodes with hit percentages
+    below this level are dropped.}	      
 }
 \value{Used for side effect.}
 \details{

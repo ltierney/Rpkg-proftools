@@ -1,2 +1,12 @@
 noweb
+vignettes/cache
+vignettes/figure
+vignettes/jss.bst
+vignettes/Rplots.pdf
+vignettes/Rprof.out
+vignettes/proftools.aux
+vignettes/proftools.bbl
+vignettes/proftools.blg
+vignettes/proftools.log
+vignettes/proftools.out
 

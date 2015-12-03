@@ -124,12 +124,15 @@ getProfCallGraphEdgeEntry <- function(from, to, env) {
 }
 
 incProfCallGraphEdgeEntry <- function(from, to, what, env, count = 1) {
-    fromEntry <- getProfCallGraphNodeEntry(from, env)
-    if (exists(to, envir = fromEntry$edges, inherits = FALSE))
-        entry <- get(to, envir = fromEntry$edges)
-    else entry <- list(self = 0, total = 0)
-    entry[[what]] <- entry[[what]] + count
-    assign(to, entry, envir = fromEntry$edges)
+    ## To allow for node trimming, only increment if both endpoints exist.
+    if (exists(from, env) && exists(to, env)) {
+        fromEntry <- getProfCallGraphNodeEntry(from, env)
+        if (exists(to, envir = fromEntry$edges, inherits = FALSE))
+            entry <- get(to, envir = fromEntry$edges)
+        else entry <- list(self = 0, total = 0)
+        entry[[what]] <- entry[[what]] + count
+        assign(to, entry, envir = fromEntry$edges)
+    }
 }
 
 rawProfCallGraph <- function(pd) {
@@ -294,7 +297,7 @@ addCycleInfo <- function(pd, data, cycles) {
             if (isIn(n, cnames))
                 incProfCallGraphNodeEntry(n, "total", data, count)
         if (length(line) > 1) {
-            if (isIn(line[1], cnames) || isIn(line[1], cnames))
+            if (isIn(line[1], cnames) || isIn(line[2], cnames))
                 incProfCallGraphEdgeEntry(line[2], line[1], "self",
                                           data, count)
             le <- lineEdges(line)
@@ -310,11 +313,35 @@ addCycleInfo <- function(pd, data, cycles) {
     mapply(fun, rvStacks, pd$counts, SIMPLIFY = FALSE)
 }
 
-cvtProfileData <- function(pd, GC) {
+trimProfCallGraph <- function(data, maxnodes, total.pct, total) {
+    v <- unlist(eapply(data, function(x) x$total, all.names = TRUE))
+
+    if (! is.na(maxnodes) && length(v) > maxnodes)
+        drop <- names(sort(v)[1 : (length(v) - maxnodes)])
+    else
+        drop <- character(0)
+    if (total.pct > 0)
+        drop <- union(drop, names(v)[v < total * (total.pct / 100)])
+
+    if (length(drop) > 0) {
+        rm(list = drop, envir = data)
+        for (fun in lsEnv(data)) {
+            x <- get(fun, data, inherits = FALSE)
+            e <- x$edges
+            rm(list = intersect(lsEnv(e), drop), envir = e)
+        }
+    }
+
+    data
+}
+
+cvtProfileData <- function(pd, GC, maxnodes = NA, total.pct = 0) {
     if (inherits(pd, "proftools_profData")) {
         if (GC && pd$haveGC)
             pd <- mergeGC(pd)
         data <- rawProfCallGraph(pd)
+        if (! is.na(maxnodes) || total.pct > 0)
+            data <- trimProfCallGraph(data, maxnodes, total.pct, pd$total)
         cycles <- findCycles(data)
         if (! is.null(cycles))
             addCycleInfo(pd, data, cycles)
@@ -478,8 +505,8 @@ makeCycleMemberLine <- function(n, cycle, pg) {
 }
 
 printProfileCallGraph <- function(pd, file = stdout(), percent = TRUE,
-                                  GC = TRUE) {
-    pd <- cvtProfileData(pd, GC)
+                                  GC = TRUE, maxnodes = NA, total.pct = 0) {
+    pd <- cvtProfileData(pd, GC, maxnodes, total.pct)
     if (is.character(file)) {
         if (file == "")
             stop("'file' must be non-empty string")
@@ -676,8 +703,9 @@ profileCallGraph2Dot <- function(pd, score = c("none", "total", "self"),
                                  nodeSizeScore = c("none", "total", "self"),
                                  edgeSizeScore = c("none", "total"),
                                  center = FALSE, size, shape = "ellipse",
-                                 layout = "dot", style, GC = TRUE) {
-    pd <- cvtProfileData(pd, GC)
+                                 layout = "dot", style, GC = TRUE,
+                                 maxnodes = NA, total.pct = 0) {
+    pd <- cvtProfileData(pd, GC, maxnodes, total.pct)
 
     if (! missing(style)) {
         if (missing(layout)) layout <- style$layout
@@ -723,7 +751,8 @@ plotProfileCallGraph <- function(pd, layout = "dot",
                                  nodeDetails = FALSE, edgeDetails = FALSE,
                                  nodeSizeScore = c("none", "total", "self"),
                                  edgeSizeScore = c("none", "total"),
-                                 shape = "ellipse", style, GC = TRUE, ...) {
+                                 shape = "ellipse", style, GC = TRUE,
+                                 maxnodes = NA, total.pct = 0, ...) {
     if (missing(style)) style <- google.style
 
     if (missing(layout)) layout <- style$layout
@@ -752,7 +781,7 @@ plotProfileCallGraph <- function(pd, layout = "dot",
             edgeColorMap <- hsv(1,1,seq(1,0,length.out=50))
     }
 
-    pd <- cvtProfileData(pd, GC)
+    pd <- cvtProfileData(pd, GC, maxnodes, total.pct)
 
     p <- np2x(pd, score, transfer, nodeColorMap,
               edgeColorMap, mergeCycles, edgesColored)
