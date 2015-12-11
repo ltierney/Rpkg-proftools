@@ -361,13 +361,8 @@ foo <- function(pd, p){
         low <- pd$counts < p * pd$total
         if (sum(low) == 0 || max(lns[low]) <=1)
             return(pd)
-        idx <- which(low & lns == max(lns[low]))
-        for (i in idx)
-            pd$stacks[[i]] <- trim(pd$stacks[[i]])
-        if (pd$haveRefs)
-            for (i in idx)
-                pd$refs[[i]] <- trim(pd$refs[[i]])
-        pd <- proftools:::compactPD(pd)
+        to <- ifelse(low & lns == max(lns[low]), lns - 1, lns)
+        pd <- proftools:::prunePD(pd, to = to)
     }
 }
 @ %%
@@ -376,6 +371,7 @@ This does a nice job; should do about what hot paths trimming on total does.
 plotProfileCallGraph(foo(pd, .05))
 @ %%
 
+The \code{focudPD} code seesm more reasonable than this.
 This should be closer to removing low total nodes:
 <<>>=
 bar <- function(pd, p) {
