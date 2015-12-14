@@ -346,10 +346,9 @@ based on \pkg{gWidgets2} \citep{Verzani:gWidgets2} and one on
 \pkg{shiny} \citep{Chang:shiny}.
 
 \section{Fixups}
-The time trimming isn't right. It's good in \code{hotPaths} but not in
-\code{filterProfileData}. This function does more or less what
-\code{hotPaths} trimming does for \code{total.pct = 100 p} but not as
-efficiently.
+This function does more or less what \code{hotPaths} trimming does for
+\code{total.pct = 100 p} but not as efficiently. Might be sueful to
+add to \code{filterProfileData}, maybe as a \code{merge.pct} filter:
 <<>>=
 foo <- function(pd, p){
     trim <- function(x) {
@@ -371,7 +370,7 @@ This does a nice job; should do about what hot paths trimming on total does.
 plotProfileCallGraph(foo(pd, .05))
 @ %%
 
-The \code{focudPD} code seesm more reasonable than this.
+The \code{focudPD} code seems more reasonable than this.
 This should be closer to removing low total nodes:
 <<>>=
 bar <- function(pd, p) {
