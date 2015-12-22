@@ -347,10 +347,10 @@ based on \pkg{gWidgets2} \citep{Verzani:gWidgets2} and one on
 
 \section{Fixups}
 This function does more or less what \code{hotPaths} trimming does for
-\code{total.pct = 100 p} but not as efficiently. Might be sueful to
+\code{total.pct = 100 p} but not as efficiently. Might be useful to
 add to \code{filterProfileData}, maybe as a \code{merge.pct} filter:
 <<>>=
-foo <- function(pd, p){
+mergeStacks <- function(pd, p){
     trim <- function(x) {
         n <- length(x)
         if (n > 0) x[-n] else x
@@ -361,31 +361,32 @@ foo <- function(pd, p){
         if (sum(low) == 0 || max(lns[low]) <=1)
             return(pd)
         to <- ifelse(low & lns == max(lns[low]), lns - 1, lns)
-        pd <- proftools:::prunePD(pd, to = to)
+        pd <- prunePD(pd, to = to)
     }
 }
+environment(mergeStacks) <- environment(hotPaths)
 @ %%
 This does a nice job; should do about what hot paths trimming on total does.
 <<fig.cap="Better filtered view">>=
-plotProfileCallGraph(foo(pd, .05))
+plotProfileCallGraph(mergeStacks(pd, .05))
 @ %%
 
-The \code{focudPD} code seems more reasonable than this.
-This should be closer to removing low total nodes:
-<<>>=
-bar <- function(pd, p) {
-    fs <- funSummary(pd, srclines=FALSE)
-    funs <- rownames(fs)
-    low <- funs[fs$total.pct < p * 100]
-    to <- sapply(pd$stacks, function(x) min(match(low,x, length(x) + 1)))
-    ## what if to[i] == 0?
-    proftools:::prunePD(pd, to = pmax(1, to - 1))
-}
-@ %%
-Need to figure out what \verb|??| means in
-\code{hotPaths(bar(pd, 0.1))}
-and compare to
-\code{hotPaths(pd, total.pct=10)}
+% The \code{focudPD} code seems more reasonable than this.
+% This should be closer to removing low total nodes:
+% <<>>=
+% bar <- function(pd, p) {
+%     fs <- funSummary(pd, srclines=FALSE)
+%     funs <- rownames(fs)
+%     low <- funs[fs$total.pct < p * 100]
+%     to <- sapply(pd$stacks, function(x) min(match(low,x, length(x) + 1)))
+%     ## what if to[i] == 0?
+%     proftools:::prunePD(pd, to = pmax(1, to - 1))
+% }
+% @ %%
+% Need to figure out what \verb|??| means in
+% \code{hotPaths(bar(pd, 0.1))}
+% and compare to
+% \code{hotPaths(pd, total.pct=10)}
 
 Callgrind for sourced code is more useful if we trim off the source
 stuff and add a fake function called something like \code{<TOP>}; this
@@ -393,14 +394,25 @@ way \code{kcachegrind} will whoud the annotated source file for the
 fake function. This code does the trick; it would need adjusting if
 the implementation of \code{source} changes:
 <<>>=
-if (all(sapply(pd$stacks, `[`, 1) == "source") &&
-    all(sapply(pd$stacks, `[`, 2) == "withVisible") &&
-    all(sapply(pd$stacks, `[`, 3) == "eval") &&
-    all(sapply(pd$stacks, `[`, 4) == "eval")) {
-    pd <- filterProfileData(pd, skip = 4)
-    pd$refs <- lapply(pd$refs, function(x) c("1#1", x))
-    pd$stacks <- lapply(pd$stacks, function(x) c("<TOP>", x))
+dropSourceFrames <- function(pd, addTOP = TRUE) {
+    if (length(pd$stacks) > 0 &&
+        all(sapply(pd$stacks, length) > 4) &&
+        pd$haveRefs &&
+        isTRUE(all(diff(refFN(sapply(pd$refs,`[`, 5))) == 0)) &&
+        all(sapply(pd$stacks, `[`, 1) == "source") &&
+        all(sapply(pd$stacks, `[`, 2) == "withVisible") &&
+        all(sapply(pd$stacks, `[`, 3) == "eval") &&
+        all(sapply(pd$stacks, `[`, 4) == "eval")) {
+        pd <- filterProfileData(pd, skip = 4)
+        if (addTOP) {
+            tref <- sprintf("%d#1", refFN(pd$refs[[1]][1]))
+            pd$refs <- lapply(pd$refs, function(x) c(tref, x))
+            pd$stacks <- lapply(pd$stacks, function(x) c("<TOP>", x))
+        }
+    }
+    pd
 }
+environment(dropSourceFrames) <- environment(hotPaths)
 @ 
 
 \bibliography{proftools}
