@@ -3,27 +3,25 @@ mkHash <- function() new.env(hash = TRUE, parent = .EmptyEnv)
 
 n2d <- function(name, color = NULL, fontSize = 14, shape = "ellipse") {
     if (is.null(color) || is.na(color))
-        paste("\"", name, "\"[shape=", shape, ",fontsize=",
-              fontSize,"];\n", sep = "")
+        paste0("\"", name, "\"[shape=", shape, ",fontsize=", fontSize,"];\n")
     else
         ## If you don't specify fillcolor, graphviz defaults both background &
         ## border to color. Original dot graph only specified color, which I 
         ## believe is the reason you made the dot file colors range from light 
         ## blue to red (to prevent borders from disappearing).
         ## See http://stackoverflow.com/questions/9106079/graphviz-how-to-change-border-color
-        paste("\"", name, "\"[shape=", shape,
-              ",style=filled,color=black,fillcolor=\"",
-              color, "\"fontsize=", fontSize, "];\n", sep = "")
+        paste0("\"", name, "\"[shape=", shape,
+               ",style=filled,color=black,fillcolor=\"",
+               color, "\"fontsize=", fontSize, "];\n")
 }
 
 e2d <- function(from, to, color = NULL, edgeLabel="", edgeWidth = 1) {
-    e <- paste("\"", from, "\" -> \"", to, "\"", sep = "")
+    e <- paste0("\"", from, "\" -> \"", to, "\"")
     if (is.null(color))
-        paste(e, "[label=\"", edgeLabel, "\", penwidth=", edgeWidth, "];\n",
-              sep = "")
+        paste0(e, "[label=\"", edgeLabel, "\", penwidth=", edgeWidth, "];\n")
     else
-        paste(e, "[color=\"", color, "\", label=\"", edgeLabel,"\", penwidth=",
-              edgeWidth, "];\n", sep = "")
+        paste0(e, "[color=\"", color, "\", label=\"", edgeLabel,"\",
+               penwidth=", edgeWidth, "];\n")
 }
 
 # **** A plausible size is 10,7.5
@@ -45,12 +43,12 @@ g2d <- function(g, filename = "g.dot", landscape = TRUE,
 
     cat("digraph xyz {\n", file = con)
     if (! missing(size))
-        cat(paste("size=\"", size, "\";\n", sep = ""), file = con)
+        cat(paste0("size=\"", size, "\";\n"), file = con)
     if (landscape)
         cat("rotate=90;\n", file = con)
     if (center)
         cat("center=1;\n", file = con)
-    cat(paste("rankdir=", rankdir, ";\n", sep = ""), file = con)
+    cat(paste0("rankdir=", rankdir, ";\n"), file = con)
 
     ## The quadruple backslashes needed for dot file
     g$gNodes <- gsub("\n", '\\\\n', g$gNodes)
@@ -193,7 +191,7 @@ makeCycleMap <- function(cycles) {
     cycleMap <- mkHash()
     for (i in seq(along = cycles))
         for (n in cycles[[i]])
-            assign(n, paste("<cycle ", i, ">", sep = ""), envir = cycleMap)
+            assign(n, paste0("<cycle ", i, ">"), envir = cycleMap)
     cycleMap
 }
 
@@ -415,7 +413,7 @@ flatProfile <- function(pd, byTotal = TRUE, GC = TRUE) {
 }
 
 makePrimaryLine<- function(node, i, pg) {
-    idx <- sprintf("%-6s", paste("[", i, "]", sep = ""))
+    idx <- sprintf("%-6s", paste0("[", i, "]"))
     if (pg$percent) {
         self <- pg$selfpct[i]
         child <- pg$childpct[i]
@@ -437,7 +435,7 @@ makePrimaryLine<- function(node, i, pg) {
 }
 
 makeCallerLine <- function(n, node, pg) {
-    idx <- paste("[", match(n, pg$nodes), "]", sep = "")
+    idx <- paste0("[", match(n, pg$nodes), "]")
     if (pg$inCycle(n) && pg$inCycle(node) &&
         pg$cycleName(n) == pg$cycleName(node))
         stats <- "                                     "
@@ -465,7 +463,7 @@ makeCallerLine <- function(n, node, pg) {
 
 # **** most of this is the same as for callers--extract the common part.
 makeCalleeLine <- function(n, node, pg) {
-    idx <- paste("[", match(n, pg$nodes), "]", sep = "")
+    idx <- paste0("[", match(n, pg$nodes), "]")
     if (pg$inCycle(n) && pg$inCycle(node) &&
         pg$cycleName(n) == pg$cycleName(node))
         stats <- "                                     "
@@ -493,7 +491,7 @@ makeCalleeLine <- function(n, node, pg) {
 
 makeCycleMemberLine <- function(n, cycle, pg) {
     i <- match(n, pg$nodes)
-    idx <- paste("[", i, "]", sep = "")
+    idx <- paste0("[", i, "]")
     extra <- paste(cycle, idx)
     if (pg$percent) self <- pg$selfpct[i]
     else self <- pg$selftime[i]
@@ -637,9 +635,8 @@ np2x <- function(pd, score = c("total", "self", "none"),
     edges <- extractProfileEdges(pd, score, mergeCycles = mergeCycles)
     totalPercent <- round(nodes$totalCost*100/pd$count, 2)
     selfPercent <- round(nodes$selfCost*100/pd$count, 2)
-    gNodes <- paste(nodes$nodes, "\n", nodes$selfCost, " (", selfPercent, 
-                    "%) \n of ", nodes$totalCost, " (", totalPercent, "%)", 
-                    sep="")
+    gNodes <- paste0(nodes$nodes, "\n", nodes$selfCost, " (", selfPercent, 
+                     "%) \n of ", nodes$totalCost, " (", totalPercent, "%)")
     p <- list(nodes = nodes$nodes, edges = edges$edges, 
               callCounts = edges$callCounts, gNodes = gNodes, 
               totalPercent = totalPercent, selfPercent = selfPercent)
@@ -689,7 +686,7 @@ colorScore <- function(score, colorMap) {
         # following formulas are totally empirical
         hue <- maxhue * (1.0 - score)
         sat <- minsat + (3.0 - minsat) * score
-        paste(hue, ",", sat, ",", bri, sep = "")
+        paste0(hue, ",", sat, ",", bri)
     }
 }
 
@@ -798,7 +795,7 @@ plotProfileCallGraph <- function(pd, layout = "dot",
     for (i in seq(along = edges))
         if(length(edges[[i]]$edges)>0)
             edgeNames[[i]] <- paste(labels[i], labels[edges[[i]]$edges],
-                                    sep="~")
+                                    sep = "~")
     edgeNames <- unlist(edgeNames)
     if (! is.null(p$edgeColors)) {
         p$edgeColors <- unlist(p$edgeColors)
@@ -826,7 +823,7 @@ plotProfileCallGraph <- function(pd, layout = "dot",
 
         if (edgeDetails) {
             spacing <- sapply(edgeCounts, function(x){rep("   ", length(x))})
-            edgeCounts <- paste(spacing, edgeCounts, sep="")
+            edgeCounts <- paste0(spacing, edgeCounts)
             names(edgeCounts) <- edgeNames
             graph::edgeRenderInfo(g) <- list(label = edgeCounts, fontsize = 8)
         }

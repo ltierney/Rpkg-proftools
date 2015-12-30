@@ -1393,24 +1393,23 @@ svgFlameGraph <- function(file, data, reorder, colormap, main,
     col <- fdg$col
     labels <- htmlencode(fdg$label)
     
-    svgCode = paste("<rect x=\"", x, "\" y=\"", y, 
+    svgCode = paste0("<rect x=\"", x, "\" y=\"", y, 
     "\" width=\"", widths, "\" height=\"15.0\" fill=\"", col, 
     "\" rx=\"2\" ry=\"2\" onmouseover=\"s('", labels, " (",
-    counts, " samples, ", percents, "%)')\" onmouseout=\"c()\" />", 
-    sep="")
+    counts, " samples, ", percents, "%)')\" onmouseout=\"c()\" />")
 
     show <- (! is.na(labels) & 10*nchar(labels)<widths)
     if (any(show))
-        svgCode = append(svgCode, paste("<text text-anchor=\"\" x=\"", 
+        svgCode = append(svgCode, paste0("<text text-anchor=\"\" x=\"", 
         x[show]+3, "\" y=\"", y[show]+10.5, "\" font-size=\"12\" font-family=\"Verdana\" fill=\"rgb(0,0,0)\" onmouseover=\"s('", 
         labels[show], " (", counts[show], " samples, ", percents[show], 
-        "%)')\" onmouseout=\"c()\" >", labels[show],"</text>", sep=""))
+        "%)')\" onmouseout=\"c()\" >", labels[show],"</text>"))
         
     writeFile(file, svgCode, mx, main, tooltip)
 }
 ## This writes the header of the svg file
 writeFile <- function(file, svgCode, mx, main, tooltip){
-    write(c(paste("<?xml version=\"1.0\" standalone=\"no\"?>
+    write(c(paste0("<?xml version=\"1.0\" standalone=\"no\"?>
     <!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">
     <svg version=\"1.1\" width=\"1200\" height=\"", 16*mx+66, "\" onload=\"init(evt)\"", if (tooltip) " onmousemove=\"mouseMove(evt)\" " else " ", "viewBox=\"0 0 1200 ", 16*mx+66, "\" xmlns=\"http://www.w3.org/2000/svg\" >
     <defs >
@@ -1505,7 +1504,7 @@ writeFile <- function(file, svgCode, mx, main, tooltip){
     <rect x=\"0.0\" y=\"0\" width=\"1200.0\" height=\"", 16*mx+66, "\" fill=\"url(#background)\"  />
     <text text-anchor=\"middle\" x=\"600\" y=\"24\" font-size=\"17\" font-family=\"Verdana\" font-weight=\"bold\" fill=\"rgb(0,0,0)\"  >", main, "</text>", if (tooltip) "" else paste0("
     <text text-anchor=\"left\" x=\"10\" y=\"", 16*mx+50, "\" font-size=\"12\" font-family=\"Verdana\" fill=\"rgb(0,0,0)\"  >Function:</text>
-    <text text-anchor=\"\" x=\"70\" y=\"", 16*mx+50, "\" font-size=\"12\" font-family=\"Verdana\" fill=\"rgb(0,0,0)\" id=\"details\" > </text>"), sep=""), svgCode, if (tooltip) "
+    <text text-anchor=\"\" x=\"70\" y=\"", 16*mx+50, "\" font-size=\"12\" font-family=\"Verdana\" fill=\"rgb(0,0,0)\" id=\"details\" > </text>")), svgCode, if (tooltip) "
     <rect x=\"10\" y=\"129\" width=\"1\" height=\"1.0\" fill=\"rgb(250,250,250)\" rx=\"2\" ry=\"2\" id=\"detailsBG\" />
     <text x=\"70\" y=\"162\" font-size=\"12\" font-family=\"Verdana\" fill=\"rgb(0,0,0)\" id=\"details\" > </text>" else "", "
     </svg>"), file = file)
