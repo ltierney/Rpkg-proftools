@@ -90,7 +90,7 @@ plotProfileCallGraph(pd, layout = "dot",
 \examples{
 pd <- readProfileData(system.file("samples", "glmEx.out", package="proftools"))
 plotProfileCallGraph(pd)
-plotProfileCallGraph(pd, score = "total")
+plotProfileCallGraph(pd, score = "none")
 plotProfileCallGraph(pd, style = plain.style, score = "total")
 }
 \keyword{programming}

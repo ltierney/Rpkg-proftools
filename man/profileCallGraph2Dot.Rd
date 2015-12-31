@@ -112,7 +112,7 @@ profileCallGraph2Dot(pd, filename = tmp.dot)
 system(sprintf("dot -Tpdf -o%s %s", tmp.pdf, tmp.dot))
 browseURL(sprintf("file://%s", tmp.pdf))
 
-profileCallGraph2Dot(pd, score = "total", filename = tmp.dot)
+profileCallGraph2Dot(pd, filename = tmp.dot)
 system(sprintf("dot -Tpdf -o%s %s", tmp.pdf, tmp.dot))
 browseURL(sprintf("file://%s", tmp.pdf))
 

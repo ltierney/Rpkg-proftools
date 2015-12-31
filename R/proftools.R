@@ -704,7 +704,7 @@ profileCallGraph2Dot <- function(pd, score = c("none", "total", "self"),
                                  maxnodes = NA, total.pct = 0) {
     pd <- cvtProfileData(pd, GC, maxnodes, total.pct)
 
-    if (missing(style)) style <- google.style
+    if (missing(style)) style <- default.style
 
     if (missing(layout)) layout <- style$layout
     if (missing(score)) score <- style$score
@@ -753,7 +753,7 @@ plotProfileCallGraph <- function(pd, layout = "dot",
                                  edgeSizeScore = c("none", "total"),
                                  shape = "ellipse", style, GC = TRUE,
                                  maxnodes = NA, total.pct = 0, ...) {
-    if (missing(style)) style <- google.style
+    if (missing(style)) style <- default.style
 
     if (missing(layout)) layout <- style$layout
     if (missing(score)) score <- style$score
@@ -864,3 +864,8 @@ google.style <- list(layout = "dot", score = "none",
                      nodeDetails = TRUE, edgeDetails = TRUE,
                      nodeSizeScore = "self", edgeSizeScore = "total",
                      shape = "box", maxnodes = NA, total.pct = 0)
+
+default.style <- google.style
+default.style$score <- "total"
+default.style$maxnodes <- 30
+default.style$total.pct <- 5
