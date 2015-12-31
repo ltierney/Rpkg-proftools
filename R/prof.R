@@ -405,6 +405,40 @@ timeSubsetPD <- function(pd, interval) {
     pd
 }
 
+mergeStacks <- function(pd, p){
+    trim <- function(x) {
+        n <- length(x)
+        if (n > 0) x[-n] else x
+    }
+    repeat {
+        lns <- sapply(pd$stacks, length)
+        low <- pd$counts < p * pd$total
+        if (sum(low) == 0 || max(lns[low]) <=1)
+            return(pd)
+        to <- ifelse(low & lns == max(lns[low]), lns - 1, lns)
+        pd <- prunePD(pd, to = to)
+    }
+}
+
+dropSourceFrames <- function(pd, addTOP = TRUE) {
+    if (length(pd$stacks) > 0 &&
+        all(sapply(pd$stacks, length) > 4) &&
+        pd$haveRefs &&
+        isTRUE(all(diff(refFN(sapply(pd$refs,`[`, 5))) == 0)) &&
+        all(sapply(pd$stacks, `[`, 1) == "source") &&
+        all(sapply(pd$stacks, `[`, 2) == "withVisible") &&
+        all(sapply(pd$stacks, `[`, 3) == "eval") &&
+        all(sapply(pd$stacks, `[`, 4) == "eval")) {
+        pd <- filterProfileData(pd, skip = 4)
+        if (addTOP) {
+            tref <- sprintf("%d#1", refFN(pd$refs[[1]][1]))
+            pd$refs <- lapply(pd$refs, function(x) c(tref, x))
+            pd$stacks <- lapply(pd$stacks, function(x) c("<TOP>", x))
+        }
+    }
+    pd
+}
+
 
 ###
 ### Hot path summaries
