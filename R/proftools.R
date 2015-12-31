@@ -704,21 +704,24 @@ profileCallGraph2Dot <- function(pd, score = c("none", "total", "self"),
                                  maxnodes = NA, total.pct = 0) {
     pd <- cvtProfileData(pd, GC, maxnodes, total.pct)
 
-    if (! missing(style)) {
-        if (missing(layout)) layout <- style$layout
-        if (missing(score)) score <- style$score
-        if (missing(transfer)) transfer <- style$transfer
-        if (missing(nodeColorMap)) nodeColorMap <- style$nodeColorMap
-        if (missing(edgeColorMap)) edgeColorMap <- style$edgeColorMap
-        if (missing(mergeCycles)) mergeCycles <- style$mergeCycles
-        if (missing(edgesColored)) edgesColored <- style$edgesColored
-        if (missing(rankDir)) rankDir <- style$rankDir
-        if (missing(nodeDetails)) nodeDetails <- style$nodeDetails
-        if (missing(edgeDetails)) edgeDetails <- style$edgeDetails
-        if (missing(nodeSizeScore)) nodeSizeScore <- style$nodeSizeScore
-        if (missing(edgeSizeScore)) edgeSizeScore <- style$edgeSizeScore
-        if (missing(shape)) shape <- style$shape
-    }
+    if (missing(style)) style <- google.style
+
+    if (missing(layout)) layout <- style$layout
+    if (missing(score)) score <- style$score
+    if (missing(transfer)) transfer <- style$transfer
+    if (missing(nodeColorMap)) nodeColorMap <- style$nodeColorMap
+    if (missing(edgeColorMap)) edgeColorMap <- style$edgeColorMap
+    if (missing(mergeCycles)) mergeCycles <- style$mergeCycles
+    if (missing(edgesColored)) edgesColored <- style$edgesColored
+    if (missing(rankDir)) rankDir <- style$rankDir
+    if (missing(nodeDetails)) nodeDetails <- style$nodeDetails
+    if (missing(edgeDetails)) edgeDetails <- style$edgeDetails
+    if (missing(nodeSizeScore)) nodeSizeScore <- style$nodeSizeScore
+    if (missing(edgeSizeScore)) edgeSizeScore <- style$edgeSizeScore
+    if (missing(shape)) shape <- style$shape
+    if (missing(maxnodes)) maxnodes <- style$maxnodes
+    if (missing(total.pct)) total.pct <- style$total.pct
+
     score <- match.arg(score)
     rankDir <- match.arg(rankDir)
     nodeSizeScore <- match.arg(nodeSizeScore)
@@ -765,6 +768,8 @@ plotProfileCallGraph <- function(pd, layout = "dot",
     if (missing(nodeSizeScore)) nodeSizeScore <- style$nodeSizeScore
     if (missing(edgeSizeScore)) edgeSizeScore <- style$edgeSizeScore
     if (missing(shape)) shape <- style$shape
+    if (missing(maxnodes)) maxnodes <- style$maxnodes
+    if (missing(total.pct)) total.pct <- style$total.pct
 
     score <- match.arg(score)
     rankDir <- match.arg(rankDir)
@@ -850,7 +855,7 @@ plain.style <- list(layout = "dot", score = "none",
                     edgesColored = FALSE, rankDir = "TB",
                     nodeDetails = FALSE, edgeDetails = FALSE,
                     nodeSizeScore = "none", edgeSizeScore = "none",
-                    shape = "ellipse")
+                    shape = "ellipse", maxnodes = NA, total.pct = 0)
 
 google.style <- list(layout = "dot", score = "none",
                      transfer = function(x) x, nodeColorMap = NULL,
@@ -858,4 +863,4 @@ google.style <- list(layout = "dot", score = "none",
                      edgesColored = FALSE, rankDir = "TB",
                      nodeDetails = TRUE, edgeDetails = TRUE,
                      nodeSizeScore = "self", edgeSizeScore = "total",
-                     shape = "box")
+                     shape = "box", maxnodes = NA, total.pct = 0)
