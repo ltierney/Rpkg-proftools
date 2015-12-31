@@ -868,4 +868,3 @@ google.style <- list(layout = "dot", score = "none",
 default.style <- google.style
 default.style$score <- "total"
 default.style$maxnodes <- 30
-default.style$total.pct <- 5
