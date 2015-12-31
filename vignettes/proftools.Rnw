@@ -99,8 +99,8 @@ visualizing, and filtering this data.
 \section{Collecting Profile Data}
 The \pkg{proftools} package includes an example script \code{bootlm.R}
 in the \code{samples} directory that runs several examples from the
-\pkg{boot} package \citep{CantyRipley:Boot} and fits a simple linear
-model. The file path can be obtained as
+\pkg{boot} package \citep{CantyRipley:Boot} and then fits a simple
+linear model. The file path can be obtained as
 <<>>=
 srcfile <- system.file("samples", "bootlmEx.R", package = "proftools")
 @  %%
@@ -135,7 +135,7 @@ form:
 head(funSummary(pd), 10)
 @ %%
 The result returned by \code{funSummary}, and most summary functions,
-is a data frame, so \code{head} can be used to focue on the top
+is a data frame, so \code{head} can be used to focus on the top
 entries. 
 
 By default, when source information is available results are
@@ -175,8 +175,8 @@ hotPaths(pd, total.pct = 10.0)
 @ %%
 Examining the result of \code{hotPaths} starting with high values of
 \code{total.pct} and then moving to lower values is a useful way to
-expore where the computational effort is concentrated.  An alternative
-to limiting the depth to which stack traces are followed is provided
+explore where the computational effort is concentrated.  An alternative
+for limiting the depth to which stack traces are followed is provided
 by the \code{maxdepth} argument.
 %% Other summary: \code{pathSummary}
 
@@ -212,7 +212,7 @@ hotPaths(glmPD, total.pct = 5.0)
 Call graphs annotated with profile information are a very popular way
 to view profiling results.  \code{plotProfileCallGraph} uses the
 \pkg{graph} \citep{Gentleman:graph} and \pkg{Rgraphviz}
-\cite{Gentry:Rgraphviz} packages from Bioconductor to render an
+\citep{Gentry:Rgraphviz} packages from Bioconductor to render an
 annotated call graph. The default style for the graph is based on the
 style used in \href{https://github.com/gperftools}{Google's profiling
   library} but can be customized in a number of ways.  A call graph
@@ -230,7 +230,7 @@ and is shown in Figure \ref{fullCallGraphFig}.
 \label{fullCallGraphFig}
 \end{figure}
 
-We can obtain a more readable graph by fitering. For example, to
+We can obtain a more readable graph by filtering. For example, to
 examine the \code{glm.fit} call and its callees we can use
 <<filteredCallGraphCmd, eval = FALSE>>=
 plotProfileCallGraph(filterProfileData(pd, focus = "glm.fit"))
