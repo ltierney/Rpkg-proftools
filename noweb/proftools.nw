@@ -1797,8 +1797,12 @@ writeCG <- function(con, pd, GC = TRUE) {
     writeGCEntry(con, data)
 }
 
-writeCallgrindFile <- function(pd, file = "Rprof.cg", GC = TRUE)
+writeCallgrindFile <- function(pd, file = "Rprof.cg", GC = TRUE,
+                               dropSource = TRUE) {
+    if (dropSource)
+        pd <- dropSourceFrames(pd)
     writeCG(file, pd, GC)
+}
 
 
 ###

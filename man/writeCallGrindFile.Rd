@@ -6,13 +6,15 @@
   \code{kcachegrind} or \code{qcachegrind}.
 }
 \usage{
-writeCallgrindFile(pd, file = "Rprof.cg", GC = TRUE)
+writeCallgrindFile(pd, file = "Rprof.cg", GC = TRUE, dropSource = TRUE)
 }
 \arguments{
   \item{pd}{profile data as returned by \code{readProfileData}.}
   \item{file}{ a connection or the name of the file where the callgrind
                output will be written. }
   \item{GC}{ logical; if true include GC information. }
+  \item{dropSource}{ logical; if true drop initial stack entried from a
+    \code{source} call and add a top level marker. }
 }
 \value{Used for side effect.}
 \details{
