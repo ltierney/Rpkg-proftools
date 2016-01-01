@@ -342,7 +342,25 @@ profile data in \href{valgrind.org}{Valgrind's} \code{callgrind}
 format for use with the
 \href{http://kcachegrind.sourceforge.net/html/Home.html}{\code{kcachegrind}}
 or \code{qcachegrind} graphical user interfaces available on Linux and
-Mac OS X.
+Mac OS X. Figure \ref{kcachegrindFig} shows the \code{kcachegrind}
+interface for the example profile date written out using
+\code{writeCallgrindFile}.
+\begin{figure}
+  \centering
+  \begin{knitrout}\small
+    \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
+    \includegraphics[width=\maxwidth]{kcachegrind}
+  \end{knitrout}
+  \caption{\code{kcachegrind} interface for examining profile profile
+    data for the example.}
+\label{kcachegrindFig}
+\end{figure}
+By default \code{writeCallgrindFile} for the common case where, as
+here, the profiled code is in a file run using \code{source} and
+source code information is retained. If this is the case,
+\code{writeCallgrindFile} removes calls associated with the
+\code{source} call and adds a \code{<TOP>} entry; this persuades
+\code{kcachegrind} to show the top level line information.
 
 Graphical user interfaces within R will be made available in the
 \href{https://github.com/ltierney/Rpkg-proftools-GUI}{\pkg{proftoolsGUI}}
