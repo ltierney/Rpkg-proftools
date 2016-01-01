@@ -148,6 +148,7 @@ filterProfileData <- function(pd, ..., normalize = FALSE, regex = FALSE)
                      select = subsetPD(pd, fargs[[i]], regex = regex),
                      omit = subsetPD(pd, omit = fargs[[i]], regex = regex),
                      interval = timeSubsetPD(pd, fargs[[i]]),
+                     merge.pct = mergeStacks(pd, fargs[[i]] / 100),
                      stop("unknown filter: ", fnames[i]))
     }
     if (normalize) 

@@ -615,9 +615,8 @@ timeSubsetPD <- function(pd, interval) {
 }
 @ %def timeSubsetPD
 
-This function does more or less what \code{hotPaths} trimming does for
-\code{total.pct = 100 p} but not as efficiently.  Might be useful to
-add to \code{filterProfileData}, maybe as a \code{merge.pct} filter:
+This function does more or less what [[hotPaths]] trimming does for
+[[total.pct = 100 p]] but not as efficiently.
 <<[[mergeStacks]] function>>=
 mergeStacks <- function(pd, p){
     trim <- function(x) {
@@ -712,6 +711,7 @@ filterProfileData <- function(pd, ..., normalize = FALSE, regex = FALSE)
                      select = subsetPD(pd, fargs[[i]], regex = regex),
                      omit = subsetPD(pd, omit = fargs[[i]], regex = regex),
                      interval = timeSubsetPD(pd, fargs[[i]]),
+                     merge.pct = mergeStacks(pd, fargs[[i]] / 100),
                      stop("unknown filter: ", fnames[i]))
     }
     if (normalize) 

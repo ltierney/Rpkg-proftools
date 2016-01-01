@@ -47,6 +47,9 @@ filterProfileData(pd, ..., normalize = FALSE, regex = FALSE)
       total percentages below this value are removed.}
     \item{\code{interval}}{inter vector of length 2 specifying first and last
       sample to use.}
+    \item{\code{merge.pct}}{numeric; functions at the top of the stacks
+      are removed and stack traces merged until each retained trace accounts
+      for at least this percentage of run time.}
   }
 }
 \author{ Luke Tierney }
