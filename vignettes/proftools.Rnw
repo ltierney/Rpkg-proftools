@@ -78,7 +78,7 @@
 <<echo=FALSE,results='hide'>>=
 library("proftools")
 options(keep.source = TRUE)
-knitr::opts_chunk$set(size = "small")
+knitr::opts_chunk$set(size = "small", fig.align = "center")
 @ %%
 Profiling is a program analysis method for determining where a program
 run spends most of its execution time, and can be very helpful in
@@ -217,19 +217,11 @@ default style for the graph is based on the style used in
 \href{https://github.com/gperftools}{Google's profiling library} but
 can be customized in a number of ways.  A call graph for the full
 profile data is produced by
-%% **** simplify using knitr chunk opitons
-<<fullCallGraphCmd, eval = FALSE>>=
+<<fullCallGraph, fig.cap = "Full call graph of profile data.">>=
 plotProfileCallGraph(pd)
-@ 
-and is shown in Figure \ref{fullCallGraphFig}.
-\begin{figure}
-  \centering
-<<echo=FALSE>>=
-<<fullCallGraphCmd>>
 @ %%
-\caption{Full call graph of \code{pd}.}
-\label{fullCallGraphFig}
-\end{figure}
+and is shown in Figure \ref{fig:fullCallGraph}.
+
 By default the call graph size is limited to at most 30 nodes; nodes
 with lower hit total counts are dropped. The \code{maxnodes} argument
 can be used to adjust this limit. Also by default color is used to
@@ -238,67 +230,39 @@ suppressed with the \code{score="none"} argument.
 
 We can obtain a more readable graph by filtering. For example, to
 examine the \code{glm.fit} call and its callees we can use
-%% **** simplify using knitr chunk opitons
-<<filteredCallGraphCmd, eval = FALSE>>=
+<<filteredCallGraph, fig.cap = "Call graph for \\code{glm.fit} call.">>=
 plotProfileCallGraph(filterProfileData(pd, focus = "glm.fit"))
-@ 
-\begin{figure}
-  \centering
-<<echo=FALSE>>=
-<<filteredCallGraphCmd>>
 @ %%
-\caption{Call graph for \code{glm.fit} call.}
-\label{filteredCallGraphFig}
-\end{figure}
-The result is shown in Figure \ref{filteredCallGraphFig}.
+The result is shown in Figure \ref{fig:filteredCallGraph}.
 
 A printed version of the call graph, similar to the call graph
 produced by \code{gprof} \citep{Graham:1982:GCG:800230.806987}, can be
 obtained with \code{printProfileCallGraph}.  For the subgraph of the
 \code{glm.fit} calls, for example,
-%% **** simplify using knitr chunk opitons
 <<printProfileCallGraph, eval=FALSE>>=
 printProfileCallGraph(filterProfileData(pd, focus = "glm.fit"))
 @ %%
-produces the printed representation shown in Figure \ref{printGraphFig}.
+produces the printed representation shown in Figure \ref{fig:printGraph}.
 \begin{figure}
   \tiny
 <<echo = FALSE, comment = NA>>=
 <<printProfileCallGraph>>
 @ %%
 \caption{Printed call graph.}
-\label{printGraphFig}
+\label{fig:printGraph}
 \end{figure}
 
 Another visualization sometimes used is a
 \href{http://www.brendangregg.com/flamegraphs.html}{flame graph}. A flame graph for the original data is produced by
-%% **** simplify using knitr chunk opitons
-<<flameGraphCmd, eval = FALSE>>=
+<<flameGraph, out.width = "4in", fig.cap = "Flame graph visualizing hot paths for the full profile data.">>=
 flameGraph(pd)
 @ %%
-\begin{figure}
-  \centering
-<<echo = FALSE, out.width = "4in">>=
-<<flameGraphCmd>>
-@ %%
-\caption{Flame graph visualizing hot paths for the full profile data.}
-\label{flameGraphFig}
-\end{figure}
-the result is shown in Figure \ref{flameGraphFig}.  A flame graph of
+The result is shown in Figure \ref{fig:flameGraph}.  A flame graph of
 the filtered data is produced by
-%% **** simplify using knitr chunk opitons
-<<filteredFlameGraphCmd, eval = FALSE>>=
+<<filteredFlameGraph, out.width = "4in", fig.cap = "Flame graph of the filtered profile data.">>=
 flameGraph(filteredPD)
 @ %%
-\begin{figure}
-  \centering
-<<echo=FALSE, out.width = "4in">>=
-<<filteredFlameGraphCmd>>
-@ %%
-\caption{Flame graph of the filtered profile data.}
-\label{filteredFlameGraphFig}
-\end{figure}
-and shown in Figure \ref{filteredFlameGraphFig}
+and shown in Figure \ref{fig:filteredFlameGraph}
 %% Furthermore, an svg file of the graph can be outputted by using the
 %% svg argument:
 %% <<eval=FALSE>>=
@@ -319,19 +283,10 @@ file.
 
 Specifying \code{order = "time"} shows the calls in the order in which
 they occurred:
-%% **** simplify using knitr chunk opitons
-<<timeGraphCmd, eval = FALSE>>=
+<<timeGraph, out.width = "4in", fig.cap = "Time graph of the full profile data.">>=
 flameGraph(pd, order = "time")
 @ %%
-\begin{figure}
-  \centering
-<<echo=FALSE, out.width = "4in">>=
-<<timeGraphCmd>>
-@ %%
-\caption{Time graph of the full profile data.}
-\label{timeGraphFig}
-\end{figure}
-Figure \ref{timeGraphFig} shows the \code{boot} calls preceding the
+Figure \ref{fig:timeGraph} shows the \code{boot} calls preceding the
 data generation for the \code{lm} call and the \code{lm} call itself.
 
 Default colors for flame graphs are based on the \code{rainbow}
@@ -350,19 +305,10 @@ identify(fg)
 
 A third visualization that is sometimes used is a callee tree map,
 produced by
-%% **** simplify using knitr chunk opitons
-<<calleeTreeCmd, eval = FALSE>>=
+<<calleeTreeMap, out.width = "4in", fig.cap = "Call tree map of the full profile data.">>=
 calleeTreeMap(pd)
 @ %%
-\begin{figure}
-  \centering
-<<echo=FALSE, out.width = "4in">>=
-<<calleeTreeCmd>>
-@ %%
-\caption{Call tree map of the full profile data.}
-\label{calleeTreeMapFig}
-\end{figure}
-and shown in Figure \ref{calleeTreeMapFig}.
+and shown in Figure \ref{fig:calleeTreeMap}.
 
 \section{Graphical User Interfaces}
 The function \code{writeCallgrindFile} can be used to write the
@@ -375,12 +321,9 @@ interface for the example profile date written out using
 \code{writeCallgrindFile}.
 \begin{figure}
   \centering
-  \begin{knitrout}\small
-    \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
-    \includegraphics[width=\maxwidth]{kcachegrind}
-  \end{knitrout}
-  \caption{\code{kcachegrind} interface for examining profile profile
-    data for the example.}
+  \includegraphics[width=\maxwidth]{kcachegrind}
+  \caption{\code{kcachegrind} interface for examining profile data for
+    the example.}
 \label{kcachegrindFig}
 \end{figure}
 By default \code{writeCallgrindFile} for the common case where, as
