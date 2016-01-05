@@ -223,10 +223,10 @@ plotProfileCallGraph(pd)
 and is shown in Figure \ref{fig:fullCallGraph}.
 
 By default the call graph size is limited to at most 30 nodes; nodes
-with lower hit total counts are dropped. The \code{maxnodes} argument
+with lower total hit counts are dropped. The \code{maxnodes} argument
 can be used to adjust this limit. Also by default color is used to
 encode the total hit score for the function nodes. This can be
-suppressed with the \code{score="none"} argument.
+suppressed with the \code{score = "none"} argument.
 
 We can obtain a more readable graph by filtering. For example, to
 examine the \code{glm.fit} call and its callees we can use
@@ -277,9 +277,7 @@ of call rectangles at a particular level within a call at the lower
 level. The default order is \code{"hot"}; it uses the hot path
 ordering with the call with the largest amount of time first.  This
 produces a visual representation of the hot path summary.  The
-\code{"alpha"} ordering orders the calls alphabetically.  The ‘"time"’
-ordering preserves the original time ordering within the stack trace
-file.
+\code{"alpha"} ordering orders the calls alphabetically.
 
 Specifying \code{order = "time"} shows the calls in the order in which
 they occurred:
@@ -303,12 +301,21 @@ fg <- flameGraph(pd)
 identify(fg)
 @ 
 
-A third visualization that is sometimes used is a callee tree map,
-produced by
+A third visualization that is sometimes used is a callee tree map.
+This is produced  by
 <<calleeTreeMap, out.width = "4in", fig.cap = "Call tree map of the full profile data.">>=
 calleeTreeMap(pd)
 @ %%
-and shown in Figure \ref{fig:calleeTreeMap}.
+and shown in Figure \ref{fig:calleeTreeMap}.  A callee tree map shows
+a tree map \citep{ShneidermanTreemaps} of the calls in the call
+tree. The tiling algorithm used depends on the \code{squarify}
+argument.  If \code{squarify} is \code{TRUE} then the
+\emph{squarified} algorithm \citep{BrulsVanWijk:sqarified} is used;
+otherwise, the longer side is partitioned. Again a method for
+\code{identify} is provided \code{calleeTreeMap} objects. Clicking on
+rectangles in the plot returns a list of the call stacks for the
+identified rectangles.
+
 
 \section{Graphical User Interfaces}
 The function \code{writeCallgrindFile} can be used to write the

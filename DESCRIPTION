@@ -1,6 +1,6 @@
 Package: proftools
 Title: Profile Output Processing Tools for R
-Version: 0.9-0
+Version: 0.99-0
 Author: Luke Tierney and Riad Jarjour
 Description: Tools for examining Rprof profile output.
 Maintainer: Luke Tierney <luke-tierney@uiowa.edu>
