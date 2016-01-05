@@ -20,4 +20,8 @@ S3method(print, proftools_hotPaths)
 S3method(identify, proftools_flameGraph)
 S3method(identify, proftools_calleeTreeMap)
 
-
+importFrom("grDevices", "heat.colors", "hsv", "rainbow", "rgb")
+importFrom("graphics", "locator", "plot", "rect", "strheight",
+           "strwidth", "text")
+importFrom("stats", "aggregate", "runif")
+importFrom("utils", "Rprof", "capture.output", "head")
