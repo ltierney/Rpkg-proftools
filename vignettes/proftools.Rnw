@@ -92,9 +92,8 @@ collected profiling data is written to a file, by default the file
 \code{Rprof.out} in the current working directory.  The function
 \code{summaryRprof}, available in the \pkg{base} package in
 \proglang{R}, provides a simple interface for examining this data. The
-\href{https://github.com/ltierney/Rpkg-proftools}{\pkg{proftools}}
-package provides a much more extensive set of tools for summarizing,
-visualizing, and filtering this data.
+\pkg{proftools} package provides a much more extensive set of tools
+for summarizing, visualizing, and filtering this data.
 
 \section{Collecting Profile Data}
 The \pkg{proftools} package includes an example script \code{bootlm.R}
@@ -118,7 +117,7 @@ Rprof(NULL)
 pd <- readProfileData(profout)
 unlink(profout)
 @ %%
-The \pkg{proftools} package provides the alternative
+The \pkg{proftools} package provides the simpler alternative
 <<cache = TRUE>>=
 pd <- profileExpr(source(srcfile))
 @ %%
@@ -209,14 +208,16 @@ hotPaths(glmPD, total.pct = 5.0)
 
 
 \section{Visualizing Profile Data}
-Call graphs annotated with profile information are a very popular way
-to view profiling results.  \code{plotProfileCallGraph} uses the
-\pkg{graph} \citep{Gentleman:graph} and \pkg{Rgraphviz}
-\citep{Gentry:Rgraphviz} packages from Bioconductor to render an
-annotated call graph. The default style for the graph is based on the
-style used in \href{https://github.com/gperftools}{Google's profiling
-  library} but can be customized in a number of ways.  A call graph
-for the full profile data is produced by
+\href{https://en.wikipedia.org/wiki/Call_graph}{Call graphs} annotated
+with profile information are a very popular way to view profiling
+results.  \code{plotProfileCallGraph} uses the \pkg{graph}
+\citep{Gentleman:graph} and \pkg{Rgraphviz} \citep{Gentry:Rgraphviz}
+packages from Bioconductor to render an annotated call graph. The
+default style for the graph is based on the style used in
+\href{https://github.com/gperftools}{Google's profiling library} but
+can be customized in a number of ways.  A call graph for the full
+profile data is produced by
+%% **** simplify using knitr chunk opitons
 <<fullCallGraphCmd, eval = FALSE>>=
 plotProfileCallGraph(pd)
 @ 
@@ -237,6 +238,7 @@ suppressed with the \code{score="none"} argument.
 
 We can obtain a more readable graph by filtering. For example, to
 examine the \code{glm.fit} call and its callees we can use
+%% **** simplify using knitr chunk opitons
 <<filteredCallGraphCmd, eval = FALSE>>=
 plotProfileCallGraph(filterProfileData(pd, focus = "glm.fit"))
 @ 
@@ -254,6 +256,7 @@ A printed version of the call graph, similar to the call graph
 produced by \code{gprof} \citep{Graham:1982:GCG:800230.806987}, can be
 obtained with \code{printProfileCallGraph}.  For the subgraph of the
 \code{glm.fit} calls, for example,
+%% **** simplify using knitr chunk opitons
 <<printProfileCallGraph, eval=FALSE>>=
 printProfileCallGraph(filterProfileData(pd, focus = "glm.fit"))
 @ %%
@@ -268,10 +271,8 @@ produces the printed representation shown in Figure \ref{printGraphFig}.
 \end{figure}
 
 Another visualization sometimes used is a
-\href{http://www.brendangregg.com/flamegraphs.html}{flame graph}.  By
-default the \code{flameGraph} function orders functions within call
-levels by execution time, which produces a visual representation of
-the hot path summary;
+\href{http://www.brendangregg.com/flamegraphs.html}{flame graph}. A flame graph for the original data is produced by
+%% **** simplify using knitr chunk opitons
 <<flameGraphCmd, eval = FALSE>>=
 flameGraph(pd)
 @ %%
@@ -285,6 +286,7 @@ flameGraph(pd)
 \end{figure}
 the result is shown in Figure \ref{flameGraphFig}.  A flame graph of
 the filtered data is produced by
+%% **** simplify using knitr chunk opitons
 <<filteredFlameGraphCmd, eval = FALSE>>=
 flameGraph(filteredPD)
 @ %%
@@ -303,8 +305,21 @@ and shown in Figure \ref{filteredFlameGraphFig}
 %% flameGraph(pd, svg = "graph.svg", order = "hot")
 %% @ 
 
+The vertical positions of rectangles in these flame graphs represent
+call depth on the stack. The widths of the rectangles represent the
+amount of time spent in a call at a particular call or set of calls at
+a particular depth. The \code{order} argument determines the ordering
+of call rectangles at a particular level within a call at the lower
+level. The default order is \code{"hot"}; it uses the hot path
+ordering with the call with the largest amount of time first.  This
+produces a visual representation of the hot path summary.  The
+\code{"alpha"} ordering orders the calls alphabetically.  The ‘"time"’
+ordering preserves the original time ordering within the stack trace
+file.
+
 Specifying \code{order = "time"} shows the calls in the order in which
 they occurred:
+%% **** simplify using knitr chunk opitons
 <<timeGraphCmd, eval = FALSE>>=
 flameGraph(pd, order = "time")
 @ %%
@@ -319,10 +334,23 @@ flameGraph(pd, order = "time")
 Figure \ref{timeGraphFig} shows the \code{boot} calls preceding the
 data generation for the \code{lm} call and the \code{lm} call itself.
 
-Flame graphs can also order functions within a level alphabetically.
+Default colors for flame graphs are based on the \code{rainbow}
+palette. Alternative colors can be specified by providing a
+\code{colormap} function. If space permits, the call labels are
+printed within the rectangles representing the calls. A method for the
+\code{identify} function is available that can be used to identify the
+individual calls when they are not visible. An option to this method
+is to request that all instance of the identified calls be outlined on
+the plot. The \code{identify} method uses the value returned by
+\code{flameGraph}; thus it would be used as
+<<eval = FALSE>>=
+fg <- flameGraph(pd)
+identify(fg)
+@ 
 
 A third visualization that is sometimes used is a callee tree map,
 produced by
+%% **** simplify using knitr chunk opitons
 <<calleeTreeCmd, eval = FALSE>>=
 calleeTreeMap(pd)
 @ %%
