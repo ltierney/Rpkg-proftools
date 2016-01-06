@@ -1,6 +1,6 @@
 \name{annotateSource}
 \alias{annotateSource}
-\title{ Annotate Soruce Files }
+\title{ Annotate Source Files }
 \description{
   Annotates source files with profile information.
 }
