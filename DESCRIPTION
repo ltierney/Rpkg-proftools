@@ -4,7 +4,7 @@ Version: 0.99-1
 Author: Luke Tierney and Riad Jarjour
 Description: Tools for examining Rprof profile output.
 Maintainer: Luke Tierney <luke-tierney@uiowa.edu>
-Suggests: graph,Rgraphviz,boot
+Suggests: graph,Rgraphviz,boot,knitr
+VignetteBuilder: knitr
 License: GPL
 ByteCompile: yes
-Packaged: 2013-10-03 15:32:31 UTC; luke
