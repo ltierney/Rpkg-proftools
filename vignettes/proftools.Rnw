@@ -182,7 +182,7 @@ by the \code{maxdepth} argument.
 \section{Filtering Profile Data}
 The hot path summary shows information associated with the source
 command itself that is not directly relevant to our analysis. The
-\code{filterProfileData} function can be uses to select or omit
+\code{filterProfileData} function can be used to select or omit
 certain functions, drop functions with small self or total times,
 narrow to a particular time interval, among others.  For example, by
 selecting only stack traces that include calls to \code{withVisible}
@@ -293,7 +293,7 @@ palette. Alternative colors can be specified by providing a
 printed within the rectangles representing the calls. A method for the
 \code{identify} function is available that can be used to identify the
 individual calls when they are not visible. An option to this method
-is to request that all instance of the identified calls be outlined on
+is to request that all instances of the identified calls be outlined on
 the plot. The \code{identify} method uses the value returned by
 \code{flameGraph}; thus it would be used as
 <<eval = FALSE>>=
@@ -312,8 +312,8 @@ tree. The tiling algorithm used depends on the \code{squarify}
 argument.  If \code{squarify} is \code{TRUE} then the
 \emph{squarified} algorithm \citep{BrulsVanWijk:sqarified} is used;
 otherwise, the longer side is partitioned. Again a method for
-\code{identify} is provided \code{calleeTreeMap} objects. Clicking on
-rectangles in the plot returns a list of the call stacks for the
+\code{identify} is provided for \code{calleeTreeMap} objects. Clicking
+on rectangles in the plot returns a list of the call stacks for the
 identified rectangles.
 
 
@@ -324,7 +324,7 @@ format for use with the
 \href{http://kcachegrind.sourceforge.net/html/Home.html}{\code{kcachegrind}}
 or \code{qcachegrind} graphical user interfaces available on Linux and
 Mac OS X. Figure \ref{kcachegrindFig} shows the \code{kcachegrind}
-interface for the example profile date written out using
+interface for the example profile data written out using
 \code{writeCallgrindFile}.
 \begin{figure}
   \centering
@@ -333,7 +333,7 @@ interface for the example profile date written out using
     the example.}
 \label{kcachegrindFig}
 \end{figure}
-By default \code{writeCallgrindFile} for the common case where, as
+By default \code{writeCallgrindFile} assumes the common case where, as
 here, the profiled code is in a file run using \code{source} and
 source code information is retained. If this is the case,
 \code{writeCallgrindFile} removes calls associated with the
