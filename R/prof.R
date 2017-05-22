@@ -15,10 +15,8 @@ readPDheader <- function(con) {
     haveGC <- grepl("GC profiling:", header)
     haveRefs <- grepl("line profiling:", header)
 
-    if (haveMem)
-        stop("memory profiling is currently not supported")
-
-    list(interval = interval, haveGC = haveGC, haveRefs = haveRefs)
+    list(interval = interval,
+         haveGC = haveGC, haveRefs = haveRefs, haveMem  = haveMem)
 }
 
 readProfileData <- function(filename = "Rprof.out")
@@ -33,10 +31,21 @@ readPDlines <- function(con, hdr) {
     }
     else files <- NULL
 
+    if (hdr$haveMem) {
+        memstuff <- sub(":([0-9]+:[0-9]+:[0-9]+:[0-9]+):.*", "\\1", stacks)
+        memnums <- sapply(strsplit(memstuff, ":"), as.numeric)
+        mem <- as.vector(t(memnums) %*%  c(8, 8, 1, 0)) / 1048576
+        stacks <- substr(stacks, nchar(memstuff) + 3, nchar(stacks))
+    }
+    else mem <- NULL
+
     ## remove any lines with only a <GC> entry
     onlyGC <- grepl("^\"<GC>\" $", stacks)
-    if (any(onlyGC))
+    if (any(onlyGC)) {
         stacks <- stacks[! onlyGC]
+        if (! is.null(mem))
+            mem <- mem[! onlyGC]
+    }
 
     ## record and strip out GC info
     inGC <- grepl("<GC>", stacks)
@@ -45,7 +54,7 @@ readPDlines <- function(con, hdr) {
     ustacks <- unique(stacks)
     trace <- match(stacks, ustacks)
 
-    list(files = files, stacks = ustacks, trace = trace, inGC = inGC)
+    list(files = files, stacks = ustacks, trace = trace, inGC = inGC, mem = mem)
 }
 
 splitStacks <- function(data) {
