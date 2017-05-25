@@ -163,7 +163,7 @@ countStacks <- function(trace, inGC, mem) {
     if (is.null(mem))
         alloc <- rep(NA_real_, length(counts))
     else
-        alloc <- tapply(c(0, pmax(diff(mem), 0)), trace, sum)
+        alloc <- as.numeric(tapply(c(0, pmax(diff(mem), 0)), trace, sum))
     list(counts = counts, gccounts = gccounts, total = total, alloc = alloc)
 }
 @ %def
@@ -856,6 +856,9 @@ hotPathData <- function(pd) {
     stacks <- pl[ord]
     counts <- pd$counts[ord]
     gccounts <- pd$gccounts[ord]
+    alloc <- pd$alloc[ord]
+    if (is.null(alloc)) ## an old pd maybe?
+        alloc <- rep(NA_real_, length(counts))
 
     pathData <- function(k) {
         s <- stacks[[k]]
@@ -863,12 +866,13 @@ hotPathData <- function(pd) {
                        function(i) paste(s[1 : i], collapse = " -> "))
         data.frame(key = keys,
                    count = counts[k],
-                   gccount = gccounts[k])
+                   gccount = gccounts[k],
+		   alloc = alloc[k])
     }
     tbl <- do.call(rbind, lapply(1:length(stacks), pathData))
 
     ## **** turn off stringsAsFactore in aggregate?
-    data <- aggregate(list(count = tbl$count, gccount = tbl$gccount),
+    data <- aggregate(list(count = tbl$count, gccount = tbl$gccount, alloc = tbl$alloc),
                       list(key = tbl$key),
                       sum)
     data$key <- as.character(data$key)
@@ -876,6 +880,7 @@ hotPathData <- function(pd) {
     selfidx <- match(data$key, sapply(stacks, paste, collapse = " -> "))
     data$self <- ifelse(is.na(selfidx), 0, counts[selfidx])
     data$gcself <- ifelse(is.na(selfidx), 0, gccounts[selfidx])
+    data$allocself <- ifelse(is.na(selfidx), 0, alloc[selfidx])
     data
 }
 @ %def hotPathsData
