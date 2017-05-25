@@ -15,7 +15,8 @@ callSummary(pd, byTotal = TRUE, value = c("pct", "time", "hits"),
 pathSummary(pd, value = c("pct", "time", "hits"),
             srclines = FALSE, GC = TRUE, total.pct = 0, ...)
 srcSummary(pd, byTotal = TRUE, value = c("pct", "time", "hits"),
-           GC = TRUE, total.pct = 0, source = TRUE, width = getOption("width"))
+           GC = TRUE, memory = FALSE, total.pct = 0, source = TRUE,
+           width = getOption("width"))
 }
 \arguments{
   \item{pd}{profile data as returned by \code{readProfileData}.}

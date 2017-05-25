@@ -1546,7 +1546,7 @@ trimOrPad <- function(str, width) {
 
 srcSummary <- function(pd, byTotal = TRUE,
                        value = c("pct", "time", "hits"),
-                       GC = TRUE, total.pct = 0,
+                       GC = TRUE, memory = FALSE, total.pct = 0,
                        source = TRUE, width = getOption("width")) {
     if (! pd$haveRefs)
         stop("profile data does not contain source information")
@@ -1591,6 +1591,10 @@ srcSummary <- function(pd, byTotal = TRUE,
         colnames(val) <- paste(colnames(val), "hits", sep = ".")
         val <- as.data.frame(val)
     }
+
+    if (memory && pd$haveMem)
+       val$alloc <- rc$alloc
+
     if (source) {
         pad <- 5 ## allow for padding print.data.frame might insert
         width <- width - max(nchar(capture.output(print(val)))) - pad
