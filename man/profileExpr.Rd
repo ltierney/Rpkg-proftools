@@ -5,12 +5,13 @@
   Return profile data collected while evaluating an expression.
 }
 \usage{
-profileExpr(expr, GC = TRUE, srclines = TRUE)
+profileExpr(expr, GC = TRUE, srclines = TRUE, memory = TRUE)
 }
 \arguments{
   \item{expr}{Valid \R expression to be profiled.}
   \item{srclines}{logical; include source information, if available, or not.}
   \item{GC}{logical; include GC information or not.}
+  \item{memory}{logical; include memory use information or not.}
 }
 \value{
   R representation of Rprof data.
@@ -18,8 +19,9 @@ profileExpr(expr, GC = TRUE, srclines = TRUE)
 \details{
    \code{profileExpr} uses \code{\link{Rprof}} to profile execution of
    \code{expr} and returns the profile data read in using
-   \code{\link{readProfileData}}.  By default GC and soruce information
-   are included in the profile data.
+   \code{\link{readProfileData}}.  By default GC and source information
+   are included in the profile data. If memory profiling is supported,
+   memory use information is also included by default.
 }
 \author{ Luke Tierney }
 

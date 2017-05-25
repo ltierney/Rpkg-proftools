@@ -1381,10 +1381,13 @@ siteCounts <- function(pd)
 ### Collecting profile data
 ###
 
-profileExpr <- function(expr, GC = TRUE, srclines = TRUE) {
+profileExpr <- function(expr, GC = TRUE, srclines = TRUE, memory = TRUE) {
+    if (! isTRUE(as.logical(capabilities("profmem"))))
+        memory = FALSE
     tmp <- tempfile()
     on.exit(unlink(tmp))
-    Rprof(tmp, gc.profiling = GC, line.profiling = TRUE)
+    Rprof(tmp, gc.profiling = GC, line.profiling = srclines,
+          memory.profiling = memory)
     expr
     Rprof(NULL)
     pd <- readProfileData(tmp)
