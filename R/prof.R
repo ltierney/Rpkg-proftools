@@ -86,10 +86,15 @@ splitStacks <- function(data) {
     data
 }
 
-countStacks <- function(trace, inGC) {
+countStacks <- function(trace, inGC, mem) {
     counts <- as.numeric(table(trace))
     gccounts <- as.numeric(tapply(inGC, trace, sum))
-    list(counts = counts, gccounts = gccounts, total = sum(counts))
+    total <- sum(counts)
+    if (is.null(mem))
+        alloc <- rep(NA_real_, length(counts))
+    else
+        alloc <- tapply(c(0, pmax(diff(mem), 0)), trace, sum)
+    list(counts = counts, gccounts = gccounts, total = total, alloc = alloc)
 }
 
 readPD <- function(file) {
@@ -99,7 +104,7 @@ readPD <- function(file) {
     hdr <- readPDheader(con)
     data <- readPDlines(con, hdr)
     sdata <- splitStacks(data)
-    counts <- countStacks(sdata$trace, sdata$inGC)
+    counts <- countStacks(sdata$trace, sdata$inGC, sdata$mem)
     structure(c(hdr, sdata, counts), class =  "proftools_profData")
 }
 
@@ -194,6 +199,7 @@ subsetPD <- function(pd, select, omit, regex = TRUE) {
     pd$refs <- pd$refs[keep]
     pd$counts <- pd$counts[keep]
     pd$gccounts <- pd$gccounts[keep]
+    pd$alloc <- pd$alloc[keep]
 
     traceKeep <- which(pd$trace %in% keep)
     pd$inGC <- pd$inGC[traceKeep]
@@ -634,6 +640,7 @@ mergeCounts <- function(data, leafdata) {
     val <- merge(data, leafdata, all = TRUE)
     val$self[is.na(val$self)] <- 0
     val$gcself[is.na(val$gcself)] <- 0
+    val$allocself[is.na(val$allocself)] <- 0
     val
 }
 
@@ -642,6 +649,9 @@ entryCounts0 <- function(pd, fun, control, names) {
     refs <- pd$refs
     counts <- pd$counts
     gccounts <- pd$gccounts
+    alloc <- pd$alloc
+    if (is.null(alloc)) ## an old pd maybe?
+        alloc <- rep(NA_real_, length(counts))
 
     which <- seq_along(stacks)
     
@@ -652,14 +662,17 @@ entryCounts0 <- function(pd, fun, control, names) {
     reps <- unlist(lapply(entries, nrow))
     tot <- rep(counts, reps)
     gctot <- rep(gccounts, reps)
-    ct <- cbind(tot, gctot, deparse.level = 0)
+    altot <- rep(alloc, reps)
+    ct <- cbind(tot, gctot, altot, deparse.level = 0)
     colnames(ct) <- names
     aggregateCounts(edf, ct)
 }
-    
+
 entryCounts <- function(pd, lineFun, leafFun, control) {
-    aedf <- entryCounts0(pd, lineFun, control, c("total", "gctotal"))
-    aledf <- entryCounts0(pd, leafFun, control, c("self", "gcself"))
+    aedf <- entryCounts0(pd, lineFun, control,
+                         c("total", "gctotal", "alloc"))
+    aledf <- entryCounts0(pd, leafFun, control,
+                          c("self", "gcself", "allocself"))
     mergeCounts(aedf, aledf)
 }
 
@@ -737,7 +750,7 @@ leafRef <- function(line, refs, useSite)
 
 refCounts <- function(pd) {
     val <- entryCounts(pd, lineRefs, leafRef, TRUE)
-    val$fun <- val$self <- val$gcself <- NULL
+    val$fun <- val$self <- val$gcself <- val$allocself <- NULL
     val[! is.na(val$refs), ]
 }
 
@@ -1268,7 +1281,7 @@ getCGdata <- function(pd, GC) {
 
 getCGselfData <- function(pd) {
     fc <- funCounts(pd, FALSE)
-    fc$total <- fc$gctotal <- NULL
+    fc <- fc[, c("fun", "site", "self", "gcself")]
     f <- sapply(pd$stacks, function(x) x[length(x)])
     r <- sapply(pd$refs, function(x) x[length(x)])
     fs <- aggregateCounts(data.frame(fun = f, site = r),
