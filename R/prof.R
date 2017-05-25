@@ -759,42 +759,46 @@ refCounts <- function(pd) {
     val[! is.na(val$refs), ]
 }
 
-funSummaryPct <- function(fc, label, gc, grandTotal) {
-    pct <- percent(fc$total, grandTotal)
-    spct <- percent(fc$self, grandTotal)
+funSummaryPct <- function(fc, label, gc, memory, grandTotal) {
+    total <- data.frame(total.pct = percent(fc$total, grandTotal))
+    self <- data.frame(self.pct = percent(fc$self, grandTotal))
     if (gc) {
-        gcpct <- percent(fc$gctotal, grandTotal)
-        sgcpct <- percent(fc$gcself, grandTotal)
-        data.frame(total.pct = pct, gc.pct = gcpct,
-                   self.pct = spct, gcself.pct = sgcpct,
-                   row.names = label)
+        total$gc.pct = percent(fc$gctotal, grandTotal)
+        self$gcself.pct = percent(fc$gcself, grandTotal)
     }
-    else
-        data.frame(total.pct = pct, self.pct = spct, row.names = label)
+    if (memory) {
+        total$alloc <- fc$alloc
+        self$allocself <- fc$allocself
+    }
+    data.frame(total, self, row.names = label)
 }
 
-funSummaryTime <- function(fc, label, gc, delta) {
-    tm <- fc$total * delta
-    stm <- fc$self * delta
+funSummaryTime <- function(fc, label, gc, memory, delta) {
+    total <- data.frame(total.time = fc$total * delta)
+    self <- data.frame(self.time = fc$self * delta)
     if (gc) {
-        gctm <- fc$gctotal * delta
-        sgctm <- fc$gcself * delta
-        data.frame(total.time = tm, gc.time = gctm,
-                   self.time = stm, gcself.time = sgctm,
-                   row.names = label)
+        total$gc.time <- fc$gctotal * delta
+        self$gcself.time <- fc$gcself * delta
     }
-    else
-        data.frame(total.time = tm, self.time = stm, row.names = label)
+    if (memory) {
+        total$alloc <- fc$alloc
+        self$allocself <- fc$allocself
+    }
+    data.frame(total, self, row.names = label)
 }
 
-funSummaryHits <- function(fc, label, gc) {
-    if (gc)
-        data.frame(total.hits = fc$total, gc.hits = fc$gctotal,
-                   self.hits = fc$self, gcself.hits = fc$gcself,
-                       row.names = label)
-    else
-        data.frame(total.hits = fc$total, self.hits = fc$self,
-                   row.names = label)
+funSummaryHits <- function(fc, label, gc, memory) {
+    total <- data.frame(total.hits = fc$total)
+    self <- data.frame(self.hits = fc$self)
+    if (gc) {
+        total$gc.hits <- fc$gctotal
+        self$gcself.hits <- fc$gcself
+    }
+    if (memory) {
+        total$alloc <- fc$alloc
+        self$allocself <- fc$allocself
+    }
+    data.frame(total, self, row.names = label)
 }
 
 ## Extract the file indices and line numbers from source references of
@@ -818,9 +822,11 @@ funLabels <- function(fun, site, files) {
 
 funSummary <- function(pd, byTotal = TRUE,
                        value = c("pct", "time", "hits"),
-                       srclines = TRUE,
-                       GC = TRUE, self.pct = 0, total.pct = 0) {
+                       srclines = TRUE, GC = TRUE, memory = FALSE,
+                       self.pct = 0, total.pct = 0) {
     value <- match.arg(value)
+    GC <- GC && pd$haveGC
+    memory <- memory && pd$haveMem
 
     fc <- funCounts(pd, srclines)
     if (byTotal)
@@ -836,18 +842,20 @@ funSummary <- function(pd, byTotal = TRUE,
     label <- funLabels(fc$fun, fc$site, pd$files)
 
     if (value == "pct")
-        funSummaryPct(fc, label, GC && pd$haveGC, pd$total)
+        funSummaryPct(fc, label, GC, memory, pd$total)
     else if (value == "time")
-        funSummaryTime(fc, label, GC && pd$haveGC, pd$interval / 1.0e6)
+        funSummaryTime(fc, label, GC, memory, pd$interval / 1.0e6)
     else
-        funSummaryHits(fc, label, GC && pd$haveGC)
+        funSummaryHits(fc, label, GC, memory)
 }
 
 callSummary <- function(pd, byTotal = TRUE,
                         value = c("pct", "time", "hits"),
-                        srclines = TRUE,
-                        GC = TRUE, self.pct = 0, total.pct = 0) {
+                        srclines = TRUE, GC = TRUE, memory = FALSE,
+                        self.pct = 0, total.pct = 0) {
     value <- match.arg(value)
+    GC <- GC && pd$haveGC
+    memory <- memory && pd$haveMem
 
     cc <- callCounts(pd, srclines, srclines)
     if (byTotal)
@@ -865,11 +873,11 @@ callSummary <- function(pd, byTotal = TRUE,
     label <- paste(caller.label, callee.label, sep = " -> ")
 
     if (value == "pct")
-        funSummaryPct(cc, label, GC && pd$haveGC, pd$total)
+        funSummaryPct(cc, label, GC, memory, pd$total)
     else if (value == "time")
-        funSummaryTime(cc, label, GC && pd$haveGC, pd$interval / 1.0e6)
+        funSummaryTime(cc, label, GC, memory, pd$interval / 1.0e6)
     else
-        funSummaryHits(cc, label, GC && pd$haveGC)
+        funSummaryHits(cc, label, GC, memory)
 }
 
 
