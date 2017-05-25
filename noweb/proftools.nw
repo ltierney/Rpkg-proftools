@@ -1857,7 +1857,7 @@ siteCounts <- function(pd)
 profileExpr <- function(expr, GC = TRUE, srclines = TRUE) {
     tmp <- tempfile()
     on.exit(unlink(tmp))
-    Rprof(tmp, gc.profiling = GC, line.profiling = TRUE)
+    Rprof(tmp, gc.profiling = GC, line.profiling = srclines)
     expr
     Rprof(NULL)
     pd <- readProfileData(tmp)
