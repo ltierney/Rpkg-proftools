@@ -1942,46 +1942,39 @@ printPaths <- function(pd, n, ...) {
     invisible(NULL)
 }
 
-pathSummaryPct <- function(apd, gc, tot) {
-    counts <- apd$counts
-    gccounts <- apd$gccounts
-    paths <- apd$paths
-
-    pct <- percent(counts, tot)
-    if (gc) {
-        gcpct <- percent(gccounts, tot)
-        data.frame(total.pct = pct, gc.pct = gcpct, row.names = paths)
-    }
-    else
-        data.frame(total.pct = pct, row.names = paths)
+pathSummaryPct <- function(apd, gc, memory, tot) {
+    total <- data.frame(total.pct = percent(apd$counts, tot))
+    if (gc)
+        total$gc.pct <- percent(apd$gccounts, tot)
+    if (memory)
+        total$alloc <- apd$alloc
+    data.frame(total, row.names = apd$paths)
 }
                            
-pathSummaryTime <- function(apd, gc, delta) {
-    counts <- apd$counts
-    gccounts <- apd$gccounts
-    paths <- apd$paths
-    tm <- counts * delta
-    if (gc) {
-        gctm <- gccounts * delta
-        data.frame(total.time = tm, gc.time = gctm, row.names = paths)
-    }
-    else
-        data.frame(total.time = tm, row.names = paths)
+pathSummaryTime <- function(apd, gc, memory, delta) {
+    total <- data.frame(total.time = apd$counts * delta)
+    if (gc)
+        total$gc.time <- apd$gccounts * delta
+    if (memory)
+        total$alloc <- apd$alloc
+    data.frame(total, row.names = apd$paths)
 }
 
-pathSummaryHits <- function(apd, gc) {
-    hits <- apd$counts
-    gchits <- apd$gccounts
-    paths <- apd$paths
+pathSummaryHits <- function(apd, gc, memory) {
+    total <- data.frame(total.hits = apd$counts)
     if (gc)
-        data.frame(total.hits = hits, gc.hits = gchits, row.names = paths)
-    else
-        data.frame(total.hits = hits, row.names = paths)
+        total$gc.hits = apd$gccounts
+    if (memory)
+        total$alloc <- apd$alloc
+    data.frame(total, row.names = apd$paths)
 }
 
 pathSummary <- function(pd, value = c("pct", "time", "hits"),
-                        srclines = FALSE, GC = TRUE, total.pct = 0, ...) {
+                        srclines = FALSE, GC = TRUE, memory = FALSE,
+			total.pct = 0, ...) {
     value <- match.arg(value)
+    GC <- GC && pd$haveGC
+    memory <- memory && pd$haveMem
 
     if (srclines && pd$haveRefs) {
         files <- pd$files ## shorter: as.character(seq_along(pd$files)
@@ -1997,18 +1990,20 @@ pathSummary <- function(pd, value = c("pct", "time", "hits"),
     ## need to aggregate in case some collapsed paths are identical
     ## or some paths differ only in source references.
     apd <- aggregateCounts(list(paths = paths),
-                           cbind(counts = pd$counts, gccounts = pd$gccounts))
+                           cbind(counts = pd$counts,
+			         gccounts = pd$gccounts,
+				 alloc = pd$alloc))
     apd <- apd[rev(order(apd$counts)),]
 
     if (total.pct > 0)
         apd <- apd[apd$counts >= pd$total * (total.pct / 100),]
 
     if (value == "pct")
-        pathSummaryPct(apd, GC && pd$haveGC, pd$total)
+        pathSummaryPct(apd, GC, memory, pd$total)
     else if (value == "time")
-        pathSummaryTime(apd, GC && pd$haveGC, pd$interval / 1.0e6)
+        pathSummaryTime(apd, GC, memory, pd$interval / 1.0e6)
     else
-        pathSummaryHits(apd, GC && pd$haveGC)
+        pathSummaryHits(apd, GC, memory)
 }
 
 trimOrPad <- function(str, width) {

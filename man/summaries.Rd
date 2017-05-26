@@ -13,7 +13,7 @@ funSummary(pd, byTotal = TRUE, value = c("pct", "time", "hits"),
 callSummary(pd, byTotal = TRUE, value = c("pct", "time", "hits"),
             srclines = TRUE, GC = TRUE, memory = FALSE, self.pct = 0, total.pct = 0)
 pathSummary(pd, value = c("pct", "time", "hits"),
-            srclines = FALSE, GC = TRUE, total.pct = 0, ...)
+            srclines = FALSE, GC = TRUE, memory = FALSE, total.pct = 0, ...)
 srcSummary(pd, byTotal = TRUE, value = c("pct", "time", "hits"),
            GC = TRUE, memory = FALSE, total.pct = 0, source = TRUE,
            width = getOption("width"))
