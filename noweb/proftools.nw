@@ -775,12 +775,14 @@ percent, time, or hits.  The defaults used here seem to work
 reasonably well but could probably use more tuning.
 <<[[hotPaths]] function>>=
 hotPaths <- function(pd, value = c("pct", "time", "hits"),
-                     self = TRUE, srclines = TRUE, GC = FALSE,
+                     self = TRUE, srclines = TRUE, GC = FALSE, memory = FALSE,
                      maxdepth = 10, self.pct = 0, total.pct = 0,
                      short = ". ", nlines = NA) {
     value <- match.arg(value)
     if (! is.na(maxdepth))
         pd <- prunePD(pd, maxdepth)
+    GC <- GC && pd$haveGC
+    memory <- memory && pd$haveMem
 
     if (! srclines && pd$haveRefs) pd <- stripRefs(pd)
 
@@ -799,11 +801,11 @@ hotPaths <- function(pd, value = c("pct", "time", "hits"),
     data$pa <- pathAbbrev(data$key, short)
 
     if (value == "pct")
-        hotPathsPct(data, self, GC && pd$haveGC, pd$total)
+        hotPathsPct(data, self, GC, memory, pd$total)
     else if (value == "time")
-        hotPathsTime(data, self, GC && pd$haveGC, pd$interval / 1.0e6)
+        hotPathsTime(data, self, GC, memory, pd$interval / 1.0e6)
     else
-        hotPathsHits(data, self, GC && pd$haveGC)
+        hotPathsHits(data, self, GC, memory)
 }
 @ %def hotPaths
 If source references are not needed they are first removed using
@@ -934,43 +936,49 @@ Final results are constructed by [[hotPathsPct]], [[hotPathsHits]], or
 [[hotPathsTime]]. The result is a data frame, but with a subclass to
 allow a custom print method to be used.
 <<[[hotPathsPct]], [[hotPathsHits]], and [[hotPathsTime]] functions>>=
-hotPathsPct <- function(data, self, gc, grandTotal) {
+hotPathsPct <- function(data, self, gc, memory, grandTotal) {
     pa <- data$pa
     val <- data.frame(path = sprintf(sprintf("%%-%ds", max(nchar(pa))), pa),
                       total.pct = percent(data$count, grandTotal),
                       stringsAsFactors = FALSE)
     if (gc) val$gc.pct = percent(data$gccount, grandTotal)
+    if (memory) val$alloc <- data$alloc
     if (self) {
         val$self.pct = percent(data$self, grandTotal)
         if (gc) val$gcself.pct = percent(data$gcself, grandTotal)
+        if (memory) val$allocself <- data$allocself
     }
     class(val) <- c("proftools_hotPaths", "data.frame")
     val
 }
 
-hotPathsHits <- function(data, self, gc) {
+hotPathsHits <- function(data, self, gc, memory) {
     pa <- data$pa
     val <- data.frame(path = sprintf(sprintf("%%-%ds", max(nchar(pa))), pa),
                       total.hits = data$count,
                       stringsAsFactors = FALSE)
     if (gc) val$gc.hits = data$gccount
+    if (memory) val$alloc <- data$alloc
     if (self) {
         val$self.hits = data$self
         if (gc) val$gcself.hits = data$gcself
+        if (memory) val$allocself <- data$allocself
     }
     class(val) <- c("proftools_hotPaths", "data.frame")
     val
 }
 
-hotPathsTime <- function(data, self, gc, delta) {
+hotPathsTime <- function(data, self, gc, memory, delta) {
     pa <- data$pa
     val <- data.frame(path = sprintf(sprintf("%%-%ds", max(nchar(pa))), pa),
                       total.time = data$count * delta,
                       stringsAsFactors = FALSE)
     if (gc) val$gc.time = data$gccount * delta
+    if (memory) val$alloc <- data$alloc
     if (self) {
         val$self.time = data$self * delta
         if (gc) val$gcself.time = data$gcself * delta
+        if (memory) val$allocself <- data$allocself
     }
     class(val) <- c("proftools_hotPaths", "data.frame")
     val

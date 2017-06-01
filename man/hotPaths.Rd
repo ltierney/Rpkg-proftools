@@ -6,7 +6,7 @@
 }
 \usage{
 hotPaths(pd, value = c("pct", "time", "hits"), self = TRUE,
-         srclines = TRUE, GC = FALSE, maxdepth = 10,
+         srclines = TRUE, GC = FALSE, memory = FALSE, maxdepth = 10,
          self.pct = 0, total.pct = 0, short = ". ", nlines = NA)
 }
 \arguments{
@@ -15,6 +15,7 @@ hotPaths(pd, value = c("pct", "time", "hits"), self = TRUE,
   \item{self}{logical; include self time for each stack in the result.}
   \item{srclines}{logical; include source information, if available, or not.}
   \item{GC}{logical; include GC information or not.}
+  \item{memory}{logical; include memory use information or not.}
   \item{maxdepth}{integer; stacks are truncated to have at most
                   \code{maxdepth} elements.}
   \item{self.pct}{numeric; stacks with self percent values below this
