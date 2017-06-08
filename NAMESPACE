@@ -17,6 +17,8 @@ export(profileDataCycles)
 S3method(plot, proftools_profData)
 S3method(print, proftools_profData)
 S3method(print, proftools_hotPaths)
+S3method(print, proftools_funSummary)
+S3method(print, proftools_callSummary)
 S3method(identify, proftools_flameGraph)
 S3method(identify, proftools_calleeTreeMap)
 

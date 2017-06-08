@@ -214,7 +214,7 @@ subsetPD <- function(pd, select, omit, regex = TRUE) {
 focusPD <- function(pd, which, self.pct = 0, total.pct = 0, regex = TRUE) {
     if (self.pct > 0 || total.pct > 0) {
         fs <- funSummary(pd, srclines = FALSE)
-        funs <- rownames(fs)
+        funs <- fs$fun
         if (self.pct > 0)
             pd <- focusPD(pd, funs[fs$self.pct >= self.pct], regex = FALSE)
         if (total.pct > 0) {
@@ -767,7 +767,7 @@ refCounts <- function(pd) {
     val[! is.na(val$refs), ]
 }
 
-funSummaryPct <- function(fc, label, gc, memory, grandTotal) {
+funSummaryPct <- function(fc, locs, gc, memory, grandTotal, call = FALSE) {
     total <- data.frame(total.pct = percent(fc$total, grandTotal))
     self <- data.frame(self.pct = percent(fc$self, grandTotal))
     if (gc) {
@@ -778,10 +778,12 @@ funSummaryPct <- function(fc, label, gc, memory, grandTotal) {
         total$alloc <- fc$alloc
         self$allocself <- fc$allocself
     }
-    data.frame(total, self, row.names = label)
+    cls <- if (call) "proftools_callSummary" else "proftools_funSummary"
+    structure(data.frame(locs, total, self, stringsAsFactors = FALSE),
+              class = c(cls, "data.frame"))
 }
 
-funSummaryTime <- function(fc, label, gc, memory, delta) {
+funSummaryTime <- function(fc, locs, gc, memory, delta, call = FALSE) {
     total <- data.frame(total.time = fc$total * delta)
     self <- data.frame(self.time = fc$self * delta)
     if (gc) {
@@ -792,10 +794,12 @@ funSummaryTime <- function(fc, label, gc, memory, delta) {
         total$alloc <- fc$alloc
         self$allocself <- fc$allocself
     }
-    data.frame(total, self, row.names = label)
+    cls <- if (call) "proftools_callSummary" else "proftools_funSummary"
+    structure(data.frame(locs, total, self, stringsAsFactors = FALSE),
+              class = c(cls, "data.frame"))
 }
 
-funSummaryHits <- function(fc, label, gc, memory) {
+funSummaryHits <- function(fc, locs, gc, memory, call = FALSE) {
     total <- data.frame(total.hits = fc$total)
     self <- data.frame(self.hits = fc$self)
     if (gc) {
@@ -806,7 +810,56 @@ funSummaryHits <- function(fc, label, gc, memory) {
         total$alloc <- fc$alloc
         self$allocself <- fc$allocself
     }
-    data.frame(total, self, row.names = label)
+    cls <- if (call) "proftools_callSummary" else "proftools_funSummary"
+    structure(data.frame(locs, total, self, stringsAsFactors = FALSE),
+              class = c(cls, "data.frame"))
+}
+
+print.proftools_funSummary <- function(x, ...) {
+    file <- x$file
+    line <- x$line
+    x$file <- x$line <- NULL
+    v <- format(x, digits = 2, justify = "left")
+    if (! is.null(file) && any(! is.na(file))) {
+        fun <- x$fun
+        funsite <- sprintf("%s (%s:%d)", fun, file, line)
+        v$fun <- ifelse(is.na(file), fun, funsite)
+        names(v)[1] <- "fun (file:line)"
+    }
+    v <- as.matrix(v)
+    rownames(v) <- rep("", nrow(v))
+    print(v, quote = FALSE)
+}
+
+print.proftools_callSummary <- function(x, ...) {
+    fun1 <- x$caller
+    fun2 <- x$callee
+    file1 <- x$caller.file
+    line1 <- x$caller.line
+    file2 <- x$callee.file
+    line2 <- x$callee.line
+    x$caller <- NULL
+    x$caller.file <- x$caller.line <- NULL
+    x$callee.file <- x$callee.line <- NULL
+    v <- format(x, digits = 2, justify = "left")
+    if ((! is.null(file1) && any(! is.na(file1))) ||
+        (! is.null(file2) && any(! is.na(file2)))) {
+        funsite1 <- sprintf("%s (%s:%d)", fun1, file1, line1)
+        funsite1 <- ifelse(is.na(file1), fun1, funsite1)
+        funsite2 <- sprintf("%s (%s:%d)", fun2, file2, line2)
+        funsite2 <- ifelse(is.na(file2), fun2, funsite2)
+        call <- "caller (file:line) -> callee (file:line)"
+    }
+    else {
+        funsite1 <- fun1
+        funsite2 <- fun2
+        call <- "caller -> callee"
+    }
+    v[[1]] <- paste(funsite1, "->", funsite2)
+    names(v)[1] <- call
+    v <- as.matrix(v)
+    rownames(v) <- rep("", nrow(v))
+    print(v, quote = FALSE)
 }
 
 ## Extract the file indices and line numbers from source references of
@@ -825,6 +878,27 @@ funLabels <- function(fun, site, files) {
         line <- refLN(site)
         funsite <- sprintf("%s (%s:%d)", fun, file, line)
         ifelse(is.na(site), fun, funsite)
+    }
+}
+funLocs <- function(fun, site, files) {
+    if (all(is.na(site)))
+        data.frame(fun, stringsAsFactors = FALSE)
+    else {
+        file <- basename(files[refFN(site)])
+        line <- refLN(site)
+        data.frame(fun, file, line, stringsAsFactors = FALSE)
+    }
+}
+callLocs <- function(caller, caller.site, callee, callee.site, files) {
+    if (is.null(files))
+        data.frame(caller, callee, stringsAsFactors = FALSE)
+    else {
+        caller.file <- basename(files[refFN(caller.site)])
+        caller.line <- refLN(caller.site)
+        callee.file <- basename(files[refFN(callee.site)])
+        callee.line <- refLN(callee.site)
+        data.frame(caller, caller.file, caller.line,
+                   callee, callee.file, callee.line, stringsAsFactors = FALSE)
     }
 }
 
@@ -847,14 +921,14 @@ funSummary <- function(pd, byTotal = TRUE,
     if (total.pct > 0)
         fc <- fc[fc$total >= pd$total * (total.pct / 100),]
 
-    label <- funLabels(fc$fun, fc$site, pd$files)
+    locs <- funLocs(fc$fun, fc$site, pd$files)
 
     if (value == "pct")
-        funSummaryPct(fc, label, GC, memory, pd$total)
+        funSummaryPct(fc, locs, GC, memory, pd$total)
     else if (value == "time")
-        funSummaryTime(fc, label, GC, memory, pd$interval / 1.0e6)
+        funSummaryTime(fc, locs, GC, memory, pd$interval / 1.0e6)
     else
-        funSummaryHits(fc, label, GC, memory)
+        funSummaryHits(fc, locs, GC, memory)
 }
 
 callSummary <- function(pd, byTotal = TRUE,
@@ -876,16 +950,15 @@ callSummary <- function(pd, byTotal = TRUE,
     if (total.pct > 0)
         cc <- cc[cc$total >= pd$total * (total.pct / 100),]
 
-    caller.label <- funLabels(cc$caller, cc$caller.site, pd$files)
-    callee.label <- funLabels(cc$callee, cc$callee.site, pd$files)
-    label <- paste(caller.label, callee.label, sep = " -> ")
+    locs <- callLocs(cc$caller, cc$caller.site, cc$callee, cc$callee.site,
+                     pd$files)
 
     if (value == "pct")
-        funSummaryPct(cc, label, GC, memory, pd$total)
+        funSummaryPct(cc, locs, GC, memory, pd$total, TRUE)
     else if (value == "time")
-        funSummaryTime(cc, label, GC, memory, pd$interval / 1.0e6)
+        funSummaryTime(cc, locs, GC, memory, pd$interval / 1.0e6, TRUE)
     else
-        funSummaryHits(cc, label, GC, memory)
+        funSummaryHits(cc, locs, GC, memory, TRUE)
 }
 
 
