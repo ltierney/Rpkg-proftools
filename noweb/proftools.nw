@@ -1208,6 +1208,8 @@ print.proftools_callSummary <- function(x, ...) {
 @ %def print.proftools_callSummary
 
 
+\end{document}
+
 \section{Implementation File}
 <<prof.R>>=
 ###
@@ -1752,5 +1754,4 @@ showAnnotation <- function(ann, width = getOption("width"), ...) {
     }
 }
 @ %def
-\end{document}
 
