@@ -625,7 +625,7 @@ timeSubsetPD <- function(pd, interval) {
     pd$trace <- match(seq_along(pd$stacks), sidx)[pd$trace]
     pd$stacks <- pd$stacks[sidx]
     pd$refs <- pd$refs[sidx]
-    cs <- countStacks(pd$trace,pd$inGC)
+    cs <- countStacks(pd$trace,pd$inGC,pd$mem)
     pd$counts <- cs$counts
     pd$gccounts <- cs$gccounts
     pd
