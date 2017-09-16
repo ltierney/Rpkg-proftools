@@ -418,6 +418,7 @@ timeSubsetPD <- function(pd, interval) {
     cs <- countStacks(pd$trace,pd$inGC,pd$mem)
     pd$counts <- cs$counts
     pd$gccounts <- cs$gccounts
+    pd$alloc<-cs$alloc
     pd
 }
 
