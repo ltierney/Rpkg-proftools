@@ -1156,13 +1156,13 @@ funSummaryHits <- function(fc, locs, gc, memory, call = FALSE) {
 }
 @ %def funSummaryPct funSummaryTime funSummaryHits
 
-A print method for function summaries:
-<<[[print.proftools_funSummary]] function>>=
-print.proftools_funSummary <- function(x, ...) {
+Format and print methods for function summaries:
+<<[[format.proftools_funSummary]] function>>=
+format.proftools_funSummary <- function (x, ...) {
     file <- x$file
     line <- x$line
     x$file <- x$line <- NULL
-    v <- format(x, digits = 2, justify = "left")
+    v <- format(as.data.frame(x), digits = 2, justify = "left")
     if (! is.null(file) && any(! is.na(file))) {
         fun <- x$fun
         funsite <- sprintf("%s (%s:%d)", fun, file, line)
@@ -1171,12 +1171,16 @@ print.proftools_funSummary <- function(x, ...) {
     }
     v <- as.matrix(v)
     rownames(v) <- rep("", nrow(v))
-    print(v, quote = FALSE)
+    v
 }
+@ %def format.proftools_funSummary
+<<[[print.proftools_funSummary]] function>>=
+print.proftools_funSummary <- function(x, ...)
+    print(format(x), quote = FALSE)
 @ %def print.proftools_funSummary
 
-<<[[print.proftools_callSummary]] function>>=
-print.proftools_callSummary <- function(x, ...) {
+<<[[format.proftools_callSummary]] function>>=
+format.proftools_callSummary <- function(x, ...) {
     fun1 <- x$caller
     fun2 <- x$callee
     file1 <- x$caller.file
@@ -1186,7 +1190,7 @@ print.proftools_callSummary <- function(x, ...) {
     x$caller <- NULL
     x$caller.file <- x$caller.line <- NULL
     x$callee.file <- x$callee.line <- NULL
-    v <- format(x, digits = 2, justify = "left")
+    v <- format(as.data.frame(x), digits = 2, justify = "left")
     if ((! is.null(file1) && any(! is.na(file1))) ||
         (! is.null(file2) && any(! is.na(file2)))) {
         funsite1 <- sprintf("%s (%s:%d)", fun1, file1, line1)
@@ -1204,7 +1208,13 @@ print.proftools_callSummary <- function(x, ...) {
     names(v)[1] <- call
     v <- as.matrix(v)
     rownames(v) <- rep("", nrow(v))
-    print(v, quote = FALSE)
+    v
+}
+@ %def format.proftools_callSummary
+
+<<[[print.proftools_callSummary]] function>>=
+print.proftools_callSummary <- function(x, ...) {
+    print(format(x), quote = FALSE)
 }
 @ %def print.proftools_callSummary
 
@@ -1440,7 +1450,11 @@ refCounts <- function(pd) {
 
 <<[[funSummaryPct]], [[funSummaryTime]], and [[funSummaryHits]] functions>>
 
+<<[[format.proftools_funSummary]] function>>
+
 <<[[print.proftools_funSummary]] function>>
+
+<<[[format.proftools_callSummary]] function>>
 
 <<[[print.proftools_callSummary]] function>>
 

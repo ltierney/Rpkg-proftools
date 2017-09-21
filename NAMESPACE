@@ -15,6 +15,8 @@ export(profileExpr)
 export(profileDataCycles)
 
 S3method(plot, proftools_profData)
+S3method(format, proftools_funSummary)
+S3method(format, proftools_callSummary)
 S3method(print, proftools_profData)
 S3method(print, proftools_hotPaths)
 S3method(print, proftools_funSummary)

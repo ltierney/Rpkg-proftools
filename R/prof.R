@@ -816,11 +816,11 @@ funSummaryHits <- function(fc, locs, gc, memory, call = FALSE) {
               class = c(cls, "data.frame"))
 }
 
-print.proftools_funSummary <- function(x, ...) {
+format.proftools_funSummary <- function (x, ...) {
     file <- x$file
     line <- x$line
     x$file <- x$line <- NULL
-    v <- format(x, digits = 2, justify = "left")
+    v <- format(as.data.frame(x), digits = 2, justify = "left")
     if (! is.null(file) && any(! is.na(file))) {
         fun <- x$fun
         funsite <- sprintf("%s (%s:%d)", fun, file, line)
@@ -829,10 +829,13 @@ print.proftools_funSummary <- function(x, ...) {
     }
     v <- as.matrix(v)
     rownames(v) <- rep("", nrow(v))
-    print(v, quote = FALSE)
+    v
 }
 
-print.proftools_callSummary <- function(x, ...) {
+print.proftools_funSummary <- function(x, ...)
+    print(format(x), quote = FALSE)
+
+format.proftools_callSummary <- function(x, ...) {
     fun1 <- x$caller
     fun2 <- x$callee
     file1 <- x$caller.file
@@ -842,7 +845,7 @@ print.proftools_callSummary <- function(x, ...) {
     x$caller <- NULL
     x$caller.file <- x$caller.line <- NULL
     x$callee.file <- x$callee.line <- NULL
-    v <- format(x, digits = 2, justify = "left")
+    v <- format(as.data.frame(x), digits = 2, justify = "left")
     if ((! is.null(file1) && any(! is.na(file1))) ||
         (! is.null(file2) && any(! is.na(file2)))) {
         funsite1 <- sprintf("%s (%s:%d)", fun1, file1, line1)
@@ -860,7 +863,11 @@ print.proftools_callSummary <- function(x, ...) {
     names(v)[1] <- call
     v <- as.matrix(v)
     rownames(v) <- rep("", nrow(v))
-    print(v, quote = FALSE)
+    v
+}
+
+print.proftools_callSummary <- function(x, ...) {
+    print(format(x), quote = FALSE)
 }
 
 ## Extract the file indices and line numbers from source references of
