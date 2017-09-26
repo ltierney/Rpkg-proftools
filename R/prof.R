@@ -827,13 +827,11 @@ format.proftools_funSummary <- function (x, ...) {
         v$fun <- ifelse(is.na(file), fun, funsite)
         names(v)[1] <- "fun (file:line)"
     }
-    v <- as.matrix(v)
-    rownames(v) <- rep("", nrow(v))
     v
 }
 
 print.proftools_funSummary <- function(x, ...)
-    print(format(x), quote = FALSE)
+    print(format(x), quote = FALSE, row.names = FALSE)
 
 format.proftools_callSummary <- function(x, ...) {
     fun1 <- x$caller
@@ -861,13 +859,11 @@ format.proftools_callSummary <- function(x, ...) {
     }
     v[[1]] <- paste(funsite1, "->", funsite2)
     names(v)[1] <- call
-    v <- as.matrix(v)
-    rownames(v) <- rep("", nrow(v))
     v
 }
 
 print.proftools_callSummary <- function(x, ...) {
-    print(format(x), quote = FALSE)
+    print(format(x), quote = FALSE, row.names = FALSE)
 }
 
 ## Extract the file indices and line numbers from source references of
