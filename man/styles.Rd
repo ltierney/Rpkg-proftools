@@ -49,7 +49,7 @@ google.style
   The \code{google.style} style is based on the display style used in the
   \code{pprof} tool from the Google Performance Tools suite.
 }
-\references{ \url{http://google-perftools.googlecode.com/svn/trunk/doc/cpuprofile.html}.}
+\references{ \url{https://gperftools.github.io/gperftools/cpuprofile.html}.}
 \author{ Luke Tierney }
 
 \seealso{
