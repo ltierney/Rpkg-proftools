@@ -1734,11 +1734,16 @@ annotateSource <- function(pd, value = c("pct", "time", "hits"),
                 s <- sprintf(" %5d  ", r$total)
         ann <- lapply(seq_along(pd$files),
                       function(fn) {
-                          flines <- readLines(pd$files[fn])
-                          b <- rep(paste0(rep(" ", nchar(s[1])), collapse = ""),
-                                   length(flines))
-                          b[line[file == fn]] <- s[file == fn]
-                          paste(b, flines, sep = sep)
+		          file <- pd$files[fn]
+			  if (file.exists(file)) {
+			      flines <- readLines(file)
+                              b <- rep(paste0(rep(" ", nchar(s[1])),
+			                      collapse = ""),
+                                       length(flines))
+                              b[line[file == fn]] <- s[file == fn]
+                              paste(b, flines, sep = sep)
+			  }
+			  else "<not available>"
                       })
         names(ann) <- pd$files
         if (show) {
