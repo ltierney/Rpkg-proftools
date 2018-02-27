@@ -260,8 +260,8 @@ compactPD <- function(pd) {
 checkStackRefs <- function(val, nf) {
     s <- val$stack
     r <- val$refs
-    if (length(s) == 0)
-        stop("stacks must have at least one entry")
+    #if (length(s) == 0)
+    #    stop("stacks must have at least one entry")
     if (length(r) != length(s) + 1)
         stop("stack and source references do not match")
     fn <- refFN(r)
