@@ -1236,7 +1236,7 @@ annotateSource <- function(pd, value = c("pct", "time", "hits"),
                       function(fn) {
                           fname <- pd$files[fn]
                           if (file.exists(fname)) {
-                              flines <- readLines(file)
+                              flines <- readLines(fname)
                               b <- rep(paste0(rep(" ", nchar(s[1])),
                                               collapse = ""),
                                        length(flines))
