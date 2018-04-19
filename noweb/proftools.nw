@@ -1734,8 +1734,8 @@ annotateSource <- function(pd, value = c("pct", "time", "hits"),
                 s <- sprintf(" %5d  ", r$total)
         ann <- lapply(seq_along(pd$files),
                       function(fn) {
-		          file <- pd$files[fn]
-			  if (file.exists(file)) {
+		          fname <- pd$files[fn]
+			  if (file.exists(fname)) {
 			      flines <- readLines(file)
                               b <- rep(paste0(rep(" ", nchar(s[1])),
 			                      collapse = ""),
