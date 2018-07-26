@@ -1369,18 +1369,17 @@ entryCounts <- function(pd, lineFun, leafFun, control) {
 }
 
 lineFuns <- function(line, refs, useSite) {
-    if (useSite) {
-        n <- length(line)
+    n <- length(line)
+    if (useSite)
         site <- refs[-(n + 1)]
-    }
-    else site <- NA_character_
+    else site <- rep(NA_character_, n)
     unique(cbind(fun = line, site))
 }
 
 leafFun <- function(line, refs, useSite) {
     n <- length(line)
     fun <- line[n]
-    site <- if (useSite) refs[n] else NA_character_
+    site <- if (useSite) refs[n] else rep(NA_character_, n)
     cbind(fun, site)
 }
 
