@@ -74,12 +74,13 @@
 %% include your article here, just as usual
 %% Note that you should use the \pkg{}, \proglang{} and <<>>=} commands.
 
-\section{Introduction}
 <<echo=FALSE,results='hide'>>=
 library("proftools")
 options(keep.source = TRUE)
 knitr::opts_chunk$set(size = "small", fig.align = "center")
 @ %%
+
+\section{Introduction}
 Profiling is a program analysis method for determining where a program
 run spends most of its execution time, and can be very helpful in
 guiding programmer effort for improving program performance.
@@ -91,7 +92,9 @@ about time spent in the garbage collector can also be collected. The
 collected profiling data is written to a file, by default the file
 \code{Rprof.out} in the current working directory.  The function
 \code{summaryRprof}, available in the \pkg{base} package in
-\proglang{R}, provides a simple interface for examining this data. The
+\proglang{R}, provides a simple interface for examining this data.
+The \pkg{profvis} package \citep{Chang:profvis} provides a
+visualization and another representation of the data. The
 \pkg{proftools} package provides a much more extensive set of tools
 for summarizing, visualizing, and filtering this data.
 
@@ -125,10 +128,11 @@ By default \code{profileExpr} enables GC and source information to be
 collected. It also trims off stack information leading up to the
 \code{profileExpr} call.
 
-\textbf{RStudio} provides a \textbf{Profile} menu for collecting
-profile data. The data are stored in a cache directory. The function
-\code{readRStudioProfileCacheData} returns the data for the most
-recent profile run in the cache, or \code{NULL} if none is available.
+\textbf{RStudio} \citep{RStudio} provides a \textbf{Profile} menu for
+collecting profile data. The data are stored in a cache directory. The
+function \code{readRStudioProfileCacheData} returns the data for the
+most recent profile run in the cache, or \code{NULL} if none is
+available.
 
 
 \section{Summary Functions}
@@ -284,7 +288,6 @@ level. The default order is \code{"hot"}; it uses the hot path
 ordering with the call with the largest amount of time first.  This
 produces a visual representation of the hot path summary.  The
 \code{"alpha"} ordering orders the calls alphabetically.
-
 Specifying \code{order = "time"} shows the calls in the order in which
 they occurred:
 <<timeGraph, out.width = "4in", fig.cap = "Time graph of the full profile data.">>=
@@ -350,7 +353,14 @@ Graphical user interfaces within R will be made available in the
 \href{https://github.com/ltierney/Rpkg-proftools-GUI}{\pkg{proftoolsGUI}}
 package. The current development version provides two interfaces, one
 based on \pkg{gWidgets2} \citep{Verzani:gWidgets2} and one on
-\pkg{shiny} \citep{Chang:shiny}.
-
+\pkg{shiny} \citep{Chang:shiny}. Figure \ref{shinyGUIFig} shows the shiny
+interface at the time of writing.
+\begin{figure}
+  \centering
+  \includegraphics[width=\maxwidth]{shinyGUI}
+  \caption{\code{proftoolsGUI} \code{shiny} interface for examining profile
+           data for the example.}
+\label{shinyGUIFig}
+\end{figure}
 \bibliography{proftools}
 \end{document}
