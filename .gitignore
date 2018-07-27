@@ -14,3 +14,8 @@ vignettes/Rprof.cg
 vignettes/Rprof.out
 vignettes/jss.bst
 vignettes/jsslogo.jpg
+noweb/proftools.aux
+noweb/proftools.log
+noweb/proftools.out
+noweb/proftools.pdf
+noweb/proftools.tex
