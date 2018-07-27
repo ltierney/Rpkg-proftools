@@ -125,6 +125,12 @@ By default \code{profileExpr} enables GC and source information to be
 collected. It also trims off stack information leading up to the
 \code{profileExpr} call.
 
+\textbf{RStudio} provides a \textbf{Profile} menu for collecting
+profile data. The data are stored in a cache directory. The function
+\code{readRStudioProfileCacheData} returns the data for the most
+recent profile run in the cache, or \code{NULL} if none is available.
+
+
 \section{Summary Functions}
 The most basic summary function is \code{funSummary} for summarizing
 profile results at the function level. It produces information similar

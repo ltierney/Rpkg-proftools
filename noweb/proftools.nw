@@ -188,6 +188,25 @@ readProfileData <- function(filename = "Rprof.out")
     readPD(filename)
 @ %def readProfileData
 
+Profile data produced via RStudio's \textbf{Profile} menu are, at the
+time of writing, stored in a cache directory specified by
+<<RStudio profile directory>>=
+options("profvis.prof_output")$profvis.prof_output
+@ %def
+The function [[readRStudioProfileCacheData]] returns the profile data for the
+most recent RStudio profiling run available, or NULL if none is available.
+<<[[readRStudioProfileCacheData]] function>>=
+readRStudioProfileCacheData <- function() {
+    profDir <- <<RStudio profile directory>>
+    if (is.null(profDir)) return(NULL)
+    stackFiles <- list.files(profDir, pattern = "*.Rprof", full.names = TRUE)
+    if (length(stackFiles) == 0) return(NULL)
+    details <- file.info(stackFiles)
+    newest <- stackFiles[order(details$mtime, decreasing = TRUE)[1]]
+    readProfileData(newest)
+}
+@ %def readRStudioProfileCacheData
+
 
 \section{Operations on Profile Data}
 Raw profile data may contain references to function calls that take
@@ -1228,6 +1247,8 @@ print.proftools_callSummary <- function(x, ...) {
 <<[[readPDheader]] function>>
 
 <<[[readProfileData]] function>>
+
+<<[[readRStudioProfileCacheData]] function>>
 
 <<[[readPDlines]] function>>
 

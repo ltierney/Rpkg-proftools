@@ -22,6 +22,16 @@ readPDheader <- function(con) {
 readProfileData <- function(filename = "Rprof.out")
     readPD(filename)
 
+readRStudioProfileCacheData <- function() {
+    profDir <- options("profvis.prof_output")$profvis.prof_output
+    if (is.null(profDir)) return(NULL)
+    stackFiles <- list.files(profDir, pattern = "*.Rprof", full.names = TRUE)
+    if (length(stackFiles) == 0) return(NULL)
+    details <- file.info(stackFiles)
+    newest <- stackFiles[order(details$mtime, decreasing = TRUE)[1]]
+    readProfileData(newest)
+}
+
 readPDlines <- function(con, hdr) {
     stacks <-  readLines(con)
     if (hdr$haveRefs) {
