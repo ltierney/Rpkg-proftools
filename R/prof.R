@@ -840,8 +840,10 @@ format.proftools_funSummary <- function (x, ...) {
     v
 }
 
-print.proftools_funSummary <- function(x, ...)
-    print(format(x), quote = FALSE, row.names = FALSE)
+print.proftools_funSummary <- function(x, ...) {
+    x <- format(x)
+    print.data.frame(x[-1], ..., row.names = x[[1]])
+}
 
 format.proftools_callSummary <- function(x, ...) {
     fun1 <- x$caller
@@ -873,7 +875,8 @@ format.proftools_callSummary <- function(x, ...) {
 }
 
 print.proftools_callSummary <- function(x, ...) {
-    print(format(x), quote = FALSE, row.names = FALSE)
+    x <- format(x)
+    print.data.frame(x[-1], row.names = x[[1]])
 }
 
 ## Extract the file indices and line numbers from source references of
