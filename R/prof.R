@@ -537,7 +537,7 @@ hotPathData <- function(pd) {
                    gccount = gccounts[k],
                    alloc = alloc[k])
     }
-    tbl <- do.call(rbind, lapply(1:length(stacks), pathData))
+    tbl <- do.call(rbind, lapply(seq_along(stacks), pathData))
 
     ## **** turn off stringsAsFactore in aggregate?
     data <- aggregate(list(count = tbl$count, gccount = tbl$gccount, alloc = tbl$alloc),
@@ -604,6 +604,7 @@ hotPaths <- function(pd, value = c("pct", "time", "hits"),
                      self = TRUE, srclines = TRUE, GC = FALSE, memory = FALSE,
                      maxdepth = 10, self.pct = 0, total.pct = 0,
                      short = ". ", nlines = NA) {
+    if (length(pd$stacks) == 0) return(NULL)
     value <- match.arg(value)
     if (! is.na(maxdepth))
         pd <- prunePD(pd, maxdepth)
@@ -858,6 +859,7 @@ format.proftools_callSummary <- function(x, ...) {
     x$caller.file <- x$caller.line <- NULL
     x$callee.file <- x$callee.line <- NULL
     v <- format(as.data.frame(x), digits = 2, justify = "left")
+    if (nrow(v) == 0) return(v)
     if ((! is.null(file1) && any(! is.na(file1))) ||
         (! is.null(file2) && any(! is.na(file2)))) {
         funsite1 <- sprintf("%s (%s:%d)", fun1, file1, line1)
