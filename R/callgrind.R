@@ -76,9 +76,16 @@ getCGdata <- function(pd, GC) {
 }
 
 getCGselfData <- function(pd) {
+    leafFun <- function(x) {
+        n <- length(x)
+        if (n > 0)
+            x[n]
+        else
+            "<TOP>"
+    }
     fc <- funCounts(pd, FALSE)
     fc <- fc[, c("fun", "site", "self", "gcself")]
-    f <- sapply(pd$stacks, function(x) x[length(x)])
+    f <- sapply(pd$stacks, leafFun)
     r <- sapply(pd$refs, function(x) x[length(x)])
     fs <- aggregateCounts(data.frame(fun = f, site = r),
                           data.frame(self = pd$counts, gcself = pd$gccounts))
