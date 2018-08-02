@@ -41,7 +41,7 @@ readPDlines <- function(con, hdr) {
     }
     else files <- NULL
 
-    if (hdr$haveMem) {
+    if (hdr$haveMem && length(stacks) > 0) {
         memstuff <- sub(":([0-9]+:[0-9]+:[0-9]+:[0-9]+):.*", "\\1", stacks)
         memnums <- sapply(strsplit(memstuff, ":"), as.numeric)
         mem <- as.vector(t(memnums) %*%  c(8, 8, 1, 0)) / 1048576
@@ -249,6 +249,7 @@ trimTop <- function(pd, funs) {
 }
 
 compactPD <- function(pd) {
+    if (length(pd$stacks) == 0) return(pd)
     ## **** need SIMPLIFY=FALSE here since mapply creates a matrix if all
     ## **** elements of the result happen to be the same length. Might
     ## **** be more robust to use paste() rather than c() (probably
@@ -650,6 +651,7 @@ fact2char <- function(d) {
 
 aggregateCounts <- function(entries, counts) {
     dcounts <- as.data.frame(counts)
+    if (nrow(dcounts) == 0) return(dcounts)     
     clean <- function(x)
         if (any(is.na(x)))
             factor(as.character(x), exclude = "")
@@ -898,7 +900,7 @@ funLabels <- function(fun, site, files) {
     }
 }
 funLocs <- function(fun, site, files) {
-    if (all(is.na(site)))
+    if (length(site) == 0 || all(is.na(site)))
         data.frame(fun, stringsAsFactors = FALSE)
     else {
         file <- basename(files[refFN(site)])
