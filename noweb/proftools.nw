@@ -423,13 +423,16 @@ compactPD <- function(pd) {
     key <- mapply(c, pd$stacks, pd$refs, SIMPLIFY = FALSE)
     map <- match(key, unique(key))
     ct <- aggregateCounts(data.frame(key = map),
-                          cbind(counts = pd$counts, gccounts = pd$gccounts))
+                          cbind(counts = pd$counts,
+			  gccounts = pd$gccounts,
+			  alloc = pd$alloc))
     ct <- ct[order(ct$key),] ## may not be needed
     invmap <- match(unique(key), key)
     pd$stacks <- pd$stacks[invmap]
     pd$refs <- pd$refs[invmap]
     pd$counts <- ct$counts
     pd$gccounts <- ct$gccounts
+    pd$alloc <- ct$alloc
     pd$trace <- map[pd$trace]
     pd
 }
