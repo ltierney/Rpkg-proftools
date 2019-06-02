@@ -2,4 +2,8 @@
 
 language: R
 cache: packages
-R: bioc-release
+
+bioc_packages:
+   - Rgraphviz
+   - graph
+
