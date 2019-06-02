@@ -19,7 +19,7 @@ evaluation.
 
 ## EXPORTED FUNCTIONS
 
-The package exports five functions:
+The package exports these functions:
 
 - `readProfileData` reads the data in the file produced by `Rprof`
   into a data structure used by the other functions in the package.
@@ -46,6 +46,12 @@ The package exports five functions:
 - `plotProfileCallGraph` uses the `graph` and `Rgraphviz` packages to
   produce call graph visualizations within R.  You will need to
   install these packages to use this function.
+
+- Additional summary functions: `funSummary`, `callSummary`,
+  `pathSummary`, `srcSummary`, and `hotPaths`.
+
+- Additional functions: `filterProfileData`, `flameGraph`, `calleeTreeMap`
+	`annotateSource`, and `profileExpr`.
 
 
 ## EXPORTED VARIABLES
