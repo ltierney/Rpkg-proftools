@@ -10,3 +10,5 @@ vignettes/proftools.blg
 vignettes/proftools.log
 vignettes/proftools.out
 
+^\.travis\.yml$
+^\README.html
