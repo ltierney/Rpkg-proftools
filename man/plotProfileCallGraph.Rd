@@ -75,7 +75,7 @@ plotProfileCallGraph(pd, layout = "dot",
 \references{
   User manual for \code{gprof}, the GNU profiler.
 
-  Graphviz: \url{http://www.research.att.com/sw/tools/graphviz/}
+  Graphviz: \url{https://graphviz.gitlab.io/download/}
 }
 
 \author{ Luke Tierney }
