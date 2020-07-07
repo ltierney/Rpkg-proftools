@@ -75,6 +75,9 @@ profileCallGraph2Dot(pd, score = c("none", "total", "self"),
   Because of lazy evaluation, nested calls like \code{f(g(x))}
   appear in the profile graph as \code{f} or one of its callees
   calling \code{g}.
+
+  Calls to functions with names containing a \code{|} character are
+  dropped as they cause problems in the \pkg{graph} package.
 }
 
 \references{

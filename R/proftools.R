@@ -702,6 +702,9 @@ profileCallGraph2Dot <- function(pd, score = c("none", "total", "self"),
                                  center = FALSE, size, shape = "ellipse",
                                  layout = "dot", style, GC = TRUE,
                                  maxnodes = NA, total.pct = 0) {
+    ## clear out any nodes fontaining '|` since they choke graphviz
+    pd <- filterProfileData(pd, omit = "\\|", regex = TRUE)
+
     pd <- cvtProfileData(pd, GC, maxnodes, total.pct)
 
     if (missing(style)) style <- default.style
@@ -782,6 +785,9 @@ plotProfileCallGraph <- function(pd, layout = "dot",
         if (is.null(edgeColorMap))
             edgeColorMap <- hsv(1,1,seq(1,0,length.out=50))
     }
+
+    ## clear out any nodes fontaining '|` since they choke graphviz
+    pd <- filterProfileData(pd, omit = "\\|", regex = TRUE)
 
     pd <- cvtProfileData(pd, GC, maxnodes, total.pct)
 
