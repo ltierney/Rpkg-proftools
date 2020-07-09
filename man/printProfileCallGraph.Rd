@@ -43,8 +43,6 @@ printProfileCallGraph(pd, file = stdout(), percent = TRUE, GC = TRUE,
   User manual for \code{gprof}, the GNU profiler.
 
   \code{cgprof}: \url{http://mvertes.free.fr/}
-
-  Graphviz: \url{http://www.research.att.com/sw/tools/graphviz/}
 }
 \author{ Luke Tierney }
 
